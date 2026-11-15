@@ -3,6 +3,7 @@
 Bu belge, projenin başından bu yana yapılan her şeyi tek yerde toplar: ne inşa edildi, hangi mimari kararlar neden alındı, hangi dosya ne iş yapıyor, neler doğrulandı, neler eksik ve sırada ne var. Kullanım kılavuzu için `README.md` dosyasına bakın; bu belge durum ve gerekçe kaydıdır.
 
 - **Konum:** `C:\Users\HP\Desktop\github\zirve`
+- **GitHub:** https://github.com/physerkm/zirve (açık depo, `main` dalı)
 - **Son güncelleme:** 15 Kasım 2026
 - **Durum:** Platform uçtan uca çalışıyor ve testleri geçiyor. İçerik sınırlı. Docker dağıtımı yazıldı ama hiç çalıştırılmadı. Proje Git ile sürümleniyor (`main` dalı).
 
@@ -24,7 +25,7 @@ C#, .NET, React, JavaScript, TypeScript, algoritmalar ve sistem tasarımı konul
 | Yerel geliştirme (`npm run dev`) | Çalışıyor (Docker gerektirmez) |
 | İçerik | 32 ders, 9 quiz (90 soru), 23 problem; 11 yolun hepsi yayında |
 | Docker / nginx / CI dosyaları | Yazıldı, **hiç çalıştırılmadı** |
-| Sürüm kontrolü | Git deposu var (`main`); GitHub'a gönderimi bekliyor |
+| Sürüm kontrolü ve CI | GitHub'da (`physerkm/zirve`); CI'ın iki işi de yeşil |
 
 ### İçerik dökümü
 
@@ -51,7 +52,7 @@ Problemler (23): 11 kolay, 12 orta; zor problem yok. Kapsanan kalıplar: dizi/ha
 Proje klasörü dışında yapılan kalıcı değişiklikler:
 
 - **.NET SDK 10.0.404** `winget` ile sistem geneline kuruldu (önceden yalnızca runtime'lar vardı).
-- **Git 2.56** ve **GitHub CLI (`gh`) 2.104** `winget` ile kuruldu (15 Kasım 2026). `gh`, GitHub hesabına (`physerkm`) giriş yapılmış durumda; belirteç Windows kimlik bilgisi deposunda tutuluyor. Deponun yazar adı ve e-postası yalnızca bu deponun ayarlarında tanımlı: `physerkm`, GitHub'ın gizli (`noreply`) adresi.
+- **Git 2.56** ve **GitHub CLI (`gh`) 2.104** `winget` ile kuruldu (15 Kasım 2026). `gh`, GitHub hesabına (`physerkm`) giriş yapılmış durumda; belirteç Windows kimlik bilgisi deposunda tutuluyor. Deponun yazar adı ve e-postası yalnızca bu deponun ayarlarında tanımlı: `physerkm`, GitHub'ın gizli (`noreply`) adresi. GitHub kimlik doğrulaması da yalnızca bu depoda `gh` üzerinden yapılıyor (`credential.https://github.com.helper`); genel Git ayarlarına dokunulmadı. `gh` belirtecinin izinleri: `repo`, `workflow`, `read:org`, `gist`.
 
 Proje klasörü içinde kurulanlar (hepsi klasör silinince gider):
 
@@ -147,7 +148,7 @@ Zirve.Runner  (:5081)
 | `scripts/dev-db.mjs` | Gömülü PostgreSQL'i `pg_ctl` ile başlatır/durdurur, veritabanını oluşturur |
 | `docker-compose.yml`, `.env.example`, `.dockerignore` | Kapsayıcı kurulumu (denenmedi) |
 | `deploy/nginx.conf` | SPA sunumu, `/api` vekili, güvenlik başlıkları, CSP (denenmedi) |
-| `.github/workflows/ci.yml` | Backend ve frontend CI işleri (hiç koşmadı) |
+| `.github/workflows/ci.yml` | Backend ve frontend CI işleri (`main`'e her gönderimde ve PR'larda koşar) |
 | `README.md` | Kurulum, kullanım, içerik biçimleri, güvenlik, yapılandırma |
 | `.gitignore`, `.gitattributes`, `.editorconfig` | Depo düzeni |
 
@@ -274,12 +275,12 @@ Zirve.Runner  (:5081)
 | Frontend testleri (Vitest) | 17 / 17 geçti |
 | Frontend üretim derlemesi | Başarılı |
 | Tarayıcı turu (başsız Edge) | 9 yol, 24 ders, 7 quiz, 23 problem sayfası açıldı; kayıt, quiz, kod çalıştır/gönder (C# ve TypeScript), sınıf problemi, deneme alanı, ders tamamlama → panel, arama, açık tema, mobil görünüm çalıştı; konsol hatası yok |
+| CI (GitHub Actions, Linux) | İlk çalıştırma yeşil: backend 147/147 (atlanan yok; Runner testleri Linux'ta ilk kez koştu), frontend lint + tip denetimi + testler + derleme |
 | Yeni içerik (8 ders, 2 quiz) | İçerik doğrulama testleri geçti; derslerdeki 12 Mermaid diyagramının hepsi Mermaid 12.3 ayrıştırıcısından geçti; çalışan sitede yollar, dersler, quizler ve arama (`izolasyon`, `deadlock`, `TLS` vb.) API üzerinden doğrulandı |
 
 **Doğrulanmayanlar:**
 
 - Docker görüntüleri, `docker-compose.yml`, nginx yapılandırması ve içindeki Content-Security-Policy hiç çalıştırılmadı. CSP'nin Monaco ve Mermaid ile uyumu denenmedi.
-- CI iş akışı hiç koşmadı (depo GitHub'da değil). Linux'ta Runner testleri denenmedi.
 - Tarayıcı turu betiği geçici klasördeydi; depoda uçtan uca (e2e) test yok.
 - Veritabanları ve Bilgisayar Bilimi Temelleri yollarının sayfaları tarayıcıda görsel olarak gezilmedi (diyagramlar yalnızca ayrıştırıcıyla denetlendi). Mermaid denetim betiği de geçici klasördeydi; depoda yok.
 - Yük, eşzamanlılık ve güvenlik (sızma) testi yapılmadı.
@@ -327,7 +328,7 @@ Her içerik eklemesinden sonra `dotnet test --project tests/Zirve.Tests` çalı�
 ### C. Sürüm kontrolü ve CI
 
 1. ~~Git kur, `git init`, ilk commit.~~ **Tamamlandı (15 Kasım 2026).**
-2. GitHub'a gönder ve CI'ın iki işinin de yeşil olduğunu doğrula (Linux'ta Runner testleri ilk kez orada koşacak).
+2. ~~GitHub'a gönder ve CI'ın iki işinin de yeşil olduğunu doğrula.~~ **Tamamlandı (15 Kasım 2026):** https://github.com/physerkm/zirve, ilk CI çalıştırması yeşil.
 
 ### D. Ürün özellikleri
 
