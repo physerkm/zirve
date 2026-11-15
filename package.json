@@ -1,0 +1,20 @@
+{
+  "name": "zirve",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Zirve — büyük teknoloji şirketleri için yazılım mühendisliği mülakat hazırlık platformu.",
+  "scripts": {
+    "setup": "npm install && npm --prefix src/Zirve.Runner/Node ci && npm --prefix web install && dotnet tool restore",
+    "db": "node scripts/dev-db.mjs",
+    "dev": "node scripts/dev.mjs",
+    "test": "dotnet test --project tests/Zirve.Tests/Zirve.Tests.csproj && npm --prefix web run test"
+  },
+  "devDependencies": {
+    "embedded-postgres": "18.6.0-beta.19",
+    "pg": "^8.13.0"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>Zirve.Runner</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Zirve.Shared\Zirve.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Test koşucusu kaynakları Runner'ın kendisine derlenmez; kullanıcı koduyla birlikte çalışma anında derlenir. -->
+    <Compile Remove="CSharp\Harness\**\*.cs" />
+    <EmbeddedResource Include="CSharp\Harness\TestHarness.cs" LogicalName="Zirve.Runner.TestHarness.cs" />
+    <None Include="Node\harness.mjs" CopyToOutputDirectory="PreserveNewest" />
+    <!-- amaro (TypeScript dönüştürücü). "npm ci" çalıştırılmadıysa bu glob boştur ve koşucu Node'un yerleşik tip silicisine düşer. -->
+    <None Include="Node\node_modules\**" CopyToOutputDirectory="PreserveNewest" LinkBase="Node\node_modules" />
+    <Content Remove="Node\package.json;Node\package-lock.json" />
+    <None Include="Node\package.json;Node\package-lock.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Zirve.Tests" />
+  </ItemGroup>
+
+</Project>

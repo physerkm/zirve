@@ -1,0 +1,107 @@
+# Bütün yığını kapsayıcılarda çalıştırır:
+#
+#   cp .env.example .env   # ve içindeki parolaları değiştirin
+#   docker compose up --build
+#
+# Site: http://localhost:8080
+#
+# Ağ düzeni:
+#   edge     -> yalnızca "web" dış dünyaya açıktır.
+#   backend  -> web, api ve db konuşur.
+#   sandbox  -> internal: true (internet erişimi YOK). Yalnızca api ile runner buradadır;
+#               kullanıcı kodunu çalıştıran runner ne internete ne de veritabanına ulaşabilir.
+
+name: zirve
+
+services:
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: zirve
+      POSTGRES_USER: zirve
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD .env dosyasında tanımlanmalı}
+    volumes:
+      - db-data:/var/lib/postgresql
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zirve -d zirve"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  runner:
+    build:
+      context: .
+      dockerfile: src/Zirve.Runner/Dockerfile
+    restart: unless-stopped
+    environment:
+      Runner__ApiKey: ${RUNNER_API_KEY:?RUNNER_API_KEY .env dosyasında tanımlanmalı}
+      Runner__MaxConcurrency: "2"
+    networks: [sandbox]
+    # --- kullanıcı kodu için yalıtım ---
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 1536m
+    cpus: 2
+
+  api:
+    build:
+      context: .
+      dockerfile: src/Zirve.Api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      runner:
+        condition: service_started
+    environment:
+      ConnectionStrings__Default: Host=db;Port=5432;Database=zirve;Username=zirve;Password=${POSTGRES_PASSWORD}
+      # Tek örnekli kurulumda pratik. Birden fazla API örneği çalıştıracaksanız migration'ları dağıtım
+      # adımında uygulayın ve bunu false yapın.
+      Database__ApplyMigrationsOnStartup: "true"
+      Runner__BaseUrl: http://runner:8080
+      Runner__ApiKey: ${RUNNER_API_KEY}
+      DataProtection__KeysPath: /keys
+      ForwardedHeaders__Enabled: "true"
+      # HTTPS arkasında true olmalıdır. Yalnızca http://localhost üzerinde denerken ve tarayıcınız
+      # Secure çerezleri reddediyorsa (ör. Safari) false yapın.
+      Auth__RequireSecureCookies: ${REQUIRE_SECURE_COOKIES:-true}
+    volumes:
+      - api-keys:/keys
+    networks: [backend, sandbox]
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    networks: [edge, backend]
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  edge:
+  backend:
+  sandbox:
+    internal: true
+
+volumes:
+  db-data:
+  api-keys:

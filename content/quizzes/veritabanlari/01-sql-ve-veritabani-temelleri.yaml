@@ -1,0 +1,150 @@
+title: SQL ve Veritabanı Temelleri
+description: Join'ler, NULL mantığı, pencere fonksiyonları, indeksler, transaction'lar, izolasyon seviyeleri ve veri modelleme.
+level: intermediate
+timeLimitMinutes: 18
+questions:
+  - q: |
+      Amaç, **bütün** müşterileri ve varsa teslim edilmiş siparişlerini listelemek. Bu sorgu ne döndürür?
+
+      ```sql
+      SELECT c.name, o.id
+      FROM customers c
+      LEFT JOIN orders o ON o.customer_id = c.id
+      WHERE o.status = 'delivered';
+      ```
+    options:
+      - "Bütün müşterileri; teslim edilmiş siparişi olmayanlarda `o.id` NULL olur."
+      - "Hiç satır döndürmez."
+      - "Yalnızca en az bir teslim edilmiş siparişi olan müşterileri; sorgu fiilen INNER JOIN gibi davranır."
+      - "Sözdizimi hatası verir."
+    answer: 3
+    difficulty: medium
+    why: |
+      Eşi olmayan müşterilerde `o.status` NULL'dır ve `NULL = 'delivered'` doğru değil `UNKNOWN` sonucunu verir; `WHERE` bu satırları eler. Sağ tabloyu süzen koşul `ON`'a yazılmalıdır: `LEFT JOIN orders o ON o.customer_id = c.id AND o.status = 'delivered'`.
+
+  - q: |
+      `legacy_orders.customer_id` sütununda en az bir NULL değer varsa bu sorgu ne döndürür?
+
+      ```sql
+      SELECT * FROM customers
+      WHERE id NOT IN (SELECT customer_id FROM legacy_orders);
+      ```
+    options:
+      - "`legacy_orders` içinde hiç geçmeyen müşterileri"
+      - "Bütün müşterileri"
+      - "Hata verir."
+      - "Hiç satır döndürmez."
+    answer: 4
+    difficulty: hard
+    why: |
+      `id NOT IN (1, 2, NULL)` ifadesi `id <> 1 AND id <> 2 AND id <> NULL` demektir. Son karşılaştırma her zaman `UNKNOWN` olduğu için bütün koşul hiçbir satırda `TRUE` olamaz. `NOT EXISTS` bu tuzağa düşmez; eşi olmayanı ararken varsayılan olarak onu kullanın.
+
+  - q: "`customers` tablosunda 5 satır var ve bunların 2'sinde `city` NULL. `SELECT COUNT(*), COUNT(city) FROM customers` ne döndürür?"
+    options:
+      - "5 ve 5"
+      - "5 ve 3"
+      - "3 ve 3"
+      - "3 ve 5"
+    answer: 2
+    difficulty: easy
+    why: |
+      `COUNT(*)` satırları sayar; `COUNT(sütun)` yalnızca o sütunun NULL olmadığı satırları sayar. Diğer toplama fonksiyonları (`SUM`, `AVG`, `MAX`) da NULL değerleri atlar; `AVG` NULL'ları paydaya katmaz.
+
+  - q: "Tabloda `(last_name, first_name)` üzerinde bir B-ağacı indeksi var. Hangi sorgu bu indeksten **verimli biçimde yararlanamaz**?"
+    options:
+      - "`WHERE last_name = 'Yılmaz'`"
+      - "`WHERE last_name = 'Yılmaz' AND first_name = 'Ada'`"
+      - "`WHERE first_name = 'Ada'`"
+      - "`WHERE last_name = 'Yılmaz' ORDER BY first_name`"
+    answer: 3
+    difficulty: medium
+    why: |
+      Bileşik indeks önce ilk sütuna, eşitlikte ikinci sütuna göre sıralıdır; telefon rehberi gibi. Yalnızca ada göre arama yapmak bütün rehberi taramayı gerektirir (en soldaki önek kuralı). PostgreSQL 18'in "skip scan" özelliği bazı durumlarda bu indeksi yine de kullanabilir, ama yalnızca ilk sütunun farklı değer sayısı azsa verimlidir.
+
+  - q: "`users (email)` üzerinde indeks olmasına rağmen `WHERE lower(email) = 'ada@ornek.com'` sorgusu tam tablo taraması yapıyor. Sebep ve çözüm nedir?"
+    options:
+      - "PostgreSQL metin sütunlarında indeks kullanamaz; sütun `bytea` yapılmalıdır."
+      - "İndeks `email` değerleri üzerine kuruludur, `lower(email)` farklı bir ifadedir. `lower(email)` üzerinde bir ifade indeksi oluşturulmalıdır."
+      - "Sorguda `LIMIT` olmadığı için indeks kullanılmaz."
+      - "B-ağacı indeksleri yalnızca sayısal sütunlarda çalışır."
+    answer: 2
+    difficulty: medium
+    why: |
+      Sütun bir fonksiyona sokulduğunda indeksteki sıralı değerler artık aranan ifadeyle eşleşmez. Çözüm `CREATE INDEX ON users (lower(email))`; bu indeks benzersiz yapılırsa büyük-küçük harf duyarsız e-posta benzersizliğini de garanti eder. Aynı sorun `WHERE date(created_at) = ...` gibi tarih fonksiyonlarında da vardır; orada aralık koşulu yazmak daha iyidir.
+
+  - q: "Maaşlar 100, 100 ve 90. `DENSE_RANK() OVER (ORDER BY salary DESC)` hangi sıra numaralarını üretir?"
+    options:
+      - "1, 2, 3"
+      - "1, 1, 3"
+      - "1, 1, 2"
+      - "2, 2, 1"
+    answer: 3
+    difficulty: easy
+    why: |
+      `DENSE_RANK` eşitlere aynı sırayı verir ve sonrasında boşluk bırakmaz. `RANK` 1, 1, 3; `ROW_NUMBER` 1, 2, 3 üretir. "İkinci en yüksek maaş" sorusunda eşit maaşları doğru ele almak için `DENSE_RANK` kullanılır.
+
+  - q: "Transaction A bir hesabın bakiyesini okur (100). Transaction B aynı bakiyeyi 50 yapar ve onaylar. A aynı satırı tekrar okur ve 50 görür. Bu anomalinin adı nedir?"
+    options:
+      - "Kirli okuma (dirty read)"
+      - "Tekrarlanamayan okuma (non-repeatable read)"
+      - "Hayalet okuma (phantom read)"
+      - "Deadlock"
+    answer: 2
+    difficulty: easy
+    why: |
+      Aynı satırın aynı transaction içinde iki okumada farklı değer vermesi tekrarlanamayan okumadır. B onaylanmadan okunsaydı kirli okuma olurdu. Hayalet okuma ise aynı koşulla yapılan sorgunun farklı bir satır **kümesi** döndürmesidir. Repeatable Read seviyesi bu anomaliyi engeller.
+
+  - q: "PostgreSQL'in varsayılan izolasyon seviyesi (Read Committed) aşağıdakilerden hangisini **engellemez**?"
+    options:
+      - "Onaylanmamış bir değişikliğin başka bir transaction tarafından okunmasını (kirli okuma)"
+      - "İki transaction'ın aynı değeri okuyup bellekte hesaplayarak üzerine yazmasıyla bir güncellemenin kaybolmasını"
+      - "Onaylanmış bir transaction'ın sunucu çöktüğünde kaybolmasını"
+      - "Yabancı anahtar kısıtını ihlal eden bir satırın kaydedilmesini"
+    answer: 2
+    difficulty: medium
+    why: |
+      Read Committed'da her komut, başladığı andaki onaylanmış veriyi görür. İki istek stoğu 10 olarak okuyup ikisi de `stock = 9` yazarsa bir satış kaybolur. Kirli okuma PostgreSQL'de hiçbir seviyede olmaz; kalıcılık WAL ile, yabancı anahtar ise kısıtla sağlanır.
+
+  - q: "Stok azaltırken **kayıp güncelleme** sorununu çözen yöntemler hangileridir? (Birden fazla doğru yanıt vardır.)"
+    options:
+      - "Hesabı tek ifadede veritabanına yaptırmak: `UPDATE products SET stock = stock - 1 WHERE id = 7 AND stock > 0`"
+      - "Satırı okurken `SELECT ... FOR UPDATE` ile kilitlemek"
+      - "Bir sürüm sütunu tutup `WHERE id = 7 AND version = <okunan sürüm>` koşuluyla güncellemek; 0 satır etkilenirse yeniden denemek"
+      - "İzolasyon seviyesini Read Uncommitted'a düşürmek"
+    answer: [1, 2, 3]
+    difficulty: hard
+    why: |
+      Atomik `UPDATE` okuma ve yazmayı tek adımda yapar ve mümkünse ilk tercihtir. `FOR UPDATE` kötümser kilittir; çakışma sık olduğunda uygundur. Sürüm sütunu iyimser eşzamanlılıktır; kilit tutmaz ve çakışmayı yazarken fark eder (EF Core'daki eşzamanlılık belirteci bunu yapar). İzolasyonu düşürmek sorunu yalnızca ağırlaştırır.
+
+  - q: "`orders` tablosunda her siparişin yanında müşterinin şehri (`customer_city`) de tutuluyor. Bu tasarım hangi normal formu ihlal eder?"
+    options:
+      - "3NF: şehir siparişin anahtarına değil, anahtar olmayan müşteri bilgisine bağlıdır (geçişli bağımlılık)."
+      - "1NF: hücrede birden fazla değer vardır."
+      - "2NF: şehir bileşik anahtarın yalnızca bir parçasına bağlıdır."
+      - "Hiçbirini; bu tasarım tamamen normalizedir."
+    answer: 1
+    difficulty: medium
+    why: |
+      `order_id → customer_id → city` zincirinde şehir, siparişe müşteri üzerinden bağlıdır. Müşteri taşındığında bütün sipariş satırlarının güncellenmesi gerekir (güncelleme anomalisi). Şehir `customers` tablosunda durmalıdır. İstisna: siparişin **teslimat adresi** sipariş anındaki bir gerçektir ve siparişte saklanmalıdır; o bir tekrar değil, ayrı bir bilgidir.
+
+  - q: "Bir API, siparişleri `ORDER BY created_at DESC LIMIT 20 OFFSET n` ile sayfalıyor ve ileri sayfalar giderek yavaşlıyor. En iyi çözüm hangisidir?"
+    options:
+      - "`LIMIT` değerini büyütmek"
+      - "`ORDER BY`'ı kaldırmak"
+      - "`OFFSET` değerlerini önbelleğe almak"
+      - "Önceki sayfanın son satırının `(created_at, id)` değerinden devam eden anahtar kümesi (keyset) sayfalamaya geçmek"
+    answer: 4
+    difficulty: medium
+    why: |
+      `OFFSET n`, veritabanının n satırı bulup atması demektir; maliyet sayfa numarasıyla büyür. Anahtar kümesi sayfalama `WHERE (created_at, id) < (@son_tarih, @son_id)` koşuluyla `(created_at, id)` indeksinden doğrudan doğru noktaya iner; her sayfa aynı hızdadır ve araya eklenen kayıtlar satırları kaydırmaz. Bedeli: rastgele bir sayfaya atlanamaz.
+
+  - q: "Para tutarlarını saklamak için hangi PostgreSQL tipi uygundur?"
+    options:
+      - "`numeric(12, 2)`"
+      - "`double precision`"
+      - "`real`"
+      - "`text`"
+    answer: 1
+    difficulty: easy
+    why: |
+      Kayan noktalı tipler (`real`, `double precision`) ikili tabanda saklanır ve 0,1 gibi ondalık değerleri tam gösteremez; toplamlarda kuruş farkları oluşur. `numeric` ondalık sayıları tam saklar. Bir diğer yaygın yöntem tutarı en küçük para biriminde tamsayı (`bigint` kuruş) olarak tutmaktır. `text` ile aritmetik ve kısıt yazmak mümkün değildir.

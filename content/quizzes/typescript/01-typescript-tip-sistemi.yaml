@@ -1,0 +1,144 @@
+title: TypeScript Tip Sistemi
+description: Yapısal tipleme, daraltma, ayrımcı birleşimler, generics ve yardımcı tipler.
+level: intermediate
+timeLimitMinutes: 12
+questions:
+  - q: |
+      Aşağıdaki kod derlenir mi?
+
+      ```typescript
+      interface Point { x: number; y: number; }
+
+      function print(p: Point) { console.log(p.x, p.y); }
+
+      const pixel = { x: 1, y: 2, color: 'red' };
+      print(pixel);
+      ```
+    options:
+      - "Hayır; `pixel` nesnesi `Point` olarak bildirilmemiştir."
+      - "Hayır; `color` özelliği `Point` içinde yoktur."
+      - "Evet; `pixel`, `Point`'in gerektirdiği bütün özelliklere sahiptir."
+      - "Evet; ama yalnızca `strict` kipi kapalıyken."
+    answer: 3
+    difficulty: easy
+    why: |
+      TypeScript **yapısal** tipleme kullanır: bir değer gereken şekle sahipse uyumludur; tipin adını bildirmesi gerekmez ve fazladan özellikler sorun değildir. Tek istisna, nesne değişmezini **doğrudan** argüman olarak verdiğinizde yapılan fazlalık denetimidir: `print({ x: 1, y: 2, color: 'red' })` hata verir.
+
+  - q: "TypeScript tipleri çalışma zamanında (runtime) ne olur?"
+    options:
+      - "JavaScript nesnelerine dönüştürülür ve `typeof` ile sorgulanabilir."
+      - "Derleme sırasında silinir; çalışma zamanında hiçbir tip denetimi yapılmaz."
+      - "Yalnızca `interface` tanımları korunur."
+      - "Tarayıcı tarafından doğrulanır."
+    answer: 2
+    difficulty: easy
+    why: |
+      Tipler yalnızca derleme zamanında vardır ve çıktıdaki JavaScript'te hiçbir iz bırakmaz. Bunun pratik sonucu: `fetch` ya da `JSON.parse` ile gelen veriyi bir tipe `as` ile damgalamak hiçbir şeyi doğrulamaz. Sistem sınırlarında veriyi çalışma zamanında doğrulamak gerekir.
+
+  - q: "`unknown` ile `any` arasındaki fark nedir?"
+    options:
+      - "Fark yoktur; `unknown`, `any`'nin yeni adıdır."
+      - "`unknown` tipindeki bir değer, tipi daraltılmadan kullanılamaz; `any` ise tip denetimini tümüyle kapatır."
+      - "`any` yalnızca nesneler için, `unknown` yalnızca ilkel değerler için kullanılır."
+      - "`unknown` çalışma zamanında hata fırlatır, `any` fırlatmaz."
+    answer: 2
+    difficulty: medium
+    why: |
+      İkisine de her değer atanabilir. Fark kullanırken ortaya çıkar: `any` üzerinde her işlem serbesttir ve hatalar çalışma zamanına kalır; `unknown` üzerinde bir özellik okumadan ya da metot çağırmadan önce `typeof`, `in` ya da bir tip koruyucuyla daraltma yapmak zorunludur. Dış kaynaklı veri için `unknown` güvenli seçimdir.
+
+  - q: |
+      Aşağıdaki tipte `state.data` özelliğine hangi durumda güvenle erişilebilir?
+
+      ```typescript
+      type State =
+        | { status: 'loading' }
+        | { status: 'success'; data: string[] }
+        | { status: 'error'; message: string };
+      ```
+    options:
+      - "Her zaman; `data` birleşimin bir üyesinde tanımlıdır."
+      - "`state.status === 'success'` denetiminden sonra."
+      - "Yalnızca `state as any` dönüşümünden sonra."
+      - "Hiçbir zaman; birleşim tiplerinde özelliklere erişilemez."
+    answer: 2
+    difficulty: medium
+    why: |
+      Bu bir **ayrımcı birleşimdir**: `status` alanı her üyede farklı bir değişmez (literal) tiptir. `status`'ü denetlemek TypeScript'in tipi ilgili üyeye daraltmasını sağlar ve `data` yalnızca o dalda erişilebilir olur. Bu model, "yükleniyor ama verisi de var" gibi geçersiz durumları tipte ifade edilemez kılar.
+
+  - q: |
+      `UserUpdate` tipi neye eşittir?
+
+      ```typescript
+      interface User { id: number; name: string; email: string; }
+
+      type UserUpdate = Partial<Omit<User, 'id'>>;
+      ```
+    options:
+      - "`{ id?: number; name?: string; email?: string }`"
+      - "`{ name: string; email: string }`"
+      - "`{ name?: string; email?: string }`"
+      - "`{ id: number }`"
+    answer: 3
+    difficulty: medium
+    why: |
+      `Omit<User, 'id'>` önce `id` alanını çıkarır: `{ name: string; email: string }`. `Partial<...>` kalan bütün alanları isteğe bağlı yapar. Yardımcı tipleri birleştirmek, aynı şekli elle yeniden yazmaktan iyidir: `User` değiştiğinde `UserUpdate` kendiliğinden güncellenir.
+
+  - q: |
+      `K extends keyof T` kısıtı bu fonksiyonda ne sağlar?
+
+      ```typescript
+      function get<T, K extends keyof T>(obj: T, key: K): T[K] {
+        return obj[key];
+      }
+      ```
+    options:
+      - "`key` yalnızca `obj`'nin gerçekten sahip olduğu bir özellik adı olabilir ve dönüş tipi o özelliğin tipidir."
+      - "`obj` yalnızca dizgi anahtarlı nesneler olabilir."
+      - "Fonksiyonun çalışma zamanında anahtarın varlığını denetlemesini sağlar."
+      - "`T` tipinin `K` tipinden türemesini zorunlu kılar."
+    answer: 1
+    difficulty: hard
+    why: |
+      `keyof T`, `T`'nin anahtar adlarının birleşimidir. `K extends keyof T`, `key` argümanını bu adlarla sınırlar: var olmayan bir anahtar derleme hatası verir. `T[K]` ise o anahtarın değer tipidir; `get(user, 'name')` çağrısının dönüş tipi `string` olarak çıkarılır. Çalışma zamanında hiçbir denetim eklenmez.
+
+  - q: |
+      Aşağıdaki `default` dalındaki atamanın amacı nedir?
+
+      ```typescript
+      function area(shape: Circle | Square): number {
+        switch (shape.kind) {
+          case 'circle': return Math.PI * shape.radius ** 2;
+          case 'square': return shape.size ** 2;
+          default: {
+            const unreachable: never = shape;
+            return unreachable;
+          }
+        }
+      }
+      ```
+    options:
+      - "Çalışma zamanında bilinmeyen şekiller için hata fırlatmak."
+      - "Birleşime yeni bir üye eklenip burada işlenmezse derleme hatası üretmek."
+      - "`shape` değişkenini bellekten silmek."
+      - "Fonksiyonun `never` döndürmesini sağlamak."
+    answer: 2
+    difficulty: hard
+    why: |
+      Bütün üyeler işlendiğinde `default` dalında `shape`'in tipi `never`'a daralır ve atama geçerlidir. Birleşime `Triangle` eklenirse `default` dalında `shape`'in tipi `Triangle` olur; `never`'a atanamaz ve derleyici işlenmemiş durumu bildirir. Buna **tüketicilik denetimi** (exhaustiveness check) denir.
+
+  - q: |
+      `Direction` tipi nedir?
+
+      ```typescript
+      const directions = ['north', 'south', 'east', 'west'] as const;
+      type Direction = (typeof directions)[number];
+      ```
+    options:
+      - "`string`"
+      - "`string[]`"
+      - "`'north' | 'south' | 'east' | 'west'`"
+      - "`readonly string[]`"
+    answer: 3
+    difficulty: medium
+    why: |
+      `as const` olmadan dizinin tipi `string[]` olurdu. `as const`, değerleri değişmez tipleriyle ve salt okunur bir demet olarak tutar. `typeof directions` bu demetin tipini, `[number]` ise herhangi bir indeksteki eleman tipini, yani dört değişmezin birleşimini verir. Değerleri ve tipi tek kaynaktan türetmenin yaygın yoludur.

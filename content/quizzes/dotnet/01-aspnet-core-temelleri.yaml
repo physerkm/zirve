@@ -1,0 +1,99 @@
+title: ASP.NET Core Temelleri
+description: Middleware hattı, dependency injection, servis ömürleri ve yapılandırma.
+level: intermediate
+timeLimitMinutes: 12
+questions:
+  - q: |
+      Aşağıdaki sıralamanın sonucu ne olur?
+
+      ```csharp
+      app.UseAuthorization();
+      app.UseAuthentication();
+      app.MapGet("/orders", GetOrders).RequireAuthorization();
+      ```
+    options:
+      - "Sıra fark etmez; ASP.NET Core middleware'leri doğru sıraya kendisi dizer."
+      - "Yetkilendirme, kullanıcı henüz doğrulanmadan çalışır ve oturum açmış kullanıcılar bile reddedilir."
+      - "Uygulama derlenmez."
+      - "Kimlik doğrulama iki kez çalışır."
+    answer: 2
+    difficulty: medium
+    why: |
+      Middleware'ler eklendikleri sırayla çalışır. `UseAuthentication` isteğin kimliğini (`HttpContext.User`) doldurur; `UseAuthorization` bu kimliğe bakarak karar verir. Sıra ters olursa yetkilendirme boş bir kimlik görür. Kimlik doğrulama her zaman yetkilendirmeden önce gelmelidir.
+
+  - q: "Aynı HTTP isteği içinde iki farklı sınıf, `AddScoped` ile kaydedilmiş bir servisi istiyor. Kaç örnek oluşturulur?"
+    options:
+      - "Bir; ikisi de aynı örneği alır."
+      - "İki; her sınıf kendi örneğini alır."
+      - "Uygulama boyunca yalnızca bir kez oluşturulmuş örnek kullanılır."
+      - "Hiç; scoped servisler elle oluşturulmalıdır."
+    answer: 1
+    difficulty: easy
+    why: |
+      Scoped ömür "kapsam başına bir örnek" demektir ve ASP.NET Core her HTTP isteği için bir kapsam açar. Aynı istekte servisi kim isterse istesin aynı örneği alır; bir sonraki istek yeni bir örnek alır. Transient olsaydı her çözümlemede yeni örnek, singleton olsaydı uygulama boyunca tek örnek oluşurdu.
+
+  - q: "Singleton olarak kaydedilmiş bir servisin kurucusunda scoped bir `DbContext` almasının sakıncası nedir?"
+    options:
+      - "Sakıncası yoktur; kapsayıcı ömürleri kendiliğinden uyumlu hale getirir."
+      - "Singleton, `DbContext`'i uygulama boyunca elinde tutar: thread güvenli olmayan ve isteğin sonunda atılması gereken bir nesne bütün istekler arasında paylaşılır."
+      - "`DbContext` her istekte yeniden oluşturulur ve performans düşer."
+      - "Yalnızca birim testlerinde sorun çıkarır."
+    answer: 2
+    difficulty: hard
+    why: |
+      Buna **tutsak bağımlılık** denir. Singleton bir kez oluşturulur ve aldığı scoped servis onunla birlikte yaşar. `DbContext` thread güvenli değildir ve bir iş birimi için tasarlanmıştır; eşzamanlı isteklerde bozulur. ASP.NET Core geliştirme ortamında bunu kapsam doğrulamasıyla açılışta yakalar. Kural: servis yalnızca kendisiyle aynı ya da daha uzun ömürlü servislere bağımlı olabilir.
+
+  - q: "Bir `BackgroundService` (singleton) içinde düzenli olarak `DbContext` kullanmanız gerekiyor. Doğru yaklaşım hangisidir?"
+    options:
+      - "`DbContext`'i kurucuya enjekte etmek"
+      - "`DbContext`'i singleton olarak kaydetmek"
+      - "`IServiceScopeFactory` enjekte edip her iş için yeni bir kapsam açmak ve `DbContext`'i o kapsamdan çözmek"
+      - "`new AppDbContext()` ile elle oluşturmak"
+    answer: 3
+    difficulty: medium
+    why: |
+      Arka plan servisinin HTTP isteği kapsamı yoktur. `IServiceScopeFactory.CreateAsyncScope()` ile her iş birimi için bir kapsam açılır; o kapsamdan çözülen scoped servisler kapsam atıldığında düzgünce temizlenir. `DbContext`'i singleton yapmak eşzamanlılık hatalarına ve giderek büyüyen bir değişiklik izleyicisine yol açar.
+
+  - q: "Her HTTP çağrısında `new HttpClient()` oluşturup atmanın (dispose) sakıncası nedir?"
+    options:
+      - "`HttpClient` yalnızca bir kez kullanılabilir."
+      - "Yük altında soket tükenmesine yol açabilir; bunun yerine `IHttpClientFactory` kullanılmalıdır."
+      - "İstekler şifrelenmez."
+      - "Sakıncası yoktur; önerilen kullanım budur."
+    answer: 2
+    difficulty: medium
+    why: |
+      Her `HttpClient` kendi bağlantı havuzunu açar; atılsa bile alttaki soketler işletim sistemi tarafından bir süre serbest bırakılmaz. Yoğun kullanımda kullanılabilir portlar tükenir. `IHttpClientFactory` (`AddHttpClient`) işleyicileri havuzlar, yeniden kullanır ve DNS değişikliklerini izlemek için belirli aralıklarla yeniler.
+
+  - q: "Options deseninde `ValidateOnStart()` çağrısının yararı nedir?"
+    options:
+      - "Ayarları şifreler."
+      - "Hatalı ya da eksik yapılandırmanın, ilk kullanım anı yerine uygulama açılırken ortaya çıkmasını sağlar."
+      - "Ayarların çalışma zamanında değiştirilmesini engeller."
+      - "Ayarları veritabanına kaydeder."
+    answer: 2
+    difficulty: medium
+    why: |
+      Doğrulama varsayılan olarak ayarlar ilk kez okunduğunda yapılır; hata, belki de saatler sonra ilgili kod yolu çalıştığında ortaya çıkar. `ValidateOnStart()` doğrulamayı açılışa taşır: hatalı ayarla dağıtılan uygulama hiç ayağa kalkmaz ve sorun hemen fark edilir (fail fast).
+
+  - q: "Bir middleware içinde `await next(context)` çağrılmazsa ne olur?"
+    options:
+      - "Hat kısa devre olur; sonraki middleware'ler ve uç nokta çalışmaz."
+      - "İstek otomatik olarak bir sonraki middleware'e devredilir."
+      - "Uygulama istisna fırlatır."
+      - "İstek baştan başlatılır."
+    answer: 1
+    difficulty: easy
+    why: |
+      Her middleware, isteği sonrakine devredip devretmeyeceğine kendisi karar verir. `next` çağrılmazsa hat orada biter ve yanıtı o middleware üretir. Kimlik doğrulama başarısız olduğunda 401 dönmek ya da önbellekten yanıt vermek gibi durumlar bu davranışa dayanır.
+
+  - q: "Yapılandırma kaynakları varsayılan sırayla yüklendiğinde, aynı anahtar için hangisi **önceliklidir**?"
+    options:
+      - "`appsettings.json`"
+      - "`appsettings.Production.json`"
+      - "Ortam değişkenleri"
+      - "Hepsi eşit önceliklidir; ilk bulunan kullanılır."
+    answer: 3
+    difficulty: medium
+    why: |
+      Kaynaklar katmanlıdır ve sonra eklenen öncekini ezer: `appsettings.json` → `appsettings.{Ortam}.json` → kullanıcı gizlileri (yalnızca geliştirmede) → ortam değişkenleri → komut satırı argümanları. Bu sayede gizli ve ortama özel değerler depoya girmeden, dağıtım ortamından sağlanabilir.

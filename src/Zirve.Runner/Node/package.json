@@ -1,0 +1,10 @@
+{
+  "name": "zirve-runner-node",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Zirve Runner'ın JavaScript/TypeScript koşucusu. amaro, enum ve parametre özelliği gibi silinemeyen TypeScript yapılarını dönüştürmek için kullanılır.",
+  "dependencies": {
+    "amaro": "1.3.0"
+  }
+}

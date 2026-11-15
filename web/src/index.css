@@ -1,0 +1,338 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+/* Koyu tema, <html> üzerindeki .dark sınıfıyla açılır (bkz. public/theme-init.js). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ------------------------------------------------------------------ tasarım belirteçleri */
+
+:root {
+  color-scheme: light;
+
+  --bg: #f7f6f2;
+  --surface: #ffffff;
+  --surface-2: #f0eee8;
+  --border: #e2dfd6;
+  --border-strong: #cfcbbf;
+  --fg: #171923;
+  --muted: #5c6070;
+  --subtle: #8a8e9c;
+
+  --primary: #5343d6;
+  --primary-hover: #4636c2;
+  --primary-fg: #ffffff;
+  --primary-soft: #eceafd;
+  --primary-text: #4636c2;
+
+  --code-bg: #f4f2ec;
+  --code-fg: #24262e;
+  --hl-keyword: #8031c7;
+  --hl-string: #1a7f4b;
+  --hl-number: #b5540b;
+  --hl-comment: #7a7e8c;
+  --hl-type: #0b6fb8;
+  --hl-function: #a3410f;
+  --hl-meta: #6b6f7d;
+
+  --shadow-card: 0 1px 2px rgb(23 25 35 / 0.04), 0 4px 16px rgb(23 25 35 / 0.04);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --bg: #0c0e14;
+  --surface: #13161f;
+  --surface-2: #1a1e2a;
+  --border: #252a38;
+  --border-strong: #353b4d;
+  --fg: #e7e9f0;
+  --muted: #9ba1b4;
+  --subtle: #6d7387;
+
+  --primary: #8f83f7;
+  --primary-hover: #a399fa;
+  --primary-fg: #0c0e14;
+  --primary-soft: #1f1c3d;
+  --primary-text: #a99ffb;
+
+  --code-bg: #0f121a;
+  --code-fg: #dfe2ec;
+  --hl-keyword: #c792ea;
+  --hl-string: #9ad08f;
+  --hl-number: #f0a676;
+  --hl-comment: #6f768c;
+  --hl-type: #7fc8f8;
+  --hl-function: #f2c27b;
+  --hl-meta: #8b91a5;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.25);
+}
+
+@theme inline {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-fg: var(--primary-fg);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-text: var(--primary-text);
+  --color-code-bg: var(--code-bg);
+  --color-code-fg: var(--code-fg);
+
+  --shadow-card: var(--shadow-card);
+
+  --animate-fade-in: fade-in 0.25s ease-out both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ temel */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+    min-height: 100dvh;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--primary) 30%, transparent);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Kodda bitişik harfler (ör. <= yerine ≤) yanıltıcıdır; her karakter yazıldığı gibi görünsün. */
+  code,
+  pre,
+  kbd {
+    font-family: var(--font-mono);
+    font-variant-ligatures: none;
+  }
+
+  button,
+  [role='button'],
+  summary {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ Markdown içerik */
+
+.prose-zirve {
+  --tw-prose-body: var(--fg);
+  --tw-prose-headings: var(--fg);
+  --tw-prose-lead: var(--muted);
+  --tw-prose-links: var(--primary-text);
+  --tw-prose-bold: var(--fg);
+  --tw-prose-counters: var(--muted);
+  --tw-prose-bullets: var(--border-strong);
+  --tw-prose-hr: var(--border);
+  --tw-prose-quotes: var(--fg);
+  --tw-prose-quote-borders: var(--primary);
+  --tw-prose-captions: var(--muted);
+  --tw-prose-code: var(--fg);
+  --tw-prose-pre-code: var(--code-fg);
+  --tw-prose-pre-bg: var(--code-bg);
+  --tw-prose-th-borders: var(--border-strong);
+  --tw-prose-td-borders: var(--border);
+  max-width: none;
+  line-height: 1.75;
+}
+
+.prose-zirve :where(h2):not(:where([class~='not-prose'] *)) {
+  margin-top: 2.25em;
+  padding-bottom: 0.35em;
+  border-bottom: 1px solid var(--border);
+  letter-spacing: -0.015em;
+}
+
+.prose-zirve :where(h3):not(:where([class~='not-prose'] *)) {
+  letter-spacing: -0.01em;
+}
+
+.prose-zirve :where(a):not(:where([class~='not-prose'] *)) {
+  text-decoration-color: color-mix(in oklab, var(--primary) 40%, transparent);
+  text-underline-offset: 3px;
+  font-weight: 500;
+}
+
+.prose-zirve :where(a):not(:where([class~='not-prose'] *)):hover {
+  text-decoration-color: var(--primary);
+}
+
+/* Satır içi kod: typography eklentisinin eklediği ters tırnakları kaldır, rozet görünümü ver. */
+.prose-zirve :where(code):not(:where(pre *, [class~='not-prose'] *)) {
+  background-color: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  padding: 0.1em 0.35em;
+  font-size: 0.875em;
+  font-weight: 500;
+}
+
+.prose-zirve :where(code):not(:where(pre *, [class~='not-prose'] *))::before,
+.prose-zirve :where(code):not(:where(pre *, [class~='not-prose'] *))::after {
+  content: none;
+}
+
+.prose-zirve :where(blockquote):not(:where([class~='not-prose'] *)) {
+  background-color: var(--primary-soft);
+  border-inline-start-width: 3px;
+  border-radius: 0 0.5rem 0.5rem 0;
+  padding: 0.75em 1.1em;
+  font-style: normal;
+  font-weight: 400;
+}
+
+.prose-zirve :where(blockquote p):not(:where([class~='not-prose'] *))::before,
+.prose-zirve :where(blockquote p):not(:where([class~='not-prose'] *))::after {
+  content: none;
+}
+
+.prose-zirve :where(blockquote > :first-child):not(:where([class~='not-prose'] *)) {
+  margin-top: 0;
+}
+
+.prose-zirve :where(blockquote > :last-child):not(:where([class~='not-prose'] *)) {
+  margin-bottom: 0;
+}
+
+.prose-zirve :where(thead th):not(:where([class~='not-prose'] *)) {
+  background-color: var(--surface-2);
+  padding: 0.6em 0.85em;
+  white-space: nowrap;
+}
+
+.prose-zirve :where(tbody td):not(:where([class~='not-prose'] *)) {
+  padding: 0.6em 0.85em;
+}
+
+/* ------------------------------------------------------------------ sözdizimi renklendirme (highlight.js) */
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal,
+.hljs-doctag {
+  color: var(--hl-keyword);
+}
+
+.hljs-string,
+.hljs-regexp,
+.hljs-addition,
+.hljs-symbol,
+.hljs-template-tag,
+.hljs-template-variable {
+  color: var(--hl-string);
+}
+
+.hljs-number,
+.hljs-bullet,
+.hljs-link {
+  color: var(--hl-number);
+}
+
+.hljs-comment,
+.hljs-quote,
+.hljs-deletion {
+  color: var(--hl-comment);
+  font-style: italic;
+}
+
+.hljs-type,
+.hljs-built_in,
+.hljs-class .hljs-title,
+.hljs-title.class_,
+.hljs-tag,
+.hljs-name,
+.hljs-attribute {
+  color: var(--hl-type);
+}
+
+.hljs-title,
+.hljs-title.function_,
+.hljs-section,
+.hljs-selector-id,
+.hljs-selector-class {
+  color: var(--hl-function);
+}
+
+.hljs-meta,
+.hljs-attr,
+.hljs-variable,
+.hljs-params,
+.hljs-punctuation,
+.hljs-operator {
+  color: var(--hl-meta);
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: 700;
+}
+
+/* ------------------------------------------------------------------ yardımcılar */
+
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+@utility container-page {
+  width: 100%;
+  max-width: 76rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+
+  @media (width >= 40rem) {
+    padding-inline: 1.5rem;
+  }
+}

@@ -1,0 +1,127 @@
+title: React Temelleri
+description: Render modeli, durum güncellemeleri, key, useEffect ve hook kuralları.
+level: intermediate
+timeLimitMinutes: 12
+questions:
+  - q: |
+      `count` başlangıçta `0` iken düğmeye bir kez tıklandığında `count` kaç olur?
+
+      ```tsx
+      function handleClick() {
+        setCount(count + 1);
+        setCount(count + 1);
+        setCount(count + 1);
+      }
+      ```
+    options:
+      - "1"
+      - "3"
+      - "0"
+      - "Sonsuz döngüye girer"
+    answer: 1
+    difficulty: medium
+    why: |
+      Durum bir **anlık görüntüdür**: bu render'daki `count` her üç satırda da `0`'dır. Üç çağrı da "1 yap" der ve React bunları tek bir render'da toplu işler. Önceki değere dayanarak güncellemek için güncelleyici fonksiyon kullanılır: `setCount(c => c + 1)` üç kez çağrılırsa sonuç `3` olur.
+
+  - q: "Bir bileşen hangi durumlarda yeniden render edilir? (Birden fazla doğru yanıt vardır.)"
+    options:
+      - "Kendi durumu (state) değiştiğinde"
+      - "Üst bileşeni yeniden render edildiğinde"
+      - "Kullandığı bir bağlam (context) değeri değiştiğinde"
+      - "Bir `useRef` değerinin `current` alanı değiştiğinde"
+    answer: [1, 2, 3]
+    difficulty: medium
+    why: |
+      Durum değişikliği, üst bileşenin render'ı ve tüketilen bağlamın değişmesi yeniden render tetikler. Üst bileşen render olduğunda alt bileşenler, özellikleri değişmese bile varsayılan olarak yeniden render edilir (`React.memo` bunu önleyebilir). `ref.current`'ı değiştirmek React'e haber vermez ve render tetiklemez; ref'ler tam da bu yüzden çizimi etkilemeyen değerler içindir.
+
+  - q: "Öğelerin eklenip silinebildiği bir listede `key` olarak dizi indeksini kullanmanın sakıncası nedir?"
+    options:
+      - "React uyarı verir ve listeyi hiç çizmez."
+      - "Liste değiştiğinde indeksler kayar; React yanlış bileşenleri eşleştirir ve bileşenlerin iç durumu yanlış satırda kalabilir."
+      - "Performansı düşürür ama doğruluk sorunu yaratmaz."
+      - "Hiçbir sakıncası yoktur; önerilen yöntemdir."
+    answer: 2
+    difficulty: medium
+    why: |
+      `key`, React'e bir öğenin render'lar arasındaki **kimliğini** söyler. Başa bir öğe eklendiğinde bütün indeksler bir kayar; React "0 numaralı öğe hâlâ aynı öğe" diye düşünür ve iç durumu (girdi kutusundaki metin, odak, animasyon) yanlış öğeyle eşleştirir. Veriden gelen kararlı ve benzersiz bir kimlik kullanın.
+
+  - q: |
+      Bu sayaç neden 1'de takılı kalır?
+
+      ```tsx
+      useEffect(() => {
+        const id = setInterval(() => setCount(count + 1), 1000);
+        return () => clearInterval(id);
+      }, []);
+      ```
+    options:
+      - "`setInterval` React içinde çalışmaz."
+      - "Effect yalnızca ilk render'da çalışır ve içindeki geri çağrı hep o render'daki `count` değerini (0) görür."
+      - "Temizlik fonksiyonu zamanlayıcıyı her saniye iptal eder."
+      - "`setCount` effect içinde çağrılamaz."
+    answer: 2
+    difficulty: hard
+    why: |
+      Bu bir **bayat closure** hatasıdır. Bağımlılık dizisi boş olduğu için effect bir kez çalışır; zamanlayıcının geri çağrısı ilk render'ın `count` değerini (0) yakalamıştır ve her saniye `setCount(0 + 1)` çağırır. En temiz çözüm güncelleyici fonksiyondur: `setCount(c => c + 1)`; böylece effect'in `count`'a ihtiyacı kalmaz.
+
+  - q: |
+      Aşağıdaki kodda hangi yaklaşım daha doğrudur?
+
+      ```tsx
+      // A
+      const [fullName, setFullName] = useState('');
+      useEffect(() => { setFullName(first + ' ' + last); }, [first, last]);
+
+      // B
+      const fullName = first + ' ' + last;
+      ```
+    options:
+      - "A; türetilen değerler her zaman durumda tutulmalıdır."
+      - "B; başka değerlerden hesaplanabilen bir değer için durum ve effect gereksizdir."
+      - "İkisi eşdeğerdir; tercih meselesidir."
+      - "A; çünkü B her render'da yeniden hesaplanır ve bu yavaştır."
+    answer: 2
+    difficulty: medium
+    why: |
+      Özelliklerden ya da durumdan **hesaplanabilen** bir değeri duruma koymak, eşitlenmesi gereken fazladan bir şey yaratır. A sürümü önce bayat `fullName` ile render eder, sonra effect çalışır ve ikinci bir render tetikler. B sürümü tek render'da her zaman doğrudur. Hesap gerçekten pahalıysa `useMemo` kullanılır.
+
+  - q: |
+      Bu kod neden ekranı güncellemez?
+
+      ```tsx
+      function addItem(item: string) {
+        items.push(item);
+        setItems(items);
+      }
+      ```
+    options:
+      - "`push` asenkron çalışır."
+      - "`setItems` yalnızca effect içinde çağrılabilir."
+      - "Dizi yerinde değiştirildiği için referansı aynı kalır; React durumun değişmediğini düşünür."
+      - "`items` bir `const` olduğu için değiştirilemez."
+    answer: 3
+    difficulty: medium
+    why: |
+      React, yeni durumu öncekiyle `Object.is` ile karşılaştırır. `push` aynı diziyi yerinde değiştirir; `setItems`'e verilen referans öncekiyle aynıdır ve React yeniden render etmeyi atlar. Durumu değişmez (immutable) ele alın: `setItems([...items, item])`.
+
+  - q: "Hook'lar neden koşul, döngü ya da iç içe fonksiyon içinde çağrılamaz?"
+    options:
+      - "Performans nedeniyle; koşul içindeki hook'lar yavaş çalışır."
+      - "React bir bileşenin hook'larını çağrı sırasına göre eşleştirir; sıra render'lar arasında değişirse durumlar birbirine karışır."
+      - "JavaScript sözdizimi buna izin vermez."
+      - "Hook'lar yalnızca sınıf bileşenlerinde koşullu çağrılabilir."
+    answer: 2
+    difficulty: medium
+    why: |
+      React, hook'ların durumunu bileşen başına sıralı bir listede tutar ve her render'da "birinci hook, ikinci hook…" diye eşleştirir. Bir hook bir render'da çağrılıp diğerinde atlanırsa sonraki bütün hook'lar yanlış duruma karşılık gelir. Bu yüzden hook'lar her render'da aynı sırayla, bileşenin en üst düzeyinde çağrılmalıdır.
+
+  - q: "Aşağıdakilerden hangisi `useEffect` kullanmak için **uygun** bir durumdur?"
+    options:
+      - "İki özellikten üçüncü bir değer hesaplamak"
+      - "Bir düğmeye tıklandığında form verisini sunucuya göndermek"
+      - "Bileşen ekrandayken bir WebSocket bağlantısı açıp ekrandan çıkınca kapatmak"
+      - "Bir özellik değiştiğinde bileşenin durumunu sıfırlamak"
+    answer: 3
+    difficulty: medium
+    why: |
+      Effect, bileşeni **React dışındaki bir sistemle eşitlemek** içindir: bağlantılar, abonelikler, tarayıcı API'leri. Değer türetme render sırasında yapılır; kullanıcı etkileşimine tepki olay işleyicisinde verilir; özellik değişince durumu sıfırlamanın yolu bileşene farklı bir `key` vermektir.

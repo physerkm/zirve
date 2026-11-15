@@ -1,0 +1,155 @@
+# Öğrenme yolları ve bölümleri. Sıra, dosyadaki sıradır.
+# Dersler:  content/lessons/{yol}/{bölüm}/NN-slug.md
+# Testler:  content/quizzes/{yol}/NN-slug.yaml
+
+- slug: mulakat
+  title: Mülakat Hazırlığı
+  description: Büyük teknoloji şirketlerinde mülakat süreci nasıl işler, nasıl plan yapılır, kodlama ve davranışsal mülakatlarda nelere bakılır.
+  icon: compass
+  accent: amber
+  modules:
+    - slug: surec
+      title: Süreç ve Plan
+      description: Mülakat aşamaları, seviye sistemi ve gerçekçi bir çalışma planı.
+    - slug: davranissal
+      title: Davranışsal Mülakat
+      description: Deneyimlerinizi etkili anlatmak için STAR yöntemi ve özgeçmiş.
+
+- slug: algoritmalar
+  title: Algoritmalar ve Veri Yapıları
+  description: Kodlama mülakatlarının omurgası. Karmaşıklık analizi, temel veri yapıları ve problem çözme kalıpları.
+  icon: binary
+  accent: emerald
+  modules:
+    - slug: temeller
+      title: Temeller
+      description: Karmaşıklık analizi, diziler ve hash tabloları.
+    - slug: kaliplar
+      title: Problem Çözme Kalıpları
+      description: İki işaretçi, kayan pencere, ikili arama, yığın.
+    - slug: veri-yapilari
+      title: Veri Yapıları
+      description: Bağlı listeler, ağaçlar, heap ve graflar.
+    - slug: ileri
+      title: İleri Teknikler
+      description: Dinamik programlama ve geri izleme.
+
+- slug: sistem-tasarimi
+  title: Sistem Tasarımı
+  description: Ölçeklenebilir sistemleri tasarlamak ve bunu 45 dakikada anlatabilmek. Yapı taşları, ödünleşimler ve örnek tasarımlar.
+  icon: network
+  accent: sky
+  modules:
+    - slug: temeller
+      title: Temeller
+      description: Mülakat çerçevesi, ölçekleme ve veri katmanı.
+    - slug: yapi-taslari
+      title: Yapı Taşları
+      description: Önbellek, mesaj kuyrukları ve tutarlılık.
+    - slug: ornek-tasarimlar
+      title: Örnek Tasarımlar
+      description: Uçtan uca çözülmüş klasik sorular.
+
+- slug: csharp
+  title: C#
+  description: Tip sistemi, bellek yönetimi, LINQ, async/await ve eşzamanlılık. Dilin mülakatlarda sorulan derin konuları.
+  icon: csharp
+  accent: violet
+  modules:
+    - slug: temeller
+      title: Tip Sistemi ve Bellek
+      description: Değer ve referans tipleri, GC ve nesne ömrü.
+    - slug: dil-ozellikleri
+      title: Dil Özellikleri
+      description: Generics, delegeler, LINQ ve async/await.
+    - slug: ileri
+      title: İleri Konular
+      description: Eşzamanlılık ve modern C#.
+
+- slug: dotnet
+  title: .NET ve ASP.NET Core
+  description: İstek hattı, dependency injection, Web API tasarımı, EF Core ve üretime hazır servis yazmanın esasları.
+  icon: server
+  accent: indigo
+  modules:
+    - slug: aspnet-core
+      title: ASP.NET Core
+      description: Middleware, DI ve API tasarımı.
+    - slug: veri-ve-uretim
+      title: Veri Erişimi ve Üretim
+      description: EF Core, performans ve dayanıklılık.
+
+- slug: javascript
+  title: JavaScript
+  description: Dilin gerçekte nasıl çalıştığı. Tipler, closure, prototipler, event loop ve asenkron programlama.
+  icon: javascript
+  accent: yellow
+  modules:
+    - slug: temeller
+      title: Dilin Çekirdeği
+      description: Tipler, kapsam, closure, this ve prototipler.
+    - slug: asenkron
+      title: Asenkron JavaScript
+      description: Event loop, Promise ve async/await.
+
+- slug: typescript
+  title: TypeScript
+  description: Yapısal tip sistemi, daraltma, generics ve ileri tip programlama.
+  icon: typescript
+  accent: blue
+  modules:
+    - slug: temeller
+      title: Tip Sistemi
+      description: Yapısal tipleme, birleşimler, daraltma ve generics.
+    - slug: ileri
+      title: İleri Tipler
+      description: Koşullu, eşlenmiş ve yardımcı tipler.
+
+- slug: react
+  title: React
+  description: Render modeli, hook'lar, durum yönetimi ve performans. Frontend mülakatlarında beklenen derinlik.
+  icon: react
+  accent: cyan
+  modules:
+    - slug: temeller
+      title: Temeller
+      description: Render modeli, hook'lar ve durum.
+    - slug: ileri
+      title: İleri Konular
+      description: Performans ve veri çekme.
+
+- slug: veritabanlari
+  title: Veritabanları
+  description: SQL, indeksler, transaction'lar ve veri modelleme. PostgreSQL örnekleriyle.
+  icon: database
+  accent: teal
+  modules:
+    - slug: sql
+      title: SQL ve Performans
+      description: Sorgular, join'ler ve indeksler.
+    - slug: kavramlar
+      title: Kavramlar
+      description: Transaction'lar, izolasyon ve modelleme.
+
+- slug: cs-temelleri
+  title: Bilgisayar Bilimi Temelleri
+  description: İşletim sistemleri, ağlar ve nesne yönelimli tasarım. Her mühendisin bilmesi beklenen temel.
+  icon: cpu
+  accent: rose
+  modules:
+    - slug: sistemler
+      title: Sistemler ve Ağlar
+      description: Süreçler, thread'ler, bellek, HTTP ve TCP.
+    - slug: tasarim
+      title: Nesne Yönelimli Tasarım
+      description: SOLID ve tasarım desenleri.
+
+- slug: sirketler
+  title: Şirket Rehberleri
+  description: Google, Meta, Amazon, Microsoft, Apple, IBM, Oracle ve Tesla mülakatlarında neye odaklanılır.
+  icon: building
+  accent: slate
+  modules:
+    - slug: rehberler
+      title: Şirketler
+      description: Şirket bazında süreç ve hazırlık önerileri.

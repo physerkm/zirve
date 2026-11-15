@@ -1,0 +1,33 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+*.trx
+coverage/
+
+# Node / web
+node_modules/
+web/dist/
+*.tsbuildinfo
+.vite/
+
+# Yerel geliştirme veritabanı (gömülü PostgreSQL)
+.pgdata/
+
+# Gizli ayarlar
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+appsettings.*.Local.json
+
+# Düzenleyiciler / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+*.log

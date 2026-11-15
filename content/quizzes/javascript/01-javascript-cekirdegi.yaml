@@ -1,0 +1,157 @@
+title: JavaScript Çekirdeği
+description: Kapsam, closure, this, event loop ve Promise üzerine "bu kodun çıktısı nedir" ağırlıklı sorular.
+level: intermediate
+timeLimitMinutes: 15
+questions:
+  - q: |
+      Aşağıdaki kodun çıktısı nedir?
+
+      ```javascript
+      console.log('1');
+      setTimeout(() => console.log('2'), 0);
+      Promise.resolve().then(() => console.log('3'));
+      console.log('4');
+      ```
+    options:
+      - "1 2 3 4"
+      - "1 4 2 3"
+      - "1 4 3 2"
+      - "1 3 4 2"
+    answer: 3
+    difficulty: medium
+    why: |
+      Önce eşzamanlı kod çalışır: `1`, `4`. Çağrı yığını boşalınca **bütün mikro görevler** (Promise geri çağrıları) işlenir: `3`. Ancak ondan sonra makro görev kuyruğundan bir görev (`setTimeout`) alınır: `2`. `setTimeout(fn, 0)` "hemen" değil, "mevcut kod ve mikro görevler bittikten sonra" demektir.
+
+  - q: |
+      Aşağıdaki kodun çıktısı nedir?
+
+      ```javascript
+      for (var i = 0; i < 3; i++) {
+        setTimeout(() => console.log(i), 0);
+      }
+      ```
+    options:
+      - "0 1 2"
+      - "3 3 3"
+      - "2 2 2"
+      - "undefined undefined undefined"
+    answer: 2
+    difficulty: medium
+    why: |
+      `var` fonksiyon kapsamlıdır: döngü boyunca tek bir `i` vardır ve üç geri çağrı da onu yakalar. Geri çağrılar döngü bittikten sonra çalışır; o sırada `i` 3'tür. `let` kullanılsaydı her tur kendi `i` değişkenini alır ve çıktı `0 1 2` olurdu.
+
+  - q: |
+      Aşağıdaki kodun (bir ES modülünde) sonucu nedir?
+
+      ```javascript
+      const user = {
+        name: 'Ada',
+        greet() { return this.name; },
+      };
+
+      const greet = user.greet;
+      console.log(greet());
+      ```
+    options:
+      - "\"Ada\""
+      - "undefined"
+      - "TypeError fırlatır"
+      - "\"\" (boş dizgi)"
+    answer: 3
+    difficulty: hard
+    why: |
+      `this`, fonksiyonun **nasıl çağrıldığına** göre belirlenir. `greet()` düz bir fonksiyon çağrısıdır; noktanın solunda nesne yoktur. Modüller katı kipte çalıştığı için `this` `undefined` olur ve `undefined.name` okumak `TypeError` fırlatır. Çözüm: `user.greet.bind(user)` ya da `() => user.greet()`.
+
+  - q: "Ok fonksiyonları (`=>`) ile normal fonksiyonlar arasındaki fark hangisidir?"
+    options:
+      - "Ok fonksiyonları her zaman daha hızlı çalışır."
+      - "Ok fonksiyonlarının kendi `this` değeri yoktur; tanımlandıkları kapsamın `this` değerini kullanırlar."
+      - "Ok fonksiyonları closure oluşturamaz."
+      - "Ok fonksiyonları yalnızca tek satırlık olabilir."
+    answer: 2
+    difficulty: easy
+    why: |
+      Ok fonksiyonları `this` değerini çevreleyen kapsamdan alır ve bu `call`/`bind` ile değiştirilemez. Bu yüzden geri çağrılar için idealdir, nesne metodu olarak ise uygun değildir. Ayrıca `arguments` nesneleri yoktur ve `new` ile çağrılamazlar.
+
+  - q: "Closure nedir?"
+    options:
+      - "Bir fonksiyonun, tanımlandığı kapsamdaki değişkenlere o kapsam sona erdikten sonra da erişebilmesidir."
+      - "Bir fonksiyonun çalışması bittiğinde bütün yerel değişkenlerinin silinmesidir."
+      - "İçinden başka bir fonksiyon çağrılan fonksiyondur."
+      - "Yalnızca `class` içinde tanımlanabilen özel metottur."
+    answer: 1
+    difficulty: easy
+    why: |
+      Fonksiyonlar, tanımlandıkları sözcüksel kapsama bir bağ taşır. İç fonksiyon dışarı döndürüldüğünde ya da geri çağrı olarak saklandığında, dış fonksiyonun değişkenleri yaşamaya devam eder. Veri gizleme, memoize, debounce ve React hook'ları bu mekanizmaya dayanır.
+
+  - q: "Aşağıdaki ifadelerden hangileri `true` değerini verir? (Birden fazla doğru yanıt vardır.)"
+    options:
+      - "`0 == ''`"
+      - "`null == undefined`"
+      - "`NaN === NaN`"
+      - "`[] === []`"
+    answer: [1, 2]
+    difficulty: medium
+    why: |
+      `==` karşılaştırmadan önce tip dönüştürür: boş dizgi sayıya çevrilince `0` olur, bu yüzden `0 == ''` doğrudur. `null` ile `undefined` birbirine `==` ile eşittir (başka hiçbir şeye değil). `NaN` kendisi dahil hiçbir değere eşit değildir; denetlemek için `Number.isNaN` kullanılır. İki ayrı dizi değişmezi farklı nesnelerdir ve `===` kimlik karşılaştırır. Kural: her zaman `===` kullanın.
+
+  - q: "Beş API isteğini aynı anda başlatıyorsunuz. Bazıları başarısız olsa bile **hepsinin sonucunu** (başarı ya da hata) görmek istiyorsunuz. Hangisini kullanırsınız?"
+    options:
+      - "`Promise.all`"
+      - "`Promise.race`"
+      - "`Promise.allSettled`"
+      - "`Promise.any`"
+    answer: 3
+    difficulty: easy
+    why: |
+      `Promise.allSettled` bütün Promise'ler sonuçlanana kadar bekler ve her biri için `{ status, value | reason }` döndürür; asla reddedilmez. `Promise.all` ilk rette hemen reddedilir ve diğer sonuçları göremezsiniz. `race` ilk sonuçlananı, `any` ilk başarılı olanı döndürür.
+
+  - q: |
+      Aşağıdaki fonksiyon çağrıldığında ne olur?
+
+      ```javascript
+      async function saveAll(items) {
+        items.forEach(async (item) => {
+          await save(item);
+        });
+        console.log('bitti');
+      }
+      ```
+    options:
+      - "Öğeler sırayla kaydedilir, sonra 'bitti' yazılır."
+      - "'bitti', kayıtlar tamamlanmadan önce yazılır."
+      - "Öğeler eşzamanlı kaydedilir ve hepsi bitince 'bitti' yazılır."
+      - "Sözdizimi hatası verir; `forEach` içinde `await` kullanılamaz."
+    answer: 2
+    difficulty: medium
+    why: |
+      `forEach`, geri çağrının döndürdüğü Promise'leri **beklemez**. Her geri çağrı ilk `await`'te duraklar ve `forEach` hemen biter; `'bitti'` kayıtlar sürerken yazılır. Sırayla işlemek için `for...of` içinde `await`, eşzamanlı işleyip beklemek için `await Promise.all(items.map(save))` kullanın.
+
+  - q: "`let` ya da `const` ile tanımlanmış bir değişkene tanım satırından **önce** erişmeye çalışırsanız ne olur?"
+    options:
+      - "`undefined` okunur."
+      - "`null` okunur."
+      - "`ReferenceError` fırlatılır (geçici ölü bölge)."
+      - "Değişken global kapsamda aranır."
+    answer: 3
+    difficulty: medium
+    why: |
+      `let` ve `const` da kapsamın başına taşınır (hoisting), ama tanım satırına kadar **geçici ölü bölgede** (temporal dead zone) kalırlar ve erişim `ReferenceError` verir. `var` ise tanım satırından önce `undefined` okunur; bu fark, `let`/`const`'un hataları erken yakalamasını sağlar.
+
+  - q: |
+      Aşağıdaki kodun çıktısı nedir?
+
+      ```javascript
+      const config = { retries: 3 };
+      config.retries = 5;
+      console.log(config.retries);
+      ```
+    options:
+      - "3"
+      - "5"
+      - "TypeError: Assignment to constant variable"
+      - "undefined"
+    answer: 2
+    difficulty: easy
+    why: |
+      `const`, değişkenin başka bir değere **yeniden atanmasını** engeller; gösterdiği nesnenin içeriğini dondurmaz. `config = {}` hata verirdi, ama özelliklerini değiştirmek serbesttir. Nesneyi değişmez yapmak için `Object.freeze` (sığ) gerekir.

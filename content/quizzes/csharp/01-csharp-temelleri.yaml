@@ -1,0 +1,156 @@
+title: C# Temelleri ve Dil Özellikleri
+description: Değer ve referans tipleri, boxing, async/await, LINQ ve closure üzerine mülakat tarzı sorular.
+level: intermediate
+timeLimitMinutes: 15
+questions:
+  - q: |
+      Aşağıdaki kodun çıktısı nedir?
+
+      ```csharp
+      struct Point { public int X; }
+
+      var a = new Point { X = 1 };
+      var b = a;
+      b.X = 5;
+      Console.WriteLine(a.X);
+      ```
+    options:
+      - "1"
+      - "5"
+      - "0"
+      - "Derleme hatası"
+    answer: 1
+    difficulty: easy
+    why: |
+      `struct` bir değer tipidir; `var b = a` atamasında veri **kopyalanır**. `b` üzerindeki değişiklik `a`'yı etkilemez. `Point` bir `class` olsaydı iki değişken aynı nesneyi gösterir ve çıktı `5` olurdu.
+
+  - q: "Aşağıdakilerden hangisi **boxing**'e yol açar?"
+    options:
+      - "`int x = 5; long y = x;`"
+      - "`int x = 5; object o = x;`"
+      - "`var list = new List<int> { 5 };`"
+      - "`string s = \"5\"; object o = s;`"
+    answer: 2
+    difficulty: medium
+    why: |
+      Boxing, bir **değer tipinin** `object` ya da bir arayüz tipine dönüştürülmesidir; değer öbekte yeni bir nesneye kopyalanır. `int`'ten `long`'a dönüşüm yalnızca sayısal genişletmedir. `List<int>` generic olduğu için elemanları kutulamaz. `string` zaten referans tipidir; `object`'e atanması yalnızca referans dönüşümüdür.
+
+  - q: "`async void` ne zaman kullanılmalıdır?"
+    options:
+      - "Sonuç döndürmeyen her asenkron metotta"
+      - "Performans gerektiren sıcak yollarda"
+      - "Yalnızca olay işleyicilerinde (event handler)"
+      - "Hiçbir zaman; derleyici izin vermez"
+    answer: 3
+    difficulty: medium
+    why: |
+      `async void` metotlar `await` edilemez; çağıran, işin bittiğini ya da hata verdiğini öğrenemez ve fırlayan istisna süreci çökertebilir. Tek meşru kullanımı, imzası `void` olmak zorunda olan olay işleyicileridir. Sonuç döndürmeyen asenkron metotlar `async Task` olmalıdır.
+
+  - q: "Bir arayüz (UI) uygulamasında `var data = GetDataAsync().Result;` satırı neden deadlock'a yol açabilir?"
+    options:
+      - "Çünkü `Result` özelliği yalnızca bir kez okunabilir."
+      - "Çünkü arayüz thread'i bloklanır; görevin devamı ise çalışmak için aynı thread'e dönmeyi bekler."
+      - "Çünkü `Task` nesneleri thread güvenli değildir."
+      - "Çünkü `async` metotlar her zaman yeni bir thread açar ve thread havuzu tükenir."
+    answer: 2
+    difficulty: hard
+    why: |
+      Eşitleme bağlamı (SynchronizationContext) olan ortamlarda `await`, varsayılan olarak devamı yakalanan bağlamda (arayüz thread'inde) çalıştırmak ister. `.Result` o thread'i bloklarsa devam asla çalışamaz ve görev asla tamamlanmaz. Çözüm baştan sona `await` kullanmaktır. ASP.NET Core'da eşitleme bağlamı olmadığı için bu klasik deadlock görülmez; ama bloklama yine thread havuzunu tüketir.
+
+  - q: |
+      Aşağıdaki kodun çıktısı nedir?
+
+      ```csharp
+      var numbers = new List<int> { 1, 2, 3 };
+      var query = numbers.Where(n => n > 1);
+
+      numbers.Add(4);
+
+      Console.WriteLine(query.Count());
+      ```
+    options:
+      - "2"
+      - "3"
+      - "4"
+      - "Çalışma zamanı hatası: koleksiyon değiştirildi"
+    answer: 2
+    difficulty: medium
+    why: |
+      LINQ sorguları **ertelenmiş** çalışır: `Where` yalnızca bir tarif oluşturur. Sorgu `Count()` çağrıldığında, yani liste `[1, 2, 3, 4]` iken çalışır ve 1'den büyük üç eleman bulur. Sonucu tanım anında sabitlemek isteseydiniz `ToList()` çağırmanız gerekirdi.
+
+  - q: "EF Core ile yazılmış `db.Orders.AsEnumerable().Where(o => o.Total > 100).ToList()` ifadesindeki sorun nedir?"
+    options:
+      - "Derlenmez; `AsEnumerable` `DbSet` üzerinde kullanılamaz."
+      - "`Where` koşulu SQL'e çevrilir ama sonuç iki kez okunur."
+      - "Bütün tablo belleğe çekilir ve süzme veritabanı yerine uygulama belleğinde yapılır."
+      - "Sorun yoktur; `AsEnumerable` sorguyu hızlandırır."
+    answer: 3
+    difficulty: medium
+    why: |
+      `IQueryable` üzerindeki işleçler ifade ağacına dönüşür ve sağlayıcı tarafından SQL'e çevrilir. `AsEnumerable()` bu zinciri keser: sonrasındaki işleçler LINQ to Objects ile, yani bellekte çalışır. Veritabanına giden sorgu `SELECT * FROM orders` olur. Süzmeyi `AsEnumerable`/`ToList` çağrısından **önce** yapın.
+
+  - q: |
+      Aşağıdaki kodun çıktısı nedir?
+
+      ```csharp
+      var actions = new List<Action>();
+
+      for (var i = 0; i < 3; i++)
+      {
+          actions.Add(() => Console.Write(i));
+      }
+
+      foreach (var action in actions) action();
+      ```
+    options:
+      - "012"
+      - "333"
+      - "222"
+      - "000"
+    answer: 2
+    difficulty: hard
+    why: |
+      Lambda, `i` değişkeninin değerini değil **kendisini** yakalar. `for` döngüsünde tek bir `i` vardır ve bütün lambdalar onu paylaşır. Lambdalar çağrıldığında döngü bitmiştir ve `i` 3'tür. Döngü içinde `var copy = i;` tanımlayıp onu yakalamak ya da `foreach` kullanmak (değişken her turda yenidir) `012` verir.
+
+  - q: |
+      Aşağıdaki kodun çıktısı nedir?
+
+      ```csharp
+      public record Person(string Name, int Age);
+
+      var a = new Person("Ada", 36);
+      var b = new Person("Ada", 36);
+
+      Console.WriteLine($"{a == b} {ReferenceEquals(a, b)}");
+      ```
+    options:
+      - "True True"
+      - "True False"
+      - "False False"
+      - "False True"
+    answer: 2
+    difficulty: medium
+    why: |
+      `record` tiplerinde derleyici **değere dayalı** eşitlik üretir: bütün alanları eşit olan iki kayıt `==` ile eşittir. Yine de bunlar öbekte iki ayrı nesnedir; bu yüzden `ReferenceEquals` yanlıştır. `Person` düz bir `class` olsaydı `==` de referans karşılaştırması yapar ve `False False` çıkardı.
+
+  - q: "`ref` ve `out` parametreleri arasındaki fark nedir?"
+    options:
+      - "`ref` yalnızca değer tipleriyle, `out` yalnızca referans tipleriyle kullanılır."
+      - "`out` parametresine metot içinde değer atanması zorunludur ve çağıranın önceden atama yapması gerekmez; `ref` parametresi çağrıdan önce atanmış olmalıdır."
+      - "`ref` değeri kopyalar, `out` kopyalamaz."
+      - "Aralarında fark yoktur; `out` eski sözdizimidir."
+    answer: 2
+    difficulty: easy
+    why: |
+      İkisi de değişkenin kendisini (referansını) geçirir. `ref` çift yönlüdür: çağıran değişkeni atamış olmalıdır ve metot onu okuyup yazabilir. `out` çıkış içindir: metot dönmeden önce atama yapmak **zorundadır**. Tipik örnek `int.TryParse(text, out var value)`.
+
+  - q: "Aşağıdakilerden hangileri bir `struct` tanımlamak için uygun gerekçelerdir? (Birden fazla doğru yanıt vardır.)"
+    options:
+      - "Tip küçüktür ve mantıksal olarak tek bir değeri temsil eder."
+      - "Tip değişmezdir (immutable)."
+      - "Tipin başka bir sınıftan kalıtım alması gerekir."
+      - "Tip büyüktür (yüzlerce bayt) ve sık sık metotlara parametre olarak geçirilir."
+    answer: [1, 2]
+    difficulty: medium
+    why: |
+      `struct` küçük, değişmez ve tek bir değeri temsil eden tipler içindir (koordinat, para tutarı). `struct`'lar kalıtım alamaz (yalnızca arayüz uygulayabilir). Büyük `struct`'lar her atamada ve parametre geçişinde kopyalandığı için pahalıdır; bu durumda `class` daha uygundur.

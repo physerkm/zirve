@@ -1,0 +1,156 @@
+title: Karmaşıklık Analizi ve Temel Veri Yapıları
+description: Big-O, diziler, hash tabloları, yığın, kuyruk, heap ve ağaçlar üzerine temel kavram testi.
+level: beginner
+timeLimitMinutes: 15
+questions:
+  - q: |
+      Aşağıdaki fonksiyonun zaman karmaşıklığı nedir?
+
+      ```csharp
+      int Count(int n)
+      {
+          var count = 0;
+          for (var i = 1; i < n; i *= 2)
+              for (var j = 0; j < n; j++)
+                  count++;
+          return count;
+      }
+      ```
+    options:
+      - "O(n)"
+      - "O(n log n)"
+      - "O(n²)"
+      - "O(log n)"
+    answer: 2
+    difficulty: easy
+    why: |
+      Dış döngüde `i` her adımda ikiye katlanır, yani yaklaşık `log₂ n` kez döner. İç döngü her seferinde `n` adım atar. Toplam iş `n · log n` olur.
+
+  - q: "Sıralı bir dizide ikili arama (binary search) en kötü durumda kaç karşılaştırma yapar?"
+    options:
+      - "O(1)"
+      - "O(log n)"
+      - "O(n)"
+      - "O(n log n)"
+    answer: 2
+    difficulty: easy
+    why: |
+      Her karşılaştırma arama aralığını yarıya indirir. `n` eleman için aralık en fazla `log₂ n` kez yarılanabilir.
+
+  - q: "Bir hash tablosunda (C# `Dictionary`, JavaScript `Map`) arama işleminin ortalama ve en kötü durum karmaşıklıkları hangisidir?"
+    options:
+      - "Ortalama O(1), en kötü O(1)"
+      - "Ortalama O(log n), en kötü O(n)"
+      - "Ortalama O(1), en kötü O(n)"
+      - "Ortalama O(n), en kötü O(n)"
+    answer: 3
+    difficulty: easy
+    why: |
+      İyi dağılmış bir hash fonksiyonuyla her kovada (bucket) sabit sayıda eleman bulunur ve arama O(1) olur. Bütün anahtarlar aynı kovaya düşerse (kötü hash fonksiyonu ya da kasıtlı çakışma saldırısı) arama o kovadaki bütün elemanları dolaşır: O(n).
+
+  - q: "Dinamik bir dizinin (C# `List<T>`, JavaScript dizisi) sonuna eleman eklemenin **amortize** maliyeti neden O(1) kabul edilir?"
+    options:
+      - "Çünkü dizi hiçbir zaman yeniden boyutlandırılmaz."
+      - "Çünkü kapasite dolduğunda iki katına çıkarılır; pahalı kopyalamalar seyrek olur ve maliyetleri bütün eklemelere yayılır."
+      - "Çünkü elemanlar bağlı liste olarak tutulur."
+      - "Çünkü her eklemede yalnızca bir eleman kopyalanır."
+    answer: 2
+    difficulty: medium
+    why: |
+      Kapasite dolunca yeni bir dizi ayrılır ve bütün elemanlar kopyalanır; bu tek işlem O(n)'dir. Ancak kapasite her seferinde ikiye katlandığı için `n` ekleme boyunca yapılan toplam kopyalama `n + n/2 + n/4 + … < 2n` olur. Ekleme başına ortalama maliyet sabittir.
+
+  - q: "Hangi veri yapısı çifti sırasıyla **LIFO** ve **FIFO** davranışı gösterir?"
+    options:
+      - "Kuyruk (queue) ve yığın (stack)"
+      - "Yığın (stack) ve kuyruk (queue)"
+      - "Heap ve yığın (stack)"
+      - "Bağlı liste ve hash tablosu"
+    answer: 2
+    difficulty: easy
+    why: |
+      Yığında son giren ilk çıkar (Last In, First Out). Kuyrukta ilk giren ilk çıkar (First In, First Out). Derinlik öncelikli arama (DFS) yığın, genişlik öncelikli arama (BFS) kuyruk kullanır.
+
+  - q: "İkili min-heap üzerinde en küçük elemanı **okumak** ve en küçük elemanı **çıkarmak** sırasıyla hangi karmaşıklıktadır?"
+    options:
+      - "O(1) ve O(1)"
+      - "O(log n) ve O(log n)"
+      - "O(1) ve O(log n)"
+      - "O(1) ve O(n)"
+    answer: 3
+    difficulty: medium
+    why: |
+      En küçük eleman her zaman köktedir, okumak O(1)'dir. Çıkarınca son eleman köke taşınır ve heap özelliğini geri kazanmak için aşağı doğru yer değiştirilir (sift-down). Ağacın yüksekliği `log n` olduğundan çıkarma O(log n) sürer.
+
+  - q: "Dengeli bir ikili arama ağacında (BST) arama O(log n)'dir. Ağaç dengesizse en kötü durumda ne olur?"
+    options:
+      - "Yine O(log n) kalır."
+      - "O(n) olur; ağaç fiilen bir bağlı listeye dönüşebilir."
+      - "O(n log n) olur."
+      - "O(1) olur."
+    answer: 2
+    difficulty: medium
+    why: |
+      Elemanlar sıralı eklenirse her düğümün yalnızca sağ çocuğu olur ve ağacın yüksekliği `n` olur. Bu yüzden pratikte kendi kendini dengeleyen ağaçlar (kırmızı-siyah, AVL) kullanılır; C# `SortedDictionary` bir kırmızı-siyah ağaçtır.
+
+  - q: "Karşılaştırmaya dayalı bir sıralama algoritmasının en kötü durumdaki alt sınırı nedir?"
+    options:
+      - "Ω(n)"
+      - "Ω(n log n)"
+      - "Ω(n²)"
+      - "Ω(log n)"
+    answer: 2
+    difficulty: medium
+    why: |
+      `n` elemanın `n!` farklı sıralanışı vardır. Her karşılaştırma olasılıkları en fazla ikiye böler; bu yüzden en az `log₂(n!) ≈ n log n` karşılaştırma gerekir. Sayma sıralaması (counting sort) gibi O(n) algoritmalar karşılaştırma yapmadıkları ve girdinin aralığı hakkında varsayımda bulundukları için bu sınıra takılmaz.
+
+  - q: |
+      Aşağıdaki özyinelemeli fonksiyonun zaman karmaşıklığı nedir?
+
+      ```javascript
+      function fib(n) {
+        if (n < 2) return n;
+        return fib(n - 1) + fib(n - 2);
+      }
+      ```
+    options:
+      - "O(n)"
+      - "O(n log n)"
+      - "O(n²)"
+      - "O(2ⁿ)"
+    answer: 4
+    difficulty: medium
+    why: |
+      Her çağrı iki yeni çağrı üretir ve çağrı ağacının derinliği `n` olur; düğüm sayısı üstel büyür (sıkı sınır yaklaşık `O(1.618ⁿ)`, üst sınır olarak `O(2ⁿ)` söylenir). Aynı alt problemler defalarca çözülür. Sonuçları saklamak (memoization) bunu O(n)'e indirir; dinamik programlamanın çıkış noktası budur.
+
+  - q: "Aşağıdakilerden hangileri hash tablosunun **uygun olmadığı** durumlardır? (Birden fazla doğru yanıt vardır.)"
+    options:
+      - "Anahtarları sıralı dolaşmak gerekiyorsa"
+      - "Bir aralıktaki (ör. 10 ile 20 arası) bütün anahtarlar isteniyorsa"
+      - "Bir anahtarın var olup olmadığı hızlıca sorgulanacaksa"
+      - "Elemanların kaç kez geçtiği sayılacaksa"
+    answer: [1, 2]
+    difficulty: medium
+    why: |
+      Hash tablosu anahtarları belirli bir sırada tutmaz; sıralı dolaşma ve aralık sorgusu için dengeli ağaç (`SortedDictionary`, B-ağacı) gerekir. Üyelik sorgusu ve frekans sayma ise hash tablosunun en güçlü olduğu işlerdir.
+
+  - q: "Tek yönlü bağlı listede, **başa** eleman eklemek ve verilen bir indeksteki elemana **erişmek** sırasıyla hangi karmaşıklıktadır?"
+    options:
+      - "O(1) ve O(1)"
+      - "O(1) ve O(n)"
+      - "O(n) ve O(1)"
+      - "O(n) ve O(n)"
+    answer: 2
+    difficulty: easy
+    why: |
+      Başa eklemek yalnızca yeni düğümün `next` işaretçisini eski başa bağlamaktır: O(1). İndeksle erişim için baştan başlayıp düğümleri tek tek izlemek gerekir: O(n). Dizide durum tersinedir: erişim O(1), başa ekleme O(n).
+
+  - q: "Bir algoritmanın **alan (space) karmaşıklığı** hesaplanırken aşağıdakilerden hangisi dikkate alınır?"
+    options:
+      - "Yalnızca girdinin kapladığı alan"
+      - "Yalnızca açıkça oluşturulan diziler ve tablolar"
+      - "Ek veri yapıları ve özyinelemenin çağrı yığınında kapladığı alan"
+      - "Yalnızca çıktının kapladığı alan"
+    answer: 3
+    difficulty: medium
+    why: |
+      Yardımcı (auxiliary) alan, algoritmanın girdi dışında kullandığı her şeyi kapsar. Özyinelemeli bir çözüm hiçbir dizi ayırmasa bile her çağrı yığında bir çerçeve tutar: derinliği `n` olan bir özyineleme O(n) alan kullanır. Mülakatlarda sık unutulan nokta budur.

@@ -1,0 +1,146 @@
+title: Sistemler, Ağlar ve Nesne Yönelimli Tasarım
+description: Süreçler ve thread'ler, bellek, eşzamanlılık, TCP/UDP, TLS, HTTP, SOLID ve tasarım desenleri.
+level: intermediate
+timeLimitMinutes: 18
+questions:
+  - q: "Aynı süreçteki thread'ler aşağıdakilerden hangisini **paylaşmaz**?"
+    options:
+      - "Öbek (heap) üzerindeki nesneleri"
+      - "Global ve statik değişkenleri"
+      - "Açık dosya tanıtıcılarını"
+      - "Yığını (stack) ve yazmaçları"
+    answer: 4
+    difficulty: easy
+    why: |
+      Thread'ler sürecin adres alanını, yani öbeği, global verileri ve açık dosyaları paylaşır. Her thread'in kendine ait bir yığını (yerel değişkenler, çağrı çerçeveleri), yazmaçları ve program sayacı vardır. Paylaşım, thread'ler arası haberleşmeyi ucuzlatır ama paylaşılan veriye erişimi senkronize etmeyi gerektirir.
+
+  - q: |
+      İki thread aynı anda bu kodu çalıştırıyor. Her biri döngüyü 1.000.000 kez dönüyor. Sonuçta `counter` için ne söylenebilir?
+
+      ```csharp
+      static int counter = 0;
+
+      static void Work()
+      {
+          for (var i = 0; i < 1_000_000; i++) counter++;
+      }
+      ```
+    options:
+      - "Her zaman tam olarak 2.000.000 olur."
+      - "2.000.000'dan küçük olabilir; çünkü `counter++` oku, artır, yaz adımlarından oluşur ve atomik değildir."
+      - "2.000.000'dan büyük olabilir."
+      - "Program kesinlikle bir istisna fırlatır."
+    answer: 2
+    difficulty: medium
+    why: |
+      İki thread aynı değeri (ör. 41) okuyup ikisi de 42 yazarsa bir artış kaybolur. Bu bir yarış durumudur. Çözüm `Interlocked.Increment(ref counter)`, bir kilit ya da her thread'in kendi yerel sayacını tutup sonda toplamasıdır.
+
+  - q: "Deadlock'un dört koşulundan **döngüsel beklemeyi** kırmak için en yaygın pratik yöntem hangisidir?"
+    options:
+      - "Daha fazla thread oluşturmak"
+      - "Bütün kilitleri her zaman aynı genel sırayla almak"
+      - "Kilitleri daha uzun süre tutmak"
+      - "Thread önceliklerini artırmak"
+    answer: 2
+    difficulty: medium
+    why: |
+      Deadlock için karşılıklı dışlama, tut ve bekle, zorla geri alınamama ve döngüsel bekleme koşullarının dördü de aynı anda sağlanmalıdır. Herkes kilitleri aynı sırayla alırsa (ör. iki hesap arasında transferde önce kimliği küçük olan) bekleme zinciri bir döngüye dönüşemez. Zaman aşımıyla kilit denemek de "tut ve bekle" koşulunu kırar.
+
+  - q: "Bir süreç, fiziksel bellekte bulunmayan bir sanal bellek sayfasına eriştiğinde ne olur?"
+    options:
+      - "Süreç her zaman segmentasyon hatasıyla sonlandırılır."
+      - "Sayfa hatası (page fault) oluşur; işletim sistemi sayfayı belleğe getirir ve süreç kaldığı yerden devam eder."
+      - "İşlemci erişimi sessizce yok sayar."
+      - "Bütün sürecin belleği diske yazılır."
+    answer: 2
+    difficulty: medium
+    why: |
+      Sayfa hatası normal bir olaydır: işletim sistemi sayfayı ilk kullanımda ayırır ya da takas alanından (diskten) okur, sayfa tablosunu günceller ve komutu yeniden çalıştırır. Diskten okuma gerektiren sayfa hataları çok pahalıdır. Süreç, hiç eşlenmemiş ya da izinsiz bir adrese erişirse ancak o zaman sonlandırılır.
+
+  - q: "Görüntülü görüşme uygulamalarının ses ve görüntü verisi için TCP yerine çoğunlukla UDP tabanlı protokoller kullanmasının sebebi nedir?"
+    options:
+      - "UDP veriyi otomatik olarak şifreler."
+      - "UDP paketlerin sırasını garanti eder."
+      - "Geç gelen bir paketi yeniden göndermek anlamsızdır; TCP'nin yeniden gönderim ve sıra başı tıkanması gecikmeyi artırır."
+      - "TCP saniyede yalnızca bir paket gönderebilir."
+    answer: 3
+    difficulty: medium
+    why: |
+      Gerçek zamanlı medyada birkaç milisaniye önce kaybolmuş bir ses parçası, geldiğinde artık işe yaramaz. TCP ise kaybolan paketi yeniden gönderir ve o gelene kadar arkasındaki verileri uygulamaya iletmez. UDP bu garantileri vermez; uygulama kaybı kendi yöntemleriyle (ör. ara değer üretme) tolere eder.
+
+  - q: "TLS, el sıkışmadan sonra veriyi şifrelemek için neden asimetrik değil **simetrik** şifreleme kullanır?"
+    options:
+      - "Simetrik şifreleme çok daha hızlıdır; asimetrik şifreleme yalnızca kimlik doğrulama ve anahtar üzerinde güvenli anlaşma için kullanılır."
+      - "Asimetrik şifreleme kırılmıştır ve güvenli değildir."
+      - "Simetrik şifreleme sertifika gerektirmez, bu yüzden daha güvenlidir."
+      - "Tarayıcılar asimetrik şifrelemeyi desteklemez."
+    answer: 1
+    difficulty: medium
+    why: |
+      Asimetrik yöntemler, güvenli olmayan bir kanalda ortak bir anahtar üzerinde anlaşmayı ve sunucunun kimliğini sertifikayla kanıtlamayı mümkün kılar, ama hesaplama açısından pahalıdır. El sıkışmada türetilen oturum anahtarıyla veri AES-GCM ya da ChaCha20 gibi hızlı simetrik algoritmalarla şifrelenir. Her bağlantıda geçici anahtarlar kullanıldığı için ileriye dönük gizlilik de sağlanır.
+
+  - q: "Hangi HTTP yöntemleri **idempotent** kabul edilir? (Birden fazla doğru yanıt vardır.)"
+    options:
+      - "`GET`"
+      - "`POST`"
+      - "`PUT`"
+      - "`DELETE`"
+    answer: [1, 3, 4]
+    difficulty: medium
+    why: |
+      Idempotent bir istek bir kez de on kez de gönderilse sunucudaki son durum aynıdır. `PUT` kaynağı verilen haliyle değiştirir; tekrarı aynı sonucu verir. `DELETE` ikinci çağrıda 404 dönebilir ama durum değişmez. `POST` her çağrıda yeni bir kayıt ya da işlem oluşturabilir; güvenle yeniden denenebilmesi için istemcinin bir idempotency anahtarı göndermesi gerekir.
+
+  - q: "Oturum açmış bir kullanıcı, yalnızca yöneticilerin erişebildiği bir uç noktayı çağırıyor. Doğru durum kodu hangisidir?"
+    options:
+      - "`401 Unauthorized`"
+      - "`403 Forbidden`"
+      - "`404 Not Found`"
+      - "`400 Bad Request`"
+    answer: 2
+    difficulty: easy
+    why: |
+      Adına rağmen `401`, kimliğin **doğrulanmadığı** anlamına gelir: oturum yok ya da belirteç geçersiz. Kullanıcının kim olduğu biliniyor ama bu işleme yetkisi yoksa `403` döner. Kaynağın varlığını bile gizlemek gereken durumlarda bazı API'ler bilerek `404` döndürür; ama anlamsal olarak doğru kod `403`'tür.
+
+  - q: "HTTP/2 tek bir bağlantıda çoklama sunduğu halde, HTTP/3'ün TCP yerine QUIC (UDP üzerinde) kullanmasının başlıca sebebi nedir?"
+    options:
+      - "UDP paketleri TCP paketlerinden daha büyüktür."
+      - "HTTP/2'de TCP düzeyinde kaybolan tek bir paket, bağlantıdaki bütün akışları bekletir; QUIC'te kayıp yalnızca ilgili akışı etkiler."
+      - "QUIC şifreleme kullanmaz, bu yüzden daha hızlıdır."
+      - "TCP, IPv6 ile çalışmaz."
+    answer: 2
+    difficulty: hard
+    why: |
+      HTTP/2 uygulama düzeyindeki sıra başı tıkanmasını çözdü, ama bütün akışlar tek bir TCP bağlantısında olduğu için TCP düzeyindeki tıkanma sürdü. QUIC akışları taşıma katmanında birbirinden bağımsız ele alır. Ayrıca TLS 1.3'ü el sıkışmaya gömerek bağlantıyı daha hızlı kurar ve bağlantı kimliği sayesinde ağ değişse de (Wi-Fi → mobil) bağlantıyı sürdürebilir. QUIC'te şifreleme zorunludur.
+
+  - q: "`Square` sınıfı `Rectangle`'dan türetiliyor ve genişlik atandığında yüksekliği de aynı değere çekiyor. `Rectangle` bekleyen bir metot genişliği 5, yüksekliği 4 yapıp alanın 20 olmasını bekliyor ama 16 buluyor. Hangi ilke ihlal edilmiştir?"
+    options:
+      - "Tek sorumluluk ilkesi"
+      - "Açık-kapalı ilkesi"
+      - "Liskov yerine geçme ilkesi"
+      - "Arayüz ayrımı ilkesi"
+    answer: 3
+    difficulty: easy
+    why: |
+      Liskov ilkesine göre alt tip, üst tipin yerine programın doğruluğunu bozmadan kullanılabilmelidir. `Rectangle`'ın sözleşmesi "genişliği değiştirmek yüksekliği değiştirmez" varsayımını içerir; `Square` bunu bozar. Matematikteki "kare bir dikdörtgendir" ilişkisi, değişebilir nesnelerin davranışında geçerli değildir.
+
+  - q: "Bağımlılığın tersine çevrilmesi ilkesine (DIP) uygun tasarım hangisidir?"
+    options:
+      - "`OrderService` içinde `new SqlOrderRepository()` ile depoyu doğrudan oluşturmak"
+      - "`IOrderRepository` arayüzünü iş katmanında tanımlamak; `OrderService`'in bu arayüze bağımlı olması, PostgreSQL uygulamasının altyapı katmanında yer alması"
+      - "`IOrderRepository` arayüzünü veritabanı sürücüsünün içinde tanımlamak ve iş katmanının sürücü paketine başvurması"
+      - "Depoya statik bir `Instance` özelliği üzerinden her yerden erişmek"
+    answer: 2
+    difficulty: medium
+    why: |
+      DIP'e göre üst seviye iş kodu altyapı ayrıntılarına değil soyutlamalara bağımlı olmalıdır ve soyutlamanın sahibi onu **kullanan** katmandır. Böylece bağımlılık oku altyapıdan iş katmanına döner: veritabanı değişse de iş kodu değişmez ve iş kodu sahte bir depoyla test edilebilir. Bağımlılık enjeksiyonu bu ilkeyi uygulamanın tekniğidir.
+
+  - q: "Bir `IProductRepository` uygulamasına, onu ve onu kullanan kodu değiştirmeden önbellek eklemek istiyorsunuz. Aynı arayüzü uygulayan ve asıl depoyu içinde tutan bir sınıf yazıyorsunuz. Bu hangi desendir?"
+    options:
+      - "Singleton"
+      - "Factory"
+      - "Observer"
+      - "Decorator"
+    answer: 4
+    difficulty: easy
+    why: |
+      Decorator, aynı arayüzü uygulayıp asıl nesneyi sarmalayarak ona davranış ekler: önbellekte varsa döndürür, yoksa çağrıyı içteki depoya iletir. Decorator'lar üst üste dizilebilir (günlükleme → önbellek → asıl depo). .NET'teki klasik örnek akışlardır: `GZipStream` ya da `BufferedStream` başka bir `Stream`'i sarmalar.
