@@ -99,6 +99,8 @@ questions:
 
 Desteklenen tipler: `int`, `long`, `double`, `bool`, `string`, `char`, `T[]`, `List<T>`, `ListNode`, `TreeNode`.
 
+**Adım adım anlatım** (isteğe bağlı): bir problemin çözümünü satır satır izleten etkileşimli, kendi başına duran statik sayfa. `web/public/walkthroughs/{problem-slug}/` altına `index.html` ve `walkthrough.js` olarak konur (satır içi betik kullanılmaz; içerik güvenlik politikası `script-src 'self'` kalır) ve slug `web/src/lib/walkthroughs.ts` listesine eklenir. Problem sayfasında çözüm "Cevabı göster" düğmesinin arkasındadır; anlatımı olan problemlerde cevap açılınca "Adım adım göster" düğmesi `/problems/{slug}/adim-adim` sayfasına götürür.
+
 ## Testler
 
 - **Runner testleri:** gerçek derleyici ve gerçek alt süreçlerle üç dilde çalıştırma, derleme/çalışma zamanı hataları, zaman aşımı, yasaklı API'ler, sandbox kaçış denemeleri.
