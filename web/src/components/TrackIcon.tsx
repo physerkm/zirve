@@ -8,6 +8,7 @@ import {
   Cpu,
   Database,
   FileCode2,
+  Hammer,
   Hash,
   Network,
   Server,
@@ -28,6 +29,7 @@ const icons: Record<string, LucideIcon> = {
   database: Database,
   cpu: Cpu,
   building: Building2,
+  hammer: Hammer,
 };
 
 const boxSizes = { sm: 'size-8 rounded-lg', md: 'size-11 rounded-xl', lg: 'size-14 rounded-2xl' };

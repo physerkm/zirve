@@ -243,6 +243,17 @@
   margin-bottom: 0;
 }
 
+/* GFM görev listeleri ("- [ ]"): madde imi yerine yalnızca onay kutusu görünsün. */
+.prose-zirve :where(ul.contains-task-list):not(:where([class~='not-prose'] *)) {
+  list-style: none;
+  padding-inline-start: 0.25em;
+}
+
+.prose-zirve :where(li.task-list-item > input):not(:where([class~='not-prose'] *)) {
+  margin: 0 0.5em 0 0;
+  vertical-align: -0.1em;
+}
+
 .prose-zirve :where(thead th):not(:where([class~='not-prose'] *)) {
   background-color: var(--surface-2);
   padding: 0.6em 0.85em;
