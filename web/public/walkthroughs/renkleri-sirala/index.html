@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<base target="_blank">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Üç Rengi Tek Turda Sıralamak</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: one reading column; the stepper is a single tool panel (controls, step card, the array track, then variables + nums | code) that stacks on phones. */
+:root {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --ink: #141b26;
+  --muted: #5a6779;
+  --line: #d6dce6;
+  --accent: #3346c8;
+  --accent-ink: #ffffff;
+  --range: #e3e9fb;
+  --range-ink: #1d2a6b;
+  --good: #17824a;
+  --good-soft: #dcf1e4;
+  --good-soft-ink: #145c36;
+  --bad: #b8402a;
+  --code-bg: #f7f8fb;
+  --code-hl: #dfe5fb;
+  --kw: #7a3aa8;
+  /* The three colors of the problem: 0 red, 1 white, 2 blue. */
+  --c0: #d23f31; --c0-ink: #ffffff;
+  --c1: #ffffff; --c1-ink: #141b26; --c1-line: #aab4c3;
+  --c2: #1f5fbf; --c2-ink: #ffffff;
+  /* Region bands and pointer labels, tinted to match. */
+  --r0: #f8dfdb; --r0-ink: #8f2a1f;
+  --r1: #e9edf3; --r1-ink: #3d4757;
+  --r2: #dbe6f8; --r2-ink: #1b4a94;
+  --t0: #b03526; --t2: #1f5fbf;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+    --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff;
+    --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+    --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+    --c0: #e5675a; --c0-ink: #1a0c0a;
+    --c1: #e8edf4; --c1-ink: #141b26; --c1-line: #e8edf4;
+    --c2: #4f7fe8; --c2-ink: #0b1020;
+    --r0: #3a1c17; --r0-ink: #ffb4a5;
+    --r1: #222b38; --r1-ink: #c3cbd8;
+    --r2: #1a2a4d; --r2-ink: #b5c8ff;
+    --t0: #ff9d8f; --t2: #8fb0ff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+  --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff;
+  --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+  --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+  --c0: #e5675a; --c0-ink: #1a0c0a;
+  --c1: #e8edf4; --c1-ink: #141b26; --c1-line: #e8edf4;
+  --c2: #4f7fe8; --c2-ink: #0b1020;
+  --r0: #3a1c17; --r0-ink: #ffb4a5;
+  --r1: #222b38; --r1-ink: #c3cbd8;
+  --r2: #1a2a4d; --r2-ink: #b5c8ff;
+  --t0: #ff9d8f; --t2: #8fb0ff;
+  color-scheme: dark;
+}
+
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 40px;
+}
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; color: var(--muted); margin: 0; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 6vw, 54px); line-height: 1.05; letter-spacing: -.02em; margin: 8px 0 14px; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0; font-size: 17px; }
+.lead + .lead { margin-top: 10px; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: -.01em; margin: 0 0 18px; text-wrap: balance; }
+code { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+
+/* Idea */
+.idea { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; list-style: none; padding: 0; margin: 0; }
+.idea li { border-top: 2px solid var(--ink); padding-top: 12px; min-width: 0; }
+.idea .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.idea h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 2px 0 6px; text-wrap: balance; }
+.idea p { margin: 0; color: var(--muted); font-size: 15px; }
+@media (max-width: 760px) { .idea { grid-template-columns: 1fr; gap: 20px; } }
+
+/* Stepper panel */
+.stepper { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+@media (max-width: 560px) { .stepper { padding: 16px; } }
+.stepper h2 { margin: 0; }
+.controls { display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+.field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+input[type="text"] { width: 16em; max-width: 100%; box-sizing: border-box; font: 600 18px var(--font-mono); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.err { margin: 0; font-size: 13px; color: var(--bad); }
+button { font: 500 14px var(--font-body); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.presets button { font-size: 13px; padding: 7px 10px; }
+.presets .mono { font-family: var(--font-mono); font-weight: 700; margin-right: 4px; }
+.presets button[aria-pressed="true"] { border-color: var(--accent); background: var(--range); color: var(--range-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; }
+#play { min-width: 7.5em; }
+
+.step { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+.step-meta { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--range); color: var(--range-ink); }
+.tag[data-kind="ok"] { background: var(--good); color: var(--surface); }
+#step-text { margin: 8px 0 0; font-size: 16.5px; max-width: 78ch; min-height: 4.8em; }
+
+.panel-label { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+
+/* Track: a spare column on each side for pointers that step off the array (high = -1, mid = n),
+   then one column per box. Rows: pointer labels, boxes, the swap bracket, region bands, indexes. */
+.track-scroll { overflow-x: auto; padding: 4px 6px 6px; }
+.track { display: grid; column-gap: 8px; row-gap: 0; grid-template-rows: auto 46px 18px auto auto; width: max-content; }
+.lbl { grid-row: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-height: 52px; padding-bottom: 6px; font: 600 11px/1.35 var(--font-mono); white-space: nowrap; }
+.lbl .t-low { color: var(--t0); }
+.lbl .t-mid { color: var(--ink); }
+.lbl .t-high { color: var(--t2); }
+.box {
+  grid-row: 2; width: 56px; height: 46px; box-sizing: border-box; border-radius: 10px;
+  display: grid; place-items: center;
+  font: 700 18px var(--font-mono); font-variant-numeric: tabular-nums;
+  border: 1px solid transparent;
+  transition: background-color .25s, color .25s, border-color .25s;
+}
+.box[data-c="0"] { background: var(--c0); color: var(--c0-ink); }
+.box[data-c="1"] { background: var(--c1); color: var(--c1-ink); border-color: var(--c1-line); }
+.box[data-c="2"] { background: var(--c2); color: var(--c2-ink); }
+.box.cur { outline: 2px solid var(--ink); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .box { transition: none; } }
+/* Bracket from the center of one swapped box to the center of the other; dashed = about to swap. */
+.swap { grid-row: 3; height: 12px; margin: 0 27px; box-sizing: border-box; border: 2px solid var(--accent); border-top: 0; border-radius: 0 0 8px 8px; }
+.swap.planned { border-style: dashed; }
+.swap-self { grid-row: 3; text-align: center; font: 700 14px/18px var(--font-mono); color: var(--accent); }
+.reg { grid-row: 4; margin-top: 4px; padding: 4px 2px; border-radius: 6px; text-align: center; font: 600 11px/1.2 var(--font-body); white-space: nowrap; }
+.reg[data-r="0"] { background: var(--r0); color: var(--r0-ink); }
+.reg[data-r="1"] { background: var(--r1); color: var(--r1-ink); }
+.reg[data-r="2"] { background: var(--r2); color: var(--r2-ink); }
+.reg[data-r="u"] { border: 1.5px dashed var(--muted); padding: 2.5px 2px; color: var(--muted); }
+.idx { grid-row: 5; padding-top: 4px; text-align: center; font: 500 12px var(--font-mono); color: var(--muted); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 6px; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1px solid transparent; box-sizing: border-box; }
+.sw.c0 { background: var(--c0); }
+.sw.c1 { background: var(--c1); border-color: var(--c1-line); }
+.sw.c2 { background: var(--c2); }
+.sw.cur { background: transparent; border: 2px solid var(--ink); }
+.sw.swp { width: 18px; height: 8px; border: 2px solid var(--accent); border-top: 0; border-radius: 0 0 5px 5px; vertical-align: 1px; }
+.sw.ru { width: 18px; border: 1.5px dashed var(--muted); }
+
+/* Variables + nums | code */
+.board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 28px; }
+@media (max-width: 880px) { .board { grid-template-columns: 1fr; } }
+.col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.vars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0; }
+@media (max-width: 560px) { .vars { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.var { border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; background: var(--bg); min-width: 0; }
+.var dt { font: 400 12px var(--font-mono); color: var(--muted); }
+.var dd { margin: 0; font: 600 18px var(--font-mono); font-variant-numeric: tabular-nums; }
+.var.changed { border-color: var(--accent); background: var(--range); }
+.var.changed dd { color: var(--range-ink); }
+.out { margin-top: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; background: var(--bg); min-width: 0; }
+.out span { display: block; font-size: 12px; color: var(--muted); }
+.out b { font: 700 17px var(--font-mono); overflow-wrap: anywhere; }
+.out[data-kind="done"] { border: 2px solid var(--good); background: var(--good-soft); }
+.out[data-kind="done"] b { color: var(--good-soft-ink); }
+.code { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 0; overflow-x: auto; font: 13px/1.6 var(--font-mono); }
+@media (max-width: 560px) { .code { font-size: 12px; } }
+.ln { display: block; padding: 0 14px 0 11px; white-space: pre; border-left: 3px solid transparent; }
+.ln.hl { background: var(--code-hl); border-left-color: var(--accent); }
+.kw { color: var(--kw); }
+
+/* Two columns keep lines short enough to read while still using the page width. */
+.why-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 40px; }
+.why-grid > div { border-top: 1px solid var(--line); padding-top: 12px; min-width: 0; }
+.why h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 0 0 6px; text-wrap: balance; }
+.why p { margin: 0; color: var(--muted); }
+.why b { color: var(--ink); }
+@media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; gap: 20px; } }
+.foot { display: flex; flex-wrap: wrap; gap: 6px 20px; border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; color: var(--muted); }
+.foot a { color: var(--accent); }
+
+/* No ligatures: `<=` and `--` should look the way they are typed.
+   Kept last because the `font` shorthand above would reset it. */
+code, .code, .box, .var dd, .out b, .lbl, input[type="text"] { font-variant-ligatures: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">LeetCode 75 · Sort Colors · Medium</p>
+    <h1>Üç Rengi Tek Turda Sıralamak</h1>
+    <p class="lead">Çözümün her adımını burada izleyebilirsin. Bir dizi seç, <b>İleri</b>'ye bas ya da <b>Oynat</b>'a tıkla; 0'ların sola, 2'lerin sağa nasıl gönderildiğini, 1'lerin de ortada kendiliğinden nasıl toplandığını gör.</p>
+    <p class="lead">Bu yönteme <b>Hollanda bayrağı</b> algoritması denir. Adını, Edsger Dijkstra'nın bu problemi anlatırken kullandığı kırmızı, beyaz ve mavi şeritli Hollanda bayrağından alır.</p>
+  </header>
+
+  <section aria-labelledby="idea-h">
+    <h2 id="idea-h">Fikir üç adımda</h2>
+    <ol class="idea">
+      <li>
+        <span class="n">1</span>
+        <h3>Diziyi dört bölge olarak düşün</h3>
+        <p>Soldan sağa: 0'lar, 1'ler, henüz bakılmamış kutular, 2'ler. Sınırları üç değişken tutuyor: <code>low</code> 0'lardan sonraki ilk kutu, <code>mid</code> şimdi bakılan kutu, <code>high</code> bakılmamış son kutu.</p>
+      </li>
+      <li>
+        <span class="n">2</span>
+        <h3>0'ı sola, 2'yi sağa gönder</h3>
+        <p><code>nums[mid]</code> 0 ise <code>low</code>'daki kutuyla, 2 ise <code>high</code>'daki kutuyla yer değiştirir. 1 ise zaten 1'lerin sonunda duruyor; sadece <code>mid</code> bir ilerler.</p>
+      </li>
+      <li>
+        <span class="n">3</span>
+        <h3>Sağdan geleni tekrar kontrol et</h3>
+        <p>2'yi sağa gönderince oradan gelen kutuya henüz bakmadık, bu yüzden <code>mid</code> yerinde kalır. Bakılmamış kutu kalmayınca (<code>mid &gt; high</code>) dizi sıralıdır.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="stepper" aria-labelledby="st-h">
+    <h2 id="st-h">Adım adım izle</h2>
+
+    <div class="controls">
+      <div class="row">
+        <div class="field">
+          <label for="list">Dizi (virgülle ayır, en fazla 10 sayı)</label>
+          <input id="list" type="text" value="2, 0, 2, 1, 1, 0" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="nav">
+          <button type="button" id="reset">Baştan</button>
+          <button type="button" id="prev-btn">← Geri</button>
+          <button type="button" id="next-btn" class="primary">İleri →</button>
+          <button type="button" id="play">▶ Oynat</button>
+        </div>
+      </div>
+      <div class="presets" role="group" aria-label="Hazır örnekler">
+        <button type="button" data-l="2, 0, 2, 1, 1, 0"><span class="mono">[2,0,2,1,1,0]</span></button>
+        <button type="button" data-l="1, 2, 0"><span class="mono">[1,2,0]</span>sağdan 0 gelir</button>
+        <button type="button" data-l="2, 0, 2"><span class="mono">[2,0,2]</span>sağdan 2 gelir</button>
+        <button type="button" data-l="2, 2, 1, 1, 0, 0"><span class="mono">[2,2,1,1,0,0]</span>ters sıralı</button>
+      </div>
+      <p class="err" id="list-err" hidden>Virgülle ayrılmış en az 1, en fazla 10 sayı yaz. Her sayı 0, 1 ya da 2 olmalı.</p>
+    </div>
+
+    <div class="step" aria-live="polite">
+      <div class="step-meta"><span id="step-count"></span><span id="step-tag" class="tag"></span></div>
+      <p id="step-text"></p>
+    </div>
+
+    <div>
+      <p class="panel-label">nums</p>
+      <div class="track-scroll"><div class="track" id="track"></div></div>
+      <div class="legend">
+        <span><i class="sw c0"></i>0 · kırmızı</span>
+        <span><i class="sw c1"></i>1 · beyaz</span>
+        <span><i class="sw c2"></i>2 · mavi</span>
+        <span><i class="sw cur"></i>şu an bakılan kutu (mid)</span>
+        <span><i class="sw swp"></i>yer değiştiren kutular (kesikli: birazdan)</span>
+        <span><i class="sw ru"></i>bakılmamış bölge (mid ile high arası)</span>
+      </div>
+    </div>
+
+    <div class="board">
+      <div class="col">
+        <p class="panel-label">Değişkenler</p>
+        <dl class="vars" id="vars"></dl>
+        <div class="out" id="out"><span>nums (metot bir şey döndürmüyor; değişen, dizinin kendisi)</span><b id="result"></b></div>
+      </div>
+      <div class="col">
+        <p class="panel-label">Kod (Solution.cs içindeki metot)</p>
+        <div class="code" id="code" role="region" aria-label="C# kodu" tabindex="0"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="why" aria-labelledby="why-h">
+    <h2 id="why-h">Neden O(n) zaman ve O(1) bellek?</h2>
+    <div class="why-grid">
+      <div>
+        <h3>O(n) zaman</h3>
+        <p>Her turda ya <code>mid</code> bir sağa ya da <code>high</code> bir sola gidiyor. Yani bakılmamış bölge her turda tam bir kutu küçülüyor. n kutuyla başladığı için döngü tam n kez döner, her turda da birkaç işlem var: <b>O(n) zaman</b>. Diziyi tek kez geziyoruz; LeetCode'un ek olarak istediği "tek tur" bu.</p>
+      </div>
+      <div>
+        <h3>O(1) bellek</h3>
+        <p>Dizi ne kadar büyük olursa olsun sadece üç değişken tutuyoruz: <code>low</code>, <code>mid</code> ve <code>high</code>. Kutuları yeni bir diziye kopyalamıyoruz, <code>nums</code>'ın içinde yer değiştiriyoruz: <b>O(1) bellek</b>.</p>
+      </div>
+      <div>
+        <h3>2'den sonra <code>mid</code> neden ilerlemiyor?</h3>
+        <p><code>high</code>'dan gelen kutu bakılmamış bölgeden geliyor; 0 da olabilir, 2 de. <code>[1, 2, 0]</code> dizisinde 2 ile sondaki 0 yer değiştirir ve dizi <code>[1, 0, 2]</code> olur. Bu noktada <code>mid</code> ilerlerse döngü biter ve 0 yanlış yerde kalır. Yerinde kalırsa bir sonraki turda 0'ı görür ve onu sola gönderir.</p>
+      </div>
+      <div>
+        <h3>0'dan sonra <code>mid</code> neden ilerleyebiliyor?</h3>
+        <p><code>low</code> ile <code>mid</code> arasında sadece 1'ler var, çünkü o kutulara zaten baktık. 0'ı <code>low</code>'a gönderince oradan gelen kutu bir 1'dir ve 1'lerin sonuna oturur. <code>low</code> ile <code>mid</code> aynı kutuyu gösteriyorsa 0 kendisiyle yer değiştirir. İki durumda da bakılacak yeni bir kutu gelmiyor, ikisi de ilerleyebilir.</p>
+      </div>
+      <div>
+        <h3>Sayma çözümüyle farkı ne?</h3>
+        <p>Önce her renkten kaç tane olduğunu sayıp sonra diziyi baştan yazmak da doğru bir çözüm; o da <b>O(n) zaman</b> ve <b>O(1) bellek</b> kullanır. Farkı, diziyi iki kez gezmesi. Bir de sayma kutulara yeni değer yazıyor, bu çözüm ise var olan kutuların yerini değiştiriyor. Kutularda sadece sayı değil de numaralı toplar olsaydı, sayıp yeniden yazmak topları kaybederdi; yer değiştirmek yine çalışırdı.</p>
+      </div>
+      <div>
+        <h3><code>(a, b) = (b, a)</code> ne yapıyor?</h3>
+        <p>İki kutunun değerini yer değiştiriyor. C# önce sağdaki iki değeri okuyor, sonra onları soldaki iki kutuya yazıyor. Böylece ikisi aynı anda değişiyor ve hiçbir değer kaybolmuyor. Aynı iş geçici bir değişkenle üç satırda da yapılabilir: önce birini <code>temp</code>'e kopyala, sonra öbürünü onun yerine yaz, en son <code>temp</code>'i öbürünün yerine koy.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <a href="https://leetcode.com/problems/sort-colors/">Soru: LeetCode 75</a>
+    <a href="https://github.com/physerkm/leetcode-solutions/blob/main/src/LeetCode/Problems/P0075_SortColors/Solution.cs">Kod: Solution.cs</a>
+    <a href="https://github.com/physerkm/leetcode-solutions">Repo: physerkm/leetcode-solutions</a>
+  </footer>
+</div>
+
+<script src="walkthrough.js"></script>
+</body>
+</html>

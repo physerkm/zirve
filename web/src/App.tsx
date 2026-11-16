@@ -15,6 +15,7 @@ const QuizzesPage = lazy(() => import('@/pages/QuizzesPage'));
 const QuizPage = lazy(() => import('@/pages/QuizPage'));
 const ProblemsPage = lazy(() => import('@/pages/ProblemsPage'));
 const ProblemPage = lazy(() => import('@/pages/ProblemPage'));
+const WalkthroughPage = lazy(() => import('@/pages/WalkthroughPage'));
 const PlaygroundPage = lazy(() => import('@/pages/PlaygroundPage'));
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'));
 const AuthPage = lazy(() => import('@/pages/AuthPage'));
@@ -32,6 +33,7 @@ const router = createBrowserRouter([
       { path: 'quizzes/:quizSlug', element: <QuizPage /> },
       { path: 'problems', element: <ProblemsPage /> },
       { path: 'problems/:problemSlug', element: <ProblemPage /> },
+      { path: 'problems/:problemSlug/adim-adim', element: <WalkthroughPage /> },
       { path: 'playground', element: <PlaygroundPage /> },
       { path: 'dashboard', element: <DashboardPage /> },
       { path: 'login', element: <AuthPage key="login" mode="login" /> },

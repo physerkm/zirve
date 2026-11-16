@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, CircleCheck, Lightbulb, List, Play, RotateCcw, Send } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CircleCheck, Eye, Lightbulb, List, ListOrdered, Play, RotateCcw, Send } from 'lucide-react';
 import { lazy, Suspense, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
 import { JudgeResultPanel } from '@/components/JudgeResultPanel';
@@ -10,6 +10,7 @@ import { useMediaQuery } from '@/lib/hooks';
 import { useEditorial, useJudge, useProblem, useSubmission, useSubmissions, useUser } from '@/lib/queries';
 import { readStorage, removeStorage, writeStorage } from '@/lib/storage';
 import type { Language, ProblemDetail } from '@/lib/types';
+import { hasWalkthrough, walkthroughPath } from '@/lib/walkthroughs';
 
 const CodeEditor = lazy(() => import('@/components/CodeEditor'));
 
@@ -230,7 +231,9 @@ function Workspace({ problem }: { problem: ProblemDetail }) {
 type LoadCode = (language: Language, code: string) => void;
 
 function InfoPanel({ problem, solved, onLoadCode }: { problem: ProblemDetail; solved: boolean; onLoadCode: LoadCode }) {
-  const [tab, setTab] = useState<InfoTab>('description');
+  // Adım adım anlatımdan dönen kullanıcı cevabı zaten açmıştı: çözüm sekmesi açık gelir.
+  const returningToAnswer = (useLocation().state as { showAnswer?: boolean } | null)?.showAnswer === true;
+  const [tab, setTab] = useState<InfoTab>(returningToAnswer ? 'editorial' : 'description');
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-bg">
@@ -257,7 +260,7 @@ function InfoPanel({ problem, solved, onLoadCode }: { problem: ProblemDetail; so
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
         {tab === 'description' && <DescriptionTab problem={problem} solved={solved} />}
         {tab === 'hints' && <HintsTab hints={problem.hints} />}
-        {tab === 'editorial' && <EditorialTab problem={problem} solved={solved} />}
+        {tab === 'editorial' && <EditorialTab problem={problem} initiallyRevealed={returningToAnswer} />}
         {tab === 'submissions' && <SubmissionsTab slug={problem.slug} onLoadCode={onLoadCode} />}
       </div>
     </div>
@@ -342,14 +345,15 @@ function HintsTab({ hints }: { hints: string[] }) {
           {revealed === 0 ? 'İlk ipucunu göster' : `Sonraki ipucunu göster (${revealed + 1}/${hints.length})`}
         </Button>
       ) : (
-        <p className="text-sm text-muted">Bütün ipuçlarını gördünüz. Hâlâ takılıyorsanız çözüm sekmesine bakabilirsiniz.</p>
+        <p className="text-sm text-muted">Bütün ipuçlarını gördünüz. Hâlâ takılıyorsanız Çözüm sekmesinden cevabı açabilirsiniz.</p>
       )}
     </div>
   );
 }
 
-function EditorialTab({ problem, solved }: { problem: ProblemDetail; solved: boolean }) {
-  const [revealed, setRevealed] = useState(solved);
+function EditorialTab({ problem, initiallyRevealed }: { problem: ProblemDetail; initiallyRevealed: boolean }) {
+  // Cevap kendiliğinden görünmez; "Cevabı göster"e basılana kadar sunucudan da istenmez.
+  const [revealed, setRevealed] = useState(initiallyRevealed);
   const editorial = useEditorial(problem.slug, revealed && problem.hasEditorial);
 
   if (!problem.hasEditorial) {
@@ -359,21 +363,38 @@ function EditorialTab({ problem, solved }: { problem: ProblemDetail; solved: boo
   if (!revealed) {
     return (
       <div className="rounded-xl border border-dashed border-border-strong p-6 text-center">
-        <p className="font-medium">Çözüme bakmadan önce kendiniz deneyin</p>
+        <p className="font-medium">Cevaba bakmadan önce kendiniz deneyin</p>
         <p className="mx-auto mt-2 max-w-sm text-sm text-muted">
-          En çok, takılıp uğraştığınız problemlerden öğrenirsiniz. Önce ipuçlarını deneyin; en az 20–30 dakika uğraştıysanız çözümü açın.
+          En çok, takılıp uğraştığınız problemlerden öğrenirsiniz. Önce ipuçlarını deneyin; en az 20–30 dakika uğraştıysanız cevabı açın.
         </p>
         <Button variant="secondary" className="mt-4" onClick={() => setRevealed(true)}>
-          Çözümü göster
+          <Eye className="size-4" aria-hidden />
+          Cevabı göster
         </Button>
       </div>
     );
   }
 
-  if (editorial.isPending) return <Spinner />;
-  if (editorial.isError) return <ErrorNotice error={editorial.error} onRetry={() => editorial.refetch()} />;
+  return (
+    <div className="animate-fade-in space-y-5">
+      {hasWalkthrough(problem.slug) && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface p-4">
+          <div className="min-w-0 flex-1 basis-56">
+            <p className="text-sm font-medium">Çözümü adım adım izleyin</p>
+            <p className="mt-0.5 text-sm text-muted">Kodun her satırının ne yaptığını kendi örneklerinizle, etkileşimli olarak görün.</p>
+          </div>
+          <ButtonLink to={walkthroughPath(problem.slug)} size="sm">
+            <ListOrdered className="size-4" aria-hidden />
+            Adım adım göster
+          </ButtonLink>
+        </div>
+      )}
 
-  return <Markdown size="sm">{editorial.data.editorial}</Markdown>;
+      {editorial.isPending && <Spinner />}
+      {editorial.isError && <ErrorNotice error={editorial.error} onRetry={() => editorial.refetch()} />}
+      {editorial.data && <Markdown size="sm">{editorial.data.editorial}</Markdown>}
+    </div>
+  );
 }
 
 function SubmissionsTab({ slug, onLoadCode }: { slug: string; onLoadCode: LoadCode }) {
