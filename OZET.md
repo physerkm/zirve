@@ -23,7 +23,7 @@ C#, .NET, React, JavaScript, TypeScript, algoritmalar ve sistem tasarımı konul
 | Runner (kod çalıştırma servisi) | Tamam, testli |
 | Frontend (React 19) | Tamam; lint, tip denetimi, testler ve derleme temiz |
 | Yerel geliştirme (`npm run dev`) | Çalışıyor (Docker gerektirmez) |
-| İçerik | 32 ders, 9 quiz (90 soru), 23 problem; 11 yolun hepsi yayında |
+| İçerik | 50 ders, 9 quiz (90 soru), 23 problem; 12 yolun hepsi yayında |
 | Docker / nginx / CI dosyaları | Yazıldı, **hiç çalıştırılmadı** |
 | Sürüm kontrolü ve CI | GitHub'da (`physerkm/zirve`); CI'ın iki işi de yeşil |
 
@@ -36,6 +36,7 @@ C#, .NET, React, JavaScript, TypeScript, algoritmalar ve sistem tasarımı konul
 | Sistem Tasarımı | 4 | 1 (10 soru) |
 | C# | 3 | 1 (10 soru) |
 | .NET ve ASP.NET Core | 1 | 1 (8 soru) |
+| Pratik Projesi: Kütüphane Yönetim API'si | 18 | — |
 | JavaScript | 2 | 1 (10 soru) |
 | TypeScript | 1 | 1 (8 soru) |
 | React | 1 | 1 (8 soru) |
@@ -44,6 +45,8 @@ C#, .NET, React, JavaScript, TypeScript, algoritmalar ve sistem tasarımı konul
 | Bilgisayar Bilimi Temelleri | 4 | 1 (12 soru) |
 
 Veritabanları dersleri: SQL sorguları ve join'ler; indeksler ve sorgu planları; transaction'lar ve izolasyon seviyeleri; veri modelleme ve normalizasyon. Bilgisayar Bilimi Temelleri dersleri: süreçler, thread'ler ve bellek; ağ temelleri (TCP, TLS, HTTP); SOLID ilkeleri; tasarım desenleri.
+
+Pratik projesi (16 Kasım 2026): `Kutuphane-API-Uygulama-Rehberi.docx` belgesinden üretilen, kod içermeyen bir uygulama rehberi. Üç bölüm: Hazırlık (5), Fazlar (Faz 0–8, 9 ders), Başvuru (4). Belgedeki kişiye ve makineye özgü ifadeler (klasör yolu, kurulu araç envanteri) genelleştirildi; kabul kriterleri Markdown görev listesi olarak yazıldı.
 
 Problemler (23): 11 kolay, 12 orta; zor problem yok. Kapsanan kalıplar: dizi/hash tablosu, iki işaretçi, kayan pencere, yığın, ikili arama, bağlı liste, ağaç (DFS/BFS/BST), graf, dinamik programlama, geri izleme, aralıklar, sınıf tasarımı (Min Yığın, LRU Önbellek).
 

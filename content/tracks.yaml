@@ -79,6 +79,22 @@
       title: Veri Erişimi ve Üretim
       description: EF Core, performans ve dayanıklılık.
 
+- slug: kutuphane-api
+  title: "Pratik Projesi: Kütüphane Yönetim API'si"
+  description: Sıfırdan, faz faz kendi yazacağın bir .NET 10 Minimal API. Clean Architecture, iş kuralları, testler ve her fazın sonunda kod review'ı.
+  icon: hammer
+  accent: orange
+  modules:
+    - slug: hazirlik
+      title: Hazırlık
+      description: Rehberin kullanımı, geliştirme ortamı, proje tanımı, mimari ve paketler.
+    - slug: fazlar
+      title: Fazlar
+      description: Çözüm iskeletinden entegrasyon testlerine ve bonus görevlere, adım adım uygulama.
+    - slug: basvuru
+      title: Başvuru
+      description: Clean Code kontrol listesi, review süreci, sözlük ve kaynaklar.
+
 - slug: javascript
   title: JavaScript
   description: Dilin gerçekte nasıl çalıştığı. Tipler, closure, prototipler, event loop ve asenkron programlama.

@@ -11,6 +11,7 @@ const accents: Record<string, { icon: string; bar: string }> = {
   cyan: { icon: 'bg-cyan-500/12 text-cyan-700 dark:text-cyan-400', bar: 'bg-cyan-500' },
   teal: { icon: 'bg-teal-500/12 text-teal-700 dark:text-teal-400', bar: 'bg-teal-500' },
   rose: { icon: 'bg-rose-500/12 text-rose-700 dark:text-rose-400', bar: 'bg-rose-500' },
+  orange: { icon: 'bg-orange-500/12 text-orange-700 dark:text-orange-400', bar: 'bg-orange-500' },
   slate: { icon: 'bg-slate-500/12 text-slate-700 dark:text-slate-300', bar: 'bg-slate-500' },
 };
 
