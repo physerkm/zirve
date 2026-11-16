@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<base target="_blank">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zıplayarak Sona Ulaşmak</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: one reading column; the stepper is a single tool panel (controls, step card, the array track, then variables + result | code) that stacks on phones. */
+:root {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --ink: #141b26;
+  --muted: #5a6779;
+  --line: #d6dce6;
+  --accent: #3346c8;
+  --accent-ink: #ffffff;
+  --range: #e3e9fb;
+  --range-ink: #1d2a6b;
+  --good: #17824a;
+  --good-soft: #dcf1e4;
+  --good-soft-ink: #145c36;
+  --bad: #b8402a;
+  --bad-soft: #f9e3dd;
+  --bad-soft-ink: #7a2615;
+  --code-bg: #f7f8fb;
+  --code-hl: #dfe5fb;
+  --kw: #7a3aa8;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+    --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff;
+    --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2;
+    --bad: #ff7d66; --bad-soft: #3a1c17; --bad-soft-ink: #ffb4a5;
+    --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+  --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff;
+  --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2;
+  --bad: #ff7d66; --bad-soft: #3a1c17; --bad-soft-ink: #ffb4a5;
+  --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+  color-scheme: dark;
+}
+
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 40px;
+}
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; color: var(--muted); margin: 0; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 6vw, 54px); line-height: 1.05; letter-spacing: -.02em; margin: 8px 0 14px; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0; font-size: 17px; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: -.01em; margin: 0 0 18px; text-wrap: balance; }
+code { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+
+/* Idea */
+.idea { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; list-style: none; padding: 0; margin: 0; }
+.idea li { border-top: 2px solid var(--ink); padding-top: 12px; min-width: 0; }
+.idea .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.idea h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 2px 0 6px; text-wrap: balance; }
+.idea p { margin: 0; color: var(--muted); font-size: 15px; }
+@media (max-width: 760px) { .idea { grid-template-columns: 1fr; gap: 20px; } }
+
+/* Stepper panel */
+.stepper { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+@media (max-width: 560px) { .stepper { padding: 16px; } }
+.stepper h2 { margin: 0; }
+.controls { display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+.field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+input[type="text"] { width: 16em; max-width: 100%; box-sizing: border-box; font: 600 18px var(--font-mono); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.err { margin: 0; font-size: 13px; color: var(--bad); }
+button { font: 500 14px var(--font-body); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.presets button { font-size: 13px; padding: 7px 10px; }
+.presets .mono { font-family: var(--font-mono); font-weight: 700; margin-right: 4px; }
+.presets button[aria-pressed="true"] { border-color: var(--accent); background: var(--range); color: var(--range-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; }
+#play { min-width: 7.5em; }
+
+.step { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+.step-meta { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--range); color: var(--range-ink); }
+.tag[data-kind="ok"] { background: var(--good); color: var(--surface); }
+.tag[data-kind="bad"] { background: var(--bad); color: var(--surface); }
+#step-text { margin: 8px 0 0; font-size: 16.5px; max-width: 78ch; min-height: 3.2em; }
+
+.panel-label { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+
+/* Track: one grid column per box plus a spare column for jumps that go past the end.
+   Rows: labels, boxes, the jump bar, indexes. */
+.track-scroll { overflow-x: auto; padding: 4px 6px 6px; }
+.track { display: grid; column-gap: 8px; row-gap: 0; width: max-content; }
+.lbl { grid-row: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-height: 36px; padding-bottom: 6px; font: 600 11px/1.35 var(--font-mono); white-space: nowrap; }
+.lbl .t-i { color: var(--accent); }
+.lbl .t-far { color: var(--ink); }
+.box {
+  grid-row: 2; width: 52px; height: 46px; box-sizing: border-box; border-radius: 10px;
+  display: grid; place-items: center;
+  font: 700 18px var(--font-mono); font-variant-numeric: tabular-nums;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  transition: background-color .2s, color .2s, border-color .2s;
+}
+.box[data-state="reach"] { background: var(--range); color: var(--range-ink); border-color: transparent; }
+.box[data-state="goal"] { background: var(--good-soft); color: var(--good-soft-ink); border: 2px solid var(--good); }
+.box[data-state="stuck"] { background: var(--bad-soft); color: var(--bad-soft-ink); border: 2px solid var(--bad); }
+.box.cur { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .box { transition: none; } }
+.bar-row { grid-row: 3; height: 22px; display: flex; align-items: center; }
+.bar { height: 8px; width: 100%; border-radius: 999px; background: var(--accent); }
+.bar.zero { width: 8px; margin: 0 auto; background: var(--muted); }
+.past { grid-row: 3; display: flex; align-items: center; font: 600 12px var(--font-mono); color: var(--accent); white-space: nowrap; }
+.idx { grid-row: 4; text-align: center; font: 500 12px var(--font-mono); color: var(--muted); }
+.idx b { display: block; font: 600 11px var(--font-body); color: var(--muted); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 6px; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--line); }
+.sw.reach { background: var(--range); border-color: transparent; }
+.sw.cur { background: transparent; border: 2px solid var(--accent); }
+.sw.bar { width: 18px; height: 6px; border-radius: 999px; background: var(--accent); border: 0; vertical-align: 2px; }
+.sw.goal { background: var(--good-soft); border: 2px solid var(--good); }
+.sw.stuck { background: var(--bad-soft); border: 2px solid var(--bad); }
+
+/* Variables + result | code */
+.board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 28px; }
+@media (max-width: 880px) { .board { grid-template-columns: 1fr; } }
+.col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.vars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.var { border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; background: var(--bg); min-width: 0; }
+.var dt { font: 400 12px var(--font-mono); color: var(--muted); }
+.var dd { margin: 0; font: 600 18px var(--font-mono); font-variant-numeric: tabular-nums; }
+.var.changed { border-color: var(--accent); background: var(--range); }
+.var.changed dd { color: var(--range-ink); }
+.out { margin-top: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; background: var(--bg); }
+.out span { display: block; font-size: 12px; color: var(--muted); }
+.out b { font: 700 18px var(--font-mono); }
+.out[data-kind="true"] { border: 2px solid var(--good); background: var(--good-soft); }
+.out[data-kind="true"] b { color: var(--good-soft-ink); }
+.out[data-kind="false"] { border: 2px solid var(--bad); background: var(--bad-soft); }
+.out[data-kind="false"] b { color: var(--bad-soft-ink); }
+.code { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 0; overflow-x: auto; font: 13px/1.6 var(--font-mono); }
+@media (max-width: 560px) { .code { font-size: 12px; } }
+.ln { display: block; padding: 0 14px 0 11px; white-space: pre; border-left: 3px solid transparent; }
+.ln.hl { background: var(--code-hl); border-left-color: var(--accent); }
+.kw { color: var(--kw); }
+.cm { color: var(--muted); }
+
+/* Two columns keep lines short enough to read while still using the page width. */
+.why-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 40px; }
+.why-grid > div { border-top: 1px solid var(--line); padding-top: 12px; min-width: 0; }
+.why h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 0 0 6px; text-wrap: balance; }
+.why p { margin: 0; color: var(--muted); }
+.why b { color: var(--ink); }
+@media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; gap: 20px; } }
+.foot { display: flex; flex-wrap: wrap; gap: 6px 20px; border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; color: var(--muted); }
+.foot a { color: var(--accent); }
+
+/* No ligatures: `>` and `-` combos should look the way they are typed.
+   Kept last because the `font` shorthand above would reset it. */
+code, .code, .box, .var dd, .out b, .past, input[type="text"] { font-variant-ligatures: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">LeetCode 55 · Jump Game · Medium</p>
+    <h1>Zıplayarak Sona Ulaşmak</h1>
+    <p class="lead">Çözümün her adımını burada izleyebilirsin. Bir dizi seç, <b>İleri</b>'ye bas ya da <b>Oynat</b>'a tıkla; ulaşabildiğimiz bölgenin kutu kutu nasıl genişlediğini, sona vardığımız ya da takıldığımız anı gör.</p>
+  </header>
+
+  <section aria-labelledby="idea-h">
+    <h2 id="idea-h">Fikir üç adımda</h2>
+    <ol class="idea">
+      <li>
+        <span class="n">1</span>
+        <h3>Yolları değil, en uzak noktayı takip et</h3>
+        <p>Hangi kutudan nereye zıplayacağımızı seçmiyoruz. Sadece tek bir sayı tutuyoruz: <code>farthest</code>, şimdiye kadar ulaşabildiğimiz en uzak kutu. 0 ile <code>farthest</code> arasındaki her kutuya ulaşılabilir.</p>
+      </li>
+      <li>
+        <span class="n">2</span>
+        <h3>Her kutuda sınırı genişlet</h3>
+        <p>Soldan sağa yürürken <code>i</code> numaralı kutudan en uzak <code>i + nums[i]</code> numaralı kutuya gidebiliriz. Bu, <code>farthest</code>'tan uzaksa sınır oraya kadar genişler.</p>
+      </li>
+      <li>
+        <span class="n">3</span>
+        <h3>Sınırın dışına düşersen takıldın</h3>
+        <p><code>i &gt; farthest</code> ise bu kutuya hiçbir yerden gelinemiyor: <code>false</code>. <code>farthest</code> son kutuya ulaşır ya da onu geçerse iş bitmiştir: <code>true</code>.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="stepper" aria-labelledby="st-h">
+    <h2 id="st-h">Adım adım izle</h2>
+
+    <div class="controls">
+      <div class="row">
+        <div class="field">
+          <label for="list">Dizi (virgülle ayır, en fazla 10 sayı)</label>
+          <input id="list" type="text" value="2, 3, 1, 1, 4" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="nav">
+          <button type="button" id="reset">Baştan</button>
+          <button type="button" id="prev-btn">← Geri</button>
+          <button type="button" id="next-btn" class="primary">İleri →</button>
+          <button type="button" id="play">▶ Oynat</button>
+        </div>
+      </div>
+      <div class="presets" role="group" aria-label="Hazır örnekler">
+        <button type="button" data-l="2, 3, 1, 1, 4"><span class="mono">[2,3,1,1,4]</span></button>
+        <button type="button" data-l="3, 2, 1, 0, 4"><span class="mono">[3,2,1,0,4]</span>takılma</button>
+        <button type="button" data-l="2, 3, 0, 0, 1"><span class="mono">[2,3,0,0,1]</span>en uzun zıplama tuzak</button>
+        <button type="button" data-l="10, 0, 0"><span class="mono">[10,0,0]</span>sonu geçen zıplama</button>
+      </div>
+      <p class="err" id="list-err" hidden>Virgülle ayrılmış en az 1, en fazla 10 tam sayı yaz. Her sayı 0 ile 99 arasında olmalı.</p>
+    </div>
+
+    <div class="step" aria-live="polite">
+      <div class="step-meta"><span id="step-count"></span><span id="step-tag" class="tag"></span></div>
+      <p id="step-text"></p>
+    </div>
+
+    <div>
+      <p class="panel-label">nums</p>
+      <div class="track-scroll"><div class="track" id="track"></div></div>
+      <div class="legend">
+        <span><i class="sw reach"></i>ulaşılabilir (0 ile farthest arası)</span>
+        <span><i class="sw cur"></i>şu anki kutu (i)</span>
+        <span><i class="sw bar"></i>bu kutudan zıplanabilecek aralık</span>
+        <span><i class="sw goal"></i>son kutuya ulaşıldı</span>
+        <span><i class="sw stuck"></i>ulaşılamayan kutu</span>
+      </div>
+    </div>
+
+    <div class="board">
+      <div class="col">
+        <p class="panel-label">Değişkenler</p>
+        <dl class="vars" id="vars"></dl>
+        <div class="out" id="out"><span>dönüş değeri</span><b id="result"></b></div>
+      </div>
+      <div class="col">
+        <p class="panel-label">Kod (Solution.cs içindeki metot)</p>
+        <div class="code" id="code" role="region" aria-label="C# kodu" tabindex="0"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="why" aria-labelledby="why-h">
+    <h2 id="why-h">Neden O(n) zaman ve O(1) bellek?</h2>
+    <div class="why-grid">
+      <div>
+        <h3>O(n) zaman</h3>
+        <p>Diziyi en fazla bir kez geziyoruz ve her kutuda sadece birkaç karşılaştırma yapıyoruz. Sona erken ulaşırsak ya da erken takılırsak döngü daha da önce bitiyor. Dizi ne kadar uzunsa iş de en fazla o oranda artar: <b>O(n) zaman</b>.</p>
+      </div>
+      <div>
+        <h3>O(1) bellek</h3>
+        <p>Dizi kaç elemanlı olursa olsun sadece dört değişken tutuyoruz: <code>lastIndex</code>, <code>farthest</code>, <code>i</code> ve <code>reach</code>. Hangi kutulara ulaşılabildiğini tek tek kaydeden bir dizi yok: <b>O(1) bellek</b>.</p>
+      </div>
+      <div>
+        <h3>Ulaşılabilen kutular neden aralıksız?</h3>
+        <p>Kutudaki sayı <b>en fazla</b> kaç adım zıplayabileceğimizi söylüyor, daha kısa da zıplayabiliriz. 3 yazan kutudan 1, 2 ya da 3 adım ileri gidebiliriz. Bu yüzden bir kutuya ulaşabiliyorsak, ondan önceki bütün kutulara da ulaşabiliriz. Tek bir sayının (<code>farthest</code>) yetmesinin sebebi bu.</p>
+      </div>
+      <div>
+        <h3>Neden hep en uzağa zıplamıyoruz?</h3>
+        <p>Çünkü en uzun zıplama tuzağa düşürebilir. <code>[2, 3, 0, 0, 1]</code> dizisinde 0'dan 2 adım zıplarsan 0 yazan kutuya düşüp takılırsın. 1 adım zıplarsan 3 yazan kutudan sona ulaşırsın. Bu çözüm zıplama seçmediği, sadece sınırı takip ettiği için bu tuzağa hiç düşmüyor.</p>
+      </div>
+      <div>
+        <h3>Başka yollar</h3>
+        <p>Her kutudan her zıplamayı denemek doğru çalışır ama yol sayısı çok hızlı büyür; testteki 10.000 elemanlı dizide yaklaşık 2<sup>9998</sup> yol var. Her kutu için "buraya ulaşılabilir mi?" bilgisini bir dizide tutmak da doğru çalışır ama <b>O(n²) zaman</b> ve <b>O(n) bellek</b> ister. Sondan başa doğru giden bir çözüm de O(n) zaman ve O(1) bellekte çalışır; bu sayfadaki baştan sona yöntemi daha kolay anlaşılıyor.</p>
+      </div>
+      <div>
+        <h3>Sondaki <code>return false</code> neden var?</h3>
+        <p>C# derleyicisi, metodun her yolda bir <code>bool</code> döndürdüğünü görmek istiyor. Değişkenlerin değerlerine bakmadığı için döngünün normal bitip en alta inebileceğini düşünüyor; bu satırı silersen kod derlenmez. Gerçekte buraya sadece boş bir dizi gelir, LeetCode ise en az 1 eleman garanti ediyor. O zaman döngünün son turunda <code>i</code> son index'e eşit olur: ya <code>i &gt; farthest</code> olur ve <code>false</code> döner, ya da <code>farthest</code> en az <code>i</code> olur ve <code>true</code> döner.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <a href="https://leetcode.com/problems/jump-game/">Soru: LeetCode 55</a>
+    <a href="https://github.com/physerkm/leetcode-solutions/blob/main/src/LeetCode/Problems/P0055_JumpGame/Solution.cs">Kod: Solution.cs</a>
+    <a href="https://github.com/physerkm/leetcode-solutions">Repo: physerkm/leetcode-solutions</a>
+  </footer>
+</div>
+
+<script src="walkthrough.js"></script>
+</body>
+</html>
