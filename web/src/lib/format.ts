@@ -75,6 +75,8 @@ const tagLabels: Record<string, string> = {
   'on-ek-toplami': 'Ön Ek Toplamı',
   javascript: 'JavaScript',
   'topolojik-siralama': 'Topolojik Sıralama',
+  'bit-islemleri': 'Bit İşlemleri',
+  'birlik-bul': 'Birlik-Bul',
 };
 
 export function tagLabel(tag: string): string {

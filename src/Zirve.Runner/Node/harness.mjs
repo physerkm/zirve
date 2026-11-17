@@ -129,14 +129,17 @@ const PRELUDE = String.raw`
 
   const MAX_NODES = 200000;
 
-  const toList = (values) => {
+  const toList = (values, pos = -1) => {
     let head = null;
     let tail = null;
-    for (const value of values) {
-      const node = new ListNode(value);
+    let cycleTarget = null;
+    for (let i = 0; i < values.length; i++) {
+      const node = new ListNode(values[i]);
       if (head === null) head = node; else tail.next = node;
+      if (i === pos) cycleTarget = node;
       tail = node;
     }
+    if (tail !== null && cycleTarget !== null) tail.next = cycleTarget;
     return head;
   };
 
@@ -190,7 +193,13 @@ const PRELUDE = String.raw`
   const hasNodes = (type) => type.includes('ListNode') || type.includes('TreeNode');
 
   const decode = (value, type) => {
-    if (type === 'ListNode') return Array.isArray(value) ? toList(value) : null;
+    if (type === 'ListNode') {
+      if (Array.isArray(value)) return toList(value);
+      if (value !== null && typeof value === 'object' && Array.isArray(value.values)) {
+        return toList(value.values, typeof value.pos === 'number' ? value.pos : -1);
+      }
+      return null;
+    }
     if (type === 'TreeNode') return Array.isArray(value) ? toTree(value) : null;
     const element = elementOf(type);
     if (element !== null && hasNodes(element) && Array.isArray(value)) return value.map((item) => decode(item, element));
