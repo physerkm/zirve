@@ -4,7 +4,7 @@ Bu belge, projenin başından bu yana yapılan her şeyi tek yerde toplar: ne in
 
 - **Konum:** `C:\Users\HP\Desktop\github\zirve`
 - **GitHub:** https://github.com/physerkm/zirve (açık depo, `main` dalı)
-- **Son güncelleme:** 15 Kasım 2026
+- **Son güncelleme:** 17 Kasım 2026
 - **Durum:** Platform uçtan uca çalışıyor ve testleri geçiyor. İçerik sınırlı. Docker dağıtımı yazıldı ama hiç çalıştırılmadı. Proje Git ile sürümleniyor (`main` dalı).
 
 ---
@@ -23,7 +23,7 @@ C#, .NET, React, JavaScript, TypeScript, algoritmalar ve sistem tasarımı konul
 | Runner (kod çalıştırma servisi) | Tamam, testli |
 | Frontend (React 19) | Tamam; lint, tip denetimi, testler ve derleme temiz |
 | Yerel geliştirme (`npm run dev`) | Çalışıyor (Docker gerektirmez) |
-| İçerik | 50 ders, 9 quiz (90 soru), 23 problem; 12 yolun hepsi yayında |
+| İçerik | 50 ders, 9 quiz (90 soru), 171 problem (hepsinde adım adım anlatım); 12 yolun hepsi yayında |
 | Docker / nginx / CI dosyaları | Yazıldı, **hiç çalıştırılmadı** |
 | Sürüm kontrolü ve CI | GitHub'da (`physerkm/zirve`); CI'ın iki işi de yeşil |
 
@@ -48,7 +48,9 @@ Veritabanları dersleri: SQL sorguları ve join'ler; indeksler ve sorgu planlar�
 
 Pratik projesi (16 Kasım 2026): `Kutuphane-API-Uygulama-Rehberi.docx` belgesinden üretilen, kod içermeyen bir uygulama rehberi. Üç bölüm: Hazırlık (5), Fazlar (Faz 0–8, 9 ders), Başvuru (4). Belgedeki kişiye ve makineye özgü ifadeler (klasör yolu, kurulu araç envanteri) genelleştirildi; kabul kriterleri Markdown görev listesi olarak yazıldı.
 
-Problemler (23): 11 kolay, 12 orta; zor problem yok. Kapsanan kalıplar: dizi/hash tablosu, iki işaretçi, kayan pencere, yığın, ikili arama, bağlı liste, ağaç (DFS/BFS/BST), graf, dinamik programlama, geri izleme, aralıklar, sınıf tasarımı (Min Yığın, LRU Önbellek).
+Problemler (171): 32 kolay, 114 orta, 25 zor. `leetcode.pdf`'teki 170 soruluk listenin (NeetCode 150 ve hedef şirketlere özgü 20 soru) tamamı ile listede olmayan "Kayıp Sayılar". Numaralar listedeki sırayı izler: önce ayrılmış boşluklar (005–007, 010, 017, 020, 022, 025, 027, 030, 031, 033), sonra 046–171. Kapsanan kalıplar: dizi/hash tablosu, iki işaretçi, kayan pencere, yığın, ikili arama, bağlı liste, ağaç (DFS/BFS/BST), trie, heap, geri izleme, graf (BFS/DFS, topolojik sıralama, Birlik-Bul, Dijkstra, Prim), 1 ve 2 boyutlu dinamik programlama, açgözlü, aralıklar, matematik ve bit işlemleri, sınıf tasarımı (Min Yığın, LRU Önbellek, Trie, Twitter, Ortanca Bulucu, Zamana Dayalı Depo, RandomizedSet vb.).
+
+Her problemin C# ve TypeScript referans çözümü ve etkileşimli bir "Adım adım" anlatımı var (`web/public/walkthroughs/{slug}/`, liste `web/src/lib/walkthroughs.ts`). Testleri belirlenimci olsun diye uyarlanan sorular: 528 Ağırlıklı Rastgele Seçim (rastgele sayı `pickIndex(r)` parametresiyle verilir), 380 O(1) Ekle/Sil/Rastgele (`getRandom` testlerde yalnızca tek elemanlı kümede çağrılır), 269 Uzaylı Sözlüğü (birden fazla sıra varsa alfabetik en küçüğü), 138 Rastgele İşaretçili Liste (`[değer, randomIndex]` çiftleri). Yerinde değiştirme isteyen sorular (88, 31, 143, 130 vb.) değiştirdikleri yapıyı döndürür; 141 Bağlı Listede Döngü testlerinde liste `{ "values": [...], "pos": k }` biçiminde verilir.
 
 ## 3. Makinede yapılan değişiklikler
 
@@ -249,7 +251,7 @@ Zirve.Runner  (:5081)
 
 ### `content` — içerik
 
-`tracks.yaml` (11 yol, 25 bölüm tanımlı; 21'inin dersi var), `lessons/` (32 ders), `quizzes/` (9 quiz), `problems/` (23 problem). Biçimler `README.md` içinde anlatılıyor.
+`tracks.yaml` (11 yol, 25 bölüm tanımlı; 21'inin dersi var), `lessons/` (32 ders), `quizzes/` (9 quiz), `problems/` (171 problem). Biçimler `README.md` içinde anlatılıyor.
 
 ## 6. Yol boyunca bulunan ve düzeltilen sorunlar
 
@@ -268,17 +270,21 @@ Zirve.Runner  (:5081)
 | İlerleme çubuğunda özel renk yerine varsayılan renk görünüyordu | Varsayılan renk yalnızca özel renk verilmediğinde uygulanıyor |
 | Kod yazı tipinde bitişik harfler (`<=` → `≤`) ve üst simgeler kötü görünüyordu | Kodda bitişik harfler kapatıldı; kısıtlarda `10^4` biçimi kullanıldı |
 | Geçici klasörde çalıştırılan `npm init`, kök `package.json`'a gereksiz alanlar ekledi | Dosya eski haline getirildi |
+| Döngülü bağlı liste (141) test verisiyle ifade edilemiyordu | `ListNode` argümanı `{ "values": [...], "pos": k }` nesnesi olarak da verilebiliyor; C# ve Node harness'ları son düğümü `pos`'taki düğüme bağlıyor |
+| `walkthroughs.ts` listesi yalnızca 14 anlatımı içeriyordu; klasörü olan 56 anlatım sitede görünmüyordu | Liste bütün anlatım klasörleriyle güncellendi (171) |
+| Arama API testi `toplam` sorgusunda "İki Sayının Toplamı"nı bekliyordu; arama en fazla 8 problem döndürdüğü için yeni "toplam"lı başlıklar onu listenin dışına itti | Test daha belirgin bir sorguyla (`sayının toplamı`) güncellendi; arama davranışı değişmedi |
 
 ## 7. Doğrulama durumu
 
 | Denetim | Sonuç |
 | --- | --- |
-| Backend testleri (`dotnet test`) | 147 / 147 geçti |
+| Backend testleri (`dotnet test`) | 443 / 443 geçti (17 Kasım 2026; 171 problemin her birinin C# ve TypeScript çözümü dahil) |
 | Frontend lint ve tip denetimi | Temiz |
-| Frontend testleri (Vitest) | 17 / 17 geçti |
+| Frontend testleri (Vitest) | 21 / 21 geçti |
 | Frontend üretim derlemesi | Başarılı |
 | Tarayıcı turu (başsız Edge) | 9 yol, 24 ders, 7 quiz, 23 problem sayfası açıldı; kayıt, quiz, kod çalıştır/gönder (C# ve TypeScript), sınıf problemi, deneme alanı, ders tamamlama → panel, arama, açık tema, mobil görünüm çalıştı; konsol hatası yok |
 | CI (GitHub Actions, Linux) | İlk çalıştırma yeşil: backend 147/147 (atlanan yok; Runner testleri Linux'ta ilk kez koştu), frontend lint + tip denetimi + testler + derleme |
+| Problem ve anlatımlar (17 Kasım 2026) | API açılışta 171 problemi eşitledi. Başsız Edge ile uygulama içinde "Çözüm" → "Cevabı göster" → "Adım adım göster" → geri dönüş akışı tıklanarak denendi. 171 anlatımın hepsi `/problems/{slug}/adim-adim` üzerinden açıldı; her birinde adımlar ilerledi ve bütün hazır örnekler hatasız çalıştı. Konsol hatası yok. Anlatım sayfaları 380 px genişlikte taşmasız. |
 | Yeni içerik (8 ders, 2 quiz) | İçerik doğrulama testleri geçti; derslerdeki 12 Mermaid diyagramının hepsi Mermaid 12.3 ayrıştırıcısından geçti; çalışan sitede yollar, dersler, quizler ve arama (`izolasyon`, `deadlock`, `TLS` vb.) API üzerinden doğrulandı |
 
 **Doğrulanmayanlar:**
@@ -290,7 +296,7 @@ Zirve.Runner  (:5081)
 
 ## 8. Bilinen sınırlamalar
 
-- **İçerik dar.** .NET, TypeScript ve React yollarında birer ders var. Zor problem yok.
+- **İçerik dar.** .NET, TypeScript ve React yollarında birer ders var.
 - **Şirket rehberi genel eğilimleri anlatır;** süreçler ekibe ve yıla göre değişir ve bu derste de belirtilmiştir.
 - **Yerel çalıştırmada kod yalıtımı zayıftır.** `npm run dev` ile kullanıcı kodu kapsayıcısız çalışır. İnternete açmadan önce Docker kurulumu kullanılmalı ve sınanmalıdır.
 - **Hesap özellikleri temel düzeyde.** E-posta doğrulama, parola sıfırlama, profil düzenleme ve hesap silme yok.
@@ -315,7 +321,7 @@ Zirve.Runner  (:5081)
    - JavaScript: tipler ve dönüşümler, prototipler, modüller, bellek sızıntıları.
 3. **Sistem tasarımı örnekleri:** haber akışı, sohbet, hız sınırlayıcı, bildirim sistemi, dağıtık önbellek; ayrıca tutarlılık ve dağıtık işlemler dersi.
 4. **Algoritma dersleri:** graflar (ayrı ders), heap, geri izleme, açgözlü yöntemler, aralıklar.
-5. **Yeni problemler** (numaralar bilerek boş bırakıldı): 005 en sık k eleman, 006 kendisi hariç çarpım, 007 en uzun ardışık dizi, 010 en çok su tutan kap, 017 döndürülmüş dizide arama, 020 sondan n. düğümü sil, 022 ağacı ters çevir, 025 k. en büyük eleman, 027 ders programı (topolojik sıralama), 030 en uzun artan alt dizi, 031 ev soyguncusu, 033 permütasyonlar, 036 trie. Ardından birkaç **zor** problem.
+5. ~~**Yeni problemler.**~~ **Tamamlandı (17 Kasım 2026):** `leetcode.pdf`'teki 170 sorunun tamamı eklendi (toplam 171 problem, 25'i zor); hepsinin C# ve TypeScript çözümü ve adım adım anlatımı var.
 6. **Yeni quizler:** Mülakat Hazırlığı yolu için ve çok dersli yollarda bölüm başına birer quiz.
 
 Her içerik eklemesinden sonra `dotnet test --project tests/Zirve.Tests` çalıştırılmalı; referans çözümler ve içerik biçimi orada doğrulanır.

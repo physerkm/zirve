@@ -367,6 +367,20 @@ namespace ZirveHarness
 
         private static ListNode BuildList(JsonElement element)
         {
+            var pos = -1;
+            if (element.ValueKind == JsonValueKind.Object)
+            {
+                if (element.TryGetProperty("pos", out var posElement) && posElement.ValueKind == JsonValueKind.Number)
+                {
+                    pos = posElement.GetInt32();
+                }
+
+                if (!element.TryGetProperty("values", out element))
+                {
+                    return null;
+                }
+            }
+
             if (element.ValueKind != JsonValueKind.Array)
             {
                 return null;
@@ -374,6 +388,8 @@ namespace ZirveHarness
 
             ListNode head = null;
             ListNode tail = null;
+            ListNode cycleTarget = null;
+            var index = 0;
 
             foreach (var item in element.EnumerateArray())
             {
@@ -387,7 +403,18 @@ namespace ZirveHarness
                     tail.next = node;
                 }
 
+                if (index == pos)
+                {
+                    cycleTarget = node;
+                }
+
                 tail = node;
+                index++;
+            }
+
+            if (tail != null && cycleTarget != null)
+            {
+                tail.next = cycleTarget;
             }
 
             return head;

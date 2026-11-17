@@ -273,7 +273,9 @@ public sealed class ApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     {
         var api = await factory.CreateSessionAsync();
 
-        var hits = await api.GetAsync("/api/search?q=toplam");
+        // Sorgu yeterince belirgin olmalı: arama en fazla 8 problem döndürür ve başlığında yalnızca
+        // "toplam" geçen problem sayısı bu sınırı aşıyor.
+        var hits = await api.GetAsync("/api/search?q=" + Uri.EscapeDataString("sayının toplamı"));
         Assert.Contains(hits.GetProperty("problems").EnumerateArray(), hit => hit.GetProperty("slug").GetString() == ProblemSlug);
 
         var empty = await api.GetAsync("/api/search?q=a");

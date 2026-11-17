@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<base target="_blank">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Çakışmayan Aralıklar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --ink: #141b26;
+  --muted: #5a6779;
+  --line: #d6dce6;
+  --accent: #3346c8;
+  --accent-ink: #ffffff;
+  --range: #e3e9fb;
+  --range-ink: #1d2a6b;
+  --probe: #c46f00;
+  --good: #17824a;
+  --good-soft: #dcf1e4;
+  --good-soft-ink: #145c36;
+  --bad: #b8402a;
+  --bad-soft: #fce8e5;
+  --code-bg: #f7f8fb;
+  --code-hl: #dfe5fb;
+  --kw: #7a3aa8;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+    --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+    --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66; --bad-soft: #361b18;
+    --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+  --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+  --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66; --bad-soft: #361b18;
+  --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+  color-scheme: dark;
+}
+
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 40px;
+}
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; color: var(--muted); margin: 0; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 6vw, 54px); line-height: 1.05; letter-spacing: -.02em; margin: 8px 0 14px; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0; font-size: 17px; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: -.01em; margin: 0 0 18px; text-wrap: balance; }
+code { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+
+.idea { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; list-style: none; padding: 0; margin: 0; }
+.idea li { border-top: 2px solid var(--ink); padding-top: 12px; min-width: 0; }
+.idea .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.idea h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 2px 0 6px; text-wrap: balance; }
+.idea p { margin: 0; color: var(--muted); font-size: 15px; }
+@media (max-width: 760px) { .idea { grid-template-columns: 1fr; gap: 20px; } }
+
+.stepper { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+@media (max-width: 560px) { .stepper { padding: 16px; } }
+.stepper h2 { margin: 0; }
+.controls { display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+.field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+input[type="text"] { width: 22em; max-width: 100%; box-sizing: border-box; font: 600 16px var(--font-mono); padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.err { margin: 0; font-size: 13px; color: var(--bad); }
+button { font: 500 14px var(--font-body); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.presets button { font-size: 13px; padding: 7px 10px; }
+.presets .mono { font-family: var(--font-mono); font-weight: 700; margin-right: 4px; }
+.presets button[aria-pressed="true"] { border-color: var(--accent); background: var(--range); color: var(--range-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; }
+#play { min-width: 7.5em; }
+
+.step { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+.step-meta { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--range); color: var(--range-ink); }
+.tag[data-kind="skip"] { background: var(--bad-soft); color: var(--bad); }
+.tag[data-kind="ok"] { background: var(--good); color: var(--surface); }
+#step-text { margin: 8px 0 0; font-size: 16.5px; max-width: 78ch; min-height: 3.2em; }
+
+.panel-label { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+.panel-label .hint { font-weight: 400; }
+
+/* Timeline bars */
+.timeline-box { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; position: relative; overflow-x: auto; }
+.axis { display: flex; justify-content: space-between; font: 600 12px var(--font-mono); color: var(--muted); border-bottom: 1px dashed var(--line); padding-bottom: 6px; margin-left: 88px; }
+.bar-row { display: flex; align-items: center; gap: 12px; min-height: 34px; }
+.bar-lbl { width: 76px; flex-shrink: 0; font: 600 13px var(--font-mono); color: var(--muted); text-align: right; }
+.bar-track { flex: 1; position: relative; height: 30px; min-width: 260px; }
+.bar {
+  position: absolute; top: 2px; bottom: 2px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font: 700 12px var(--font-mono); padding: 0 6px; box-sizing: border-box;
+  border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
+  transition: all .2s; white-space: nowrap; overflow: hidden;
+}
+.bar[data-state="kept"] { background: var(--good-soft); color: var(--good-soft-ink); border-color: var(--good); }
+.bar[data-state="removed"] { background: var(--bad-soft); color: var(--bad); border-color: var(--bad); border-style: dashed; text-decoration: line-through; opacity: .82; }
+.bar.cur { outline: 2.5px solid var(--accent); outline-offset: 2px; }
+.prev-line { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--probe); pointer-events: none; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 8px; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--line); }
+.sw.cur { background: transparent; border: 2px solid var(--accent); }
+.sw.kept { background: var(--good-soft); border-color: var(--good); }
+.sw.removed { background: var(--bad-soft); border: 1.5px dashed var(--bad); }
+.sw.probe { background: var(--probe); border-color: var(--probe); }
+
+.board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 28px; }
+@media (max-width: 880px) { .board { grid-template-columns: 1fr; } }
+.col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.vars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.var { border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; background: var(--bg); min-width: 0; }
+.var dt { font: 400 12px var(--font-mono); color: var(--muted); }
+.var dd { margin: 0; font: 600 18px var(--font-mono); font-variant-numeric: tabular-nums; }
+.var.changed { border-color: var(--accent); background: var(--range); }
+.var.changed dd { color: var(--range-ink); }
+.code { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 0; overflow-x: auto; font: 13px/1.6 var(--font-mono); }
+@media (max-width: 560px) { .code { font-size: 12px; } }
+.ln { display: block; padding: 0 14px 0 11px; white-space: pre; border-left: 3px solid transparent; }
+.ln.hl { background: var(--code-hl); border-left-color: var(--accent); }
+.kw { color: var(--kw); }
+
+.why-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 40px; }
+.why-grid > div { border-top: 1px solid var(--line); padding-top: 12px; min-width: 0; }
+.why h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 0 0 6px; text-wrap: balance; }
+.why p { margin: 0; color: var(--muted); }
+.why b { color: var(--ink); }
+@media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; gap: 20px; } }
+.foot { display: flex; flex-wrap: wrap; gap: 6px 20px; border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; color: var(--muted); }
+.foot a { color: var(--accent); }
+
+code, .code, .bar, .var dd, input[type="text"] { font-variant-ligatures: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">LeetCode 435 · Non-overlapping Intervals · Medium</p>
+    <h1>Çakışmayan Aralıklar</h1>
+    <p class="lead">Aralıkları <b>bitiş zamanına göre</b> sıraladığımızda, her çakışmada daha erken biten aralığı korumak gelecekteki aralıklar için en geniş boşluğu bırakır.</p>
+  </header>
+
+  <section aria-labelledby="idea-h">
+    <h2 id="idea-h">Fikir üç adımda</h2>
+    <ol class="idea">
+      <li>
+        <span class="n">1</span>
+        <h3>Bitiş zamanına göre sırala</h3>
+        <p>En erken biten aralık sağ tarafta en çok boş yeri bırakır. Bu yüzden başlangıç değil, <code>end</code> değerine göre sıralarız.</p>
+      </li>
+      <li>
+        <span class="n">2</span>
+        <h3>Son bitiş noktasını takip et</h3>
+        <p>Tutulan son aralığın bitişini <code>prevEnd</code> içinde saklarız. İlk aralık her zaman en erken bittiği için doğrudan tutulur.</p>
+      </li>
+      <li>
+        <span class="n">3</span>
+        <h3>Çakışanı sil, çakışmayanı tut</h3>
+        <p>Sıradaki aralığın başlangıcı <code>start &lt; prevEnd</code> ise çakışma vardır (<code>removed++</code>); değilse aralığı tutar ve <code>prevEnd = end</code> yaparız.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="stepper" aria-labelledby="st-h">
+    <h2 id="st-h">Adım adım izle</h2>
+
+    <div class="controls">
+      <div class="row">
+        <div class="field">
+          <label for="list">Aralıklar (<code>start-end</code> biçiminde virgülle ayır, en fazla 7 aralık)</label>
+          <input id="list" type="text" value="1-2, 2-3, 3-4, 1-3" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="nav">
+          <button type="button" id="reset">Baştan</button>
+          <button type="button" id="prev-btn">← Geri</button>
+          <button type="button" id="next-btn" class="primary">İleri →</button>
+          <button type="button" id="play">▶ Oynat</button>
+        </div>
+      </div>
+      <div class="presets" role="group" aria-label="Hazır örnekler">
+        <button type="button" data-l="1-2, 2-3, 3-4, 1-3"><span class="mono">[[1,2],[2,3],[3,4],[1,3]]</span></button>
+        <button type="button" data-l="1-10, 2-4, 4-7, 7-9"><span class="mono">[[1,10],[2,4],[4,7],[7,9]]</span>uzun kapsayan</button>
+        <button type="button" data-l="1-2, 1-2, 1-2"><span class="mono">[[1,2],[1,2],[1,2]]</span>aynı aralıklar</button>
+        <button type="button" data-l="0-2, 1-3, 2-4, 3-5, 4-6"><span class="mono">zincirleme çakışma</span></button>
+      </div>
+      <p class="err" id="list-err" hidden>En az 1, en fazla 7 aralık girin (örneğin: 1-2, 2-3, 1-3). Her aralıkta start &lt; end olmalı.</p>
+    </div>
+
+    <div class="step" aria-live="polite">
+      <div class="step-meta"><span id="step-count"></span><span id="step-tag" class="tag"></span></div>
+      <p id="step-text"></p>
+    </div>
+
+    <div>
+      <p class="panel-label">Zaman Çizgisi <span class="hint">(bitiş zamanına göre sıralanmış aralıklar ve <code>prevEnd</code> sınırı)</span></p>
+      <div class="timeline-box" id="timeline"></div>
+      <div class="legend">
+        <span><i class="sw cur"></i>incelenen aralık (i)</span>
+        <span><i class="sw kept"></i>tutulan aralık</span>
+        <span><i class="sw removed"></i>çıkarılan aralık (çakıştı)</span>
+        <span><i class="sw probe"></i>prevEnd sınırı</span>
+      </div>
+    </div>
+
+    <div class="board">
+      <div class="col">
+        <p class="panel-label">Değişkenler</p>
+        <dl class="vars" id="vars"></dl>
+      </div>
+      <div class="col">
+        <p class="panel-label">Kod (Solution.cs)</p>
+        <div class="code" id="code" role="region" aria-label="C# kodu" tabindex="0"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="why" aria-labelledby="why-h">
+    <h2 id="why-h">Neden bu kadar verimli?</h2>
+    <div class="why-grid">
+      <div>
+        <h3>Neden başlangıca göre değil bitişe göre sıralıyoruz?</h3>
+        <p><code>[1, 10]</code>, <code>[2, 4]</code>, <code>[4, 7]</code> örneğini düşün. Başlangıca göre ilk gelen <code>[1, 10]</code> aralığını tutarsak diğer ikisini silmek zorunda kalırız. Oysa en erken biten <code>[2, 4]</code>'ü tuttuğumuzda 4'ten sonrası tamamen serbest kalır.</p>
+      </div>
+      <div>
+        <h3>Uç noktaların değmesi neden çakışma değil?</h3>
+        <p><code>[1, 2]</code> bittiği anda <code>[2, 3]</code> başlayabilir. Bu yüzden çakışma koşulumuz <code>start &lt;= prevEnd</code> değil, kesin küçüklük olan <b><code>start &lt; prevEnd</code></b> biçimindedir.</p>
+      </div>
+      <div>
+        <h3>Zaman ve Alan Karmaşıklığı</h3>
+        <p>Sıralama adımı <b>O(n log n)</b>, tek geçişli döngü ise <b>O(n)</b> sürer. Ek bir veri yapısı kullanmadığımız için yardımcı bellek <b>O(1)</b>'dir.</p>
+      </div>
+      <div>
+        <h3>Etkinlik Seçimi ile İlişkisi</h3>
+        <p>"En az kaç aralık silinmeli?" sorusu, <code>n - (en fazla kaç çakışmayan aralık seçilebilir)</code> ile aynıdır. Kodumuz doğrudan çakışanları sayarak aynı sonucu tek geçişte bulur.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <a href="https://leetcode.com/problems/non-overlapping-intervals/">Soru: LeetCode 435</a>
+  </footer>
+</div>
+
+<script src="walkthrough.js"></script>
+</body>
+</html>

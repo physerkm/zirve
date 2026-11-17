@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<base target="_blank">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dizgileri Kodla ve Çöz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --ink: #141b26;
+  --muted: #5a6779;
+  --line: #d6dce6;
+  --accent: #3346c8;
+  --accent-ink: #ffffff;
+  --range: #e3e9fb;
+  --range-ink: #1d2a6b;
+  --probe: #c46f00;
+  --good: #17824a;
+  --good-soft: #dcf1e4;
+  --good-soft-ink: #145c36;
+  --bad: #b8402a;
+  --code-bg: #f7f8fb;
+  --code-hl: #dfe5fb;
+  --kw: #7a3aa8;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+    --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+    --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+    --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+  --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+  --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+  --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+  color-scheme: dark;
+}
+
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 40px;
+}
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; color: var(--muted); margin: 0; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 6vw, 54px); line-height: 1.05; letter-spacing: -.02em; margin: 8px 0 14px; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0; font-size: 17px; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: -.01em; margin: 0 0 18px; text-wrap: balance; }
+code { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+
+.idea { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; list-style: none; padding: 0; margin: 0; }
+.idea li { border-top: 2px solid var(--ink); padding-top: 12px; min-width: 0; }
+.idea .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.idea h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 2px 0 6px; text-wrap: balance; }
+.idea p { margin: 0; color: var(--muted); font-size: 15px; }
+@media (max-width: 760px) { .idea { grid-template-columns: 1fr; gap: 20px; } }
+
+.stepper { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+@media (max-width: 560px) { .stepper { padding: 16px; } }
+.stepper h2 { margin: 0; }
+.controls { display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+.field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+input[type="text"] { width: 20em; max-width: 100%; box-sizing: border-box; font: 600 16px var(--font-mono); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.err { margin: 0; font-size: 13px; color: var(--bad); }
+button { font: 500 14px var(--font-body); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.presets button { font-size: 13px; padding: 7px 10px; }
+.presets .mono { font-family: var(--font-mono); font-weight: 700; margin-right: 4px; }
+.presets button[aria-pressed="true"] { border-color: var(--accent); background: var(--range); color: var(--range-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; }
+#play { min-width: 7.5em; }
+
+.step { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+.step-meta { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--range); color: var(--range-ink); }
+.tag[data-kind="ok"] { background: var(--good); color: var(--surface); }
+#step-text { margin: 8px 0 0; font-size: 16.5px; max-width: 78ch; min-height: 3.2em; }
+
+.panel-label { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+.panel-label .hint { font-weight: 400; }
+
+.viz-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 760px) { .viz-grid { grid-template-columns: 1fr; } }
+.viz-box { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.mini-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 34px; }
+.str-chip { padding: 4px 10px; border-radius: 7px; font: 600 14px var(--font-mono); border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.str-chip.now { border-color: var(--accent); background: var(--range); color: var(--range-ink); outline: 2px solid var(--accent); outline-offset: 1px; }
+.str-chip.good { border-color: var(--good); background: var(--good-soft); color: var(--good-soft-ink); }
+
+.tape-scroll { overflow-x: auto; padding: 6px 2px 8px; }
+.tape { display: flex; gap: 4px; width: max-content; min-height: 76px; align-items: flex-end; }
+.cell-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.ptr { font: 700 11px var(--font-mono); min-height: 16px; color: var(--accent); }
+.ptr.j { color: var(--probe); }
+.cell {
+  width: 32px; height: 38px; border-radius: 7px; border: 1px solid var(--line); background: var(--surface);
+  display: grid; place-items: center; font: 700 16px var(--font-mono); color: var(--ink);
+}
+.cell.len { background: var(--range); color: var(--range-ink); border-color: var(--accent); }
+.cell.sep { background: var(--code-bg); color: var(--probe); border-color: var(--probe); font-weight: 800; }
+.cell.pay { background: var(--good-soft); color: var(--good-soft-ink); border-color: var(--good); }
+.idx { font: 400 10px var(--font-mono); color: var(--muted); }
+.empty-note { color: var(--muted); font-size: 13px; font-family: var(--font-mono); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 8px; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--line); }
+.sw.len { background: var(--range); border-color: var(--accent); }
+.sw.sep { background: var(--code-bg); border-color: var(--probe); }
+.sw.pay { background: var(--good-soft); border-color: var(--good); }
+
+.board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 28px; }
+@media (max-width: 880px) { .board { grid-template-columns: 1fr; } }
+.col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.vars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.var { border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; background: var(--bg); min-width: 0; }
+.var dt { font: 400 12px var(--font-mono); color: var(--muted); }
+.var dd { margin: 0; font: 600 17px var(--font-mono); font-variant-numeric: tabular-nums; }
+.var.changed { border-color: var(--accent); background: var(--range); }
+.var.changed dd { color: var(--range-ink); }
+.code { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 0; overflow-x: auto; font: 13px/1.6 var(--font-mono); }
+@media (max-width: 560px) { .code { font-size: 12px; } }
+.ln { display: block; padding: 0 14px 0 11px; white-space: pre; border-left: 3px solid transparent; }
+.ln.hl { background: var(--code-hl); border-left-color: var(--accent); }
+.kw { color: var(--kw); }
+
+.why-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 40px; }
+.why-grid > div { border-top: 1px solid var(--line); padding-top: 12px; min-width: 0; }
+.why h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 0 0 6px; text-wrap: balance; }
+.why p { margin: 0; color: var(--muted); }
+.why b { color: var(--ink); }
+@media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; gap: 20px; } }
+
+code, .code, .cell, .str-chip, .var dd, input[type="text"] { font-variant-ligatures: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">LeetCode 271 · Encode and Decode Strings · Medium</p>
+    <h1>Dizgileri Kodla ve Çöz</h1>
+    <p class="lead">Dizgilerin içinde <code>#</code>, sayı veya boşluk geçebildiğinde basit bir ayraç kullanmak işe yaramaz. Her dizgiyi <code>&lt;uzunluk&gt;#&lt;dizgi&gt;</code> biçiminde paketleyerek hem kodlama (encode) hem de çözme (decode) adımlarını izle.</p>
+  </header>
+
+  <section aria-labelledby="idea-h">
+    <h2 id="idea-h">Fikir üç adımda</h2>
+    <ol class="idea">
+      <li>
+        <span class="n">1</span>
+        <h3>Uzunluk + '#' öneki ekle</h3>
+        <p>Her dizginin başına karakter sayısını ve <code>#</code> işaretini yazarız: örneğin <code>"a#b"</code> dizgisi <code>"3#a#b"</code> olarak paketlenir.</p>
+      </li>
+      <li>
+        <span class="n">2</span>
+        <h3>Çözerken önce '#' bul</h3>
+        <p><code>i</code> konumundan başlayıp ilk <code>#</code> karakterinin olduğu <code>j</code> indeksini buluruz. <code>s[i..j]</code> bize dizginin tam uzunluğunu (<code>length</code>) verir.</p>
+      </li>
+      <li>
+        <span class="n">3</span>
+        <h3>Tam 'length' karakter oku</h3>
+        <p><code>j + 1</code> konumundan itibaren tam <code>length</code> karakteri kesip alırız; içeride <code>#</code> geçse bile ayraç sanılmaz.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="stepper" aria-labelledby="st-h">
+    <h2 id="st-h">Adım adım izle</h2>
+
+    <div class="controls">
+      <div class="row">
+        <div class="field">
+          <label for="list">Dizgiler (`|` ile ayır, en fazla 5 dizgi)</label>
+          <input id="list" type="text" value="zirve | kod | a#b" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="nav">
+          <button type="button" id="reset">Baştan</button>
+          <button type="button" id="prev-btn">← Geri</button>
+          <button type="button" id="next-btn" class="primary">İleri →</button>
+          <button type="button" id="play">▶ Oynat</button>
+        </div>
+      </div>
+      <div class="presets" role="group" aria-label="Hazır örnekler">
+        <button type="button" data-l="zirve | kod | a#b"><span class="mono">["zirve", "kod", "a#b"]</span></button>
+        <button type="button" data-l="a#b | 12#3 | "><span class="mono">["a#b", "12#3", ""]</span>özel karakterler</button>
+        <button type="button" data-l="we | say | : | yes"><span class="mono">["we", "say", ":", "yes"]</span></button>
+      </div>
+      <p class="err" id="list-err" hidden>En fazla 5 dizgi girin (toplam kodlanmış uzunluk 32 karakteri aşmamalı).</p>
+    </div>
+
+    <div class="step" aria-live="polite">
+      <div class="step-meta"><span id="step-count"></span><span id="step-tag" class="tag"></span></div>
+      <p id="step-text"></p>
+    </div>
+
+    <div class="viz-grid">
+      <div class="viz-box">
+        <p class="panel-label">Girdi: strs[]</p>
+        <div class="mini-row" id="strs-row"></div>
+      </div>
+      <div class="viz-box">
+        <p class="panel-label">Çözülen liste: result</p>
+        <div class="mini-row" id="res-row"></div>
+      </div>
+    </div>
+
+    <div>
+      <p class="panel-label">Kodlanmış dizgi <code>s</code> <span class="hint">(Decode sırasında i, j ve okunan paket vurgulanır)</span></p>
+      <div class="tape-scroll"><div class="tape" id="tape"></div></div>
+      <div class="legend">
+        <span><i class="sw len"></i>uzunluk öneki (s[i..j])</span>
+        <span><i class="sw sep"></i>'#' ayracı (s[j])</span>
+        <span><i class="sw pay"></i>okunan dizgi (s[j+1 .. j+1+length])</span>
+      </div>
+    </div>
+
+    <div class="board">
+      <div class="col">
+        <p class="panel-label">Değişkenler</p>
+        <dl class="vars" id="vars"></dl>
+      </div>
+      <div class="col">
+        <p class="panel-label">Kod (StringCodec.cs)</p>
+        <div class="code" id="code" role="region" aria-label="C# kodu" tabindex="0"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="why" aria-labelledby="why-h">
+    <h2 id="why-h">Neden bu kadar verimli?</h2>
+    <div class="why-grid">
+      <div>
+        <h3>Kaçış karakteri (Escape) neden daha karmaşık?</h3>
+        <p>Ayraçları <code>\#</code> ve <code>\\</code> şeklinde kaçış karakteriyle kodlamak da mümkündür; ancak her karakteri tek tek kontrol etmeyi gerektirir. Uzunluk önekli yöntemde ise <code>length</code> okunduktan sonra doğrudan <code>Substring(start, length)</code> ile blok halinde atlanır.</p>
+      </div>
+      <div>
+        <h3>Neden hem uzunluk hem '#' gerekiyor?</h3>
+        <p>Yalnızca uzunluk yazsaydık, örneğin uzunluğu <code>4</code> olan <code>"9999"</code> dizgisi <code>"49999"</code> olurdu ve çözerken uzunluğun 4 mü yoksa 49999 mu olduğu anlaşılamazdı. <code>#</code> işareti uzunluk sayısının nerede bittiğini kesinleştirir.</p>
+      </div>
+      <div>
+        <h3>Boş dizgi ("") nasıl ayırt edilir?</h3>
+        <p>Boş bir dizgi <code>"0#"</code> olarak kodlanır. Çözerken <code>length = 0</code> okunur ve <code>""</code> listeye eklenir. Böylece boş dizi <code>[]</code> (kodlanmış hali <code>""</code>) ile <code>[""]</code> (kodlanmış hali <code>"0#"</code>) birbirine karışmaz.</p>
+      </div>
+      <div>
+        <h3>Zaman ve Alan Karmaşıklığı</h3>
+        <p>Her karakter hem <code>Encode</code> hem de <code>Decode</code> aşamasında sabit sayıda işlenir: toplam zaman <b>O(N)</b>, çıktı dışındaki ek bellek <b>O(1)</b>'dir.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="walkthrough.js"></script>
+</body>
+</html>

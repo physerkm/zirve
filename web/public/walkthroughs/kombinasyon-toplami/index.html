@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<base target="_blank">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kombinasyon Toplamı</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --ink: #141b26;
+  --muted: #5a6779;
+  --line: #d6dce6;
+  --accent: #3346c8;
+  --accent-ink: #ffffff;
+  --range: #e3e9fb;
+  --range-ink: #1d2a6b;
+  --probe: #c46f00;
+  --good: #17824a;
+  --good-soft: #dcf1e4;
+  --good-soft-ink: #145c36;
+  --bad: #b8402a;
+  --code-bg: #f7f8fb;
+  --code-hl: #dfe5fb;
+  --kw: #7a3aa8;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+    --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+    --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+    --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+  --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+  --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+  --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+  color-scheme: dark;
+}
+
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 40px;
+}
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; color: var(--muted); margin: 0; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 6vw, 54px); line-height: 1.05; letter-spacing: -.02em; margin: 8px 0 14px; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0; font-size: 17px; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: -.01em; margin: 0 0 18px; text-wrap: balance; }
+code { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+
+.idea { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; list-style: none; padding: 0; margin: 0; }
+.idea li { border-top: 2px solid var(--ink); padding-top: 12px; min-width: 0; }
+.idea .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.idea h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 2px 0 6px; text-wrap: balance; }
+.idea p { margin: 0; color: var(--muted); font-size: 15px; }
+@media (max-width: 760px) { .idea { grid-template-columns: 1fr; gap: 20px; } }
+
+.stepper { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+@media (max-width: 560px) { .stepper { padding: 16px; } }
+.stepper h2 { margin: 0; }
+.controls { display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+button { font: 500 14px var(--font-body); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.presets button { font-size: 13px; padding: 7px 10px; }
+.presets .mono { font-family: var(--font-mono); font-weight: 700; margin-right: 4px; }
+.presets button[aria-pressed="true"] { border-color: var(--accent); background: var(--range); color: var(--range-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; }
+#play { min-width: 7.5em; }
+
+.step { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+.step-meta { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--range); color: var(--range-ink); }
+.tag[data-kind="skip"] { background: var(--code-bg); color: var(--bad); border: 1px solid var(--bad); }
+.tag[data-kind="ok"] { background: var(--good); color: var(--surface); }
+#step-text { margin: 8px 0 0; font-size: 16.5px; max-width: 78ch; min-height: 3.2em; }
+
+.panel-label { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+.panel-label .hint { font-weight: 400; }
+
+.viz-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 780px) { .viz-grid { grid-template-columns: 1fr; } }
+.viz-box { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; min-height: 48px; align-items: center; }
+.chip {
+  min-width: 46px; height: 42px; padding: 0 10px; box-sizing: border-box; border-radius: 10px;
+  display: grid; place-items: center;
+  font: 700 17px var(--font-mono); font-variant-numeric: tabular-nums;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  transition: background-color .2s, color .2s, border-color .2s;
+}
+.chip.cur { outline: 2px solid var(--accent); outline-offset: 2px; background: var(--range); color: var(--range-ink); }
+.chip.dim { opacity: 0.45; border-style: dashed; }
+.chip.path-item { background: var(--range); color: var(--range-ink); border-color: var(--accent); }
+.chip.ok-item { background: var(--good-soft); color: var(--good-soft-ink); border-color: var(--good); }
+.chip.bad-item { border-color: var(--bad); color: var(--bad); }
+.res-list { display: flex; flex-wrap: wrap; gap: 8px; min-height: 48px; align-items: center; }
+.res-badge { font: 600 14px var(--font-mono); padding: 6px 10px; border-radius: 8px; background: var(--good-soft); color: var(--good-soft-ink); border: 1px solid var(--good); }
+.empty-note { color: var(--muted); font-size: 14px; margin: 0; }
+
+.board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 28px; }
+@media (max-width: 880px) { .board { grid-template-columns: 1fr; } }
+.col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.vars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.var { border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; background: var(--bg); min-width: 0; }
+.var dt { font: 400 12px var(--font-mono); color: var(--muted); }
+.var dd { margin: 0; font: 600 16px var(--font-mono); font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.var.changed { border-color: var(--accent); background: var(--range); }
+.var.changed dd { color: var(--range-ink); }
+.code { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 0; overflow-x: auto; font: 13px/1.6 var(--font-mono); }
+@media (max-width: 560px) { .code { font-size: 12px; } }
+.ln { display: block; padding: 0 14px 0 11px; white-space: pre; border-left: 3px solid transparent; }
+.ln.hl { background: var(--code-hl); border-left-color: var(--accent); }
+.kw { color: var(--kw); }
+
+.why-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 40px; }
+.why-grid > div { border-top: 1px solid var(--line); padding-top: 12px; min-width: 0; }
+.why h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 0 0 6px; text-wrap: balance; }
+.why p { margin: 0; color: var(--muted); }
+.why b { color: var(--ink); }
+@media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; gap: 20px; } }
+
+code, .code, .chip, .res-badge, .var dd { font-variant-ligatures: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">LeetCode 39 · Combination Sum · Medium</p>
+    <h1>Kombinasyon Toplamı</h1>
+    <p class="lead">Aynı sayıyı sınırsız kez seçebildiğimiz karar ağacında <b>geri izleme (backtracking)</b> adımlarını izle; <code>start</code> indeksinin permütasyon tekrarlarını nasıl önlediğini gör.</p>
+  </header>
+
+  <section aria-labelledby="idea-h">
+    <h2 id="idea-h">Fikir üç adımda</h2>
+    <ol class="idea">
+      <li>
+        <span class="n">1</span>
+        <h3>Adayı seç ve hedeften düş</h3>
+        <p>Her adımda <code>candidates[i]</code> sayısını <code>path</code> listesine ekler ve kalan hedefi <code>remaining - candidates[i]</code> olarak güncelleriz.</p>
+      </li>
+      <li>
+        <span class="n">2</span>
+        <h3>İndeksi sabit tutarak tekrar seç</h3>
+        <p>Aynı sayıyı sınırsız kez kullanabilmek için alt çağrıya <code>i + 1</code> yerine <code>i</code> göndeririz; ancak <code>i</code>'den önceki indeksleri bir daha denemeyiz.</p>
+      </li>
+      <li>
+        <span class="n">3</span>
+        <h3>Hedefe ulaş veya budayıp geri dön</h3>
+        <p><code>remaining == 0</code> ise geçerli kombinasyonu kaydederiz. <code>remaining &lt; 0</code> olduğunda ise dalı budayıp son elemanı geri çıkarırız.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="stepper" aria-labelledby="st-h">
+    <h2 id="st-h">Adım adım izle</h2>
+
+    <div class="controls">
+      <div class="row">
+        <div class="presets" role="group" aria-label="Hazır örnekler">
+          <button type="button" data-idx="0"><span class="mono">[2, 3, 6, 7], target = 7</span></button>
+          <button type="button" data-idx="1"><span class="mono">[2, 3, 5], target = 8</span></button>
+          <button type="button" data-idx="2"><span class="mono">[3, 4], target = 5</span>sonuç yok</button>
+        </div>
+        <div class="nav">
+          <button type="button" id="reset">Baştan</button>
+          <button type="button" id="prev-btn">← Geri</button>
+          <button type="button" id="next-btn" class="primary">İleri →</button>
+          <button type="button" id="play">▶ Oynat</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="step" aria-live="polite">
+      <div class="step-meta"><span id="step-count"></span><span id="step-tag" class="tag"></span></div>
+      <p id="step-text"></p>
+    </div>
+
+    <div class="viz-grid">
+      <div class="viz-box">
+        <p class="panel-label">Adaylar (candidates) <span class="hint">soluk olanlar start öncesi</span></p>
+        <div class="chips" id="cand-row"></div>
+      </div>
+      <div class="viz-box">
+        <p class="panel-label">Mevcut Yol (path)</p>
+        <div class="chips" id="path-row"></div>
+      </div>
+      <div class="viz-box">
+        <p class="panel-label">Bulunan Kombinasyonlar (result)</p>
+        <div class="res-list" id="res-row"></div>
+      </div>
+    </div>
+
+    <div class="board">
+      <div class="col">
+        <p class="panel-label">Değişkenler</p>
+        <dl class="vars" id="vars"></dl>
+      </div>
+      <div class="col">
+        <p class="panel-label">Kod (Solution.cs)</p>
+        <div class="code" id="code" role="region" aria-label="C# kodu" tabindex="0"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="why" aria-labelledby="why-h">
+    <h2 id="why-h">Neden bu kadar verimli?</h2>
+    <div class="why-grid">
+      <div>
+        <h3>Neden permütasyon tekrarı oluşmuyor?</h3>
+        <p>Eğer her adımda döngüyü <code>0</code>'dan başlatsaydık <code>[2, 2, 3]</code> yanında <code>[2, 3, 2]</code> ve <code>[3, 2, 2]</code> gibi aynı kombinasyonun farklı sıralamalarını da üretirdik. <code>start</code> parametresi sayesinde bir sonraki adımda asla daha önceki bir adaya geri dönmüyoruz.</p>
+      </div>
+      <div>
+        <h3>Neden <code>Backtrack(i, ...)</code> çağrılıyor?</h3>
+        <p>Her elemanı sınırsız kez seçebildiğimiz için, <code>i</code> indeksindeki adayı seçtikten sonra alt çağrıda yine <code>i</code> indeksinden devam ediyoruz. Bu daldan geri döndüğümüzde döngü <code>i++</code> ile bir sonraki adaya geçerek o elemandan vazgeçmiş oluyor.</p>
+      </div>
+      <div>
+        <h3>Erken budama (Pruning)</h3>
+        <p>Toplam hedefi aştığımızda (<code>remaining &lt; 0</code>) daha derine inmek yalnızca toplamı büyütür (çünkü tüm adaylar pozitiftir). Bu yüzden hemen <code>return</code> ile dalı kesip gereksiz aramaları önlüyoruz.</p>
+      </div>
+      <div>
+        <h3>Kopyalama detayı: <code>new List&lt;int&gt;(path)</code></h3>
+        <p><code>path</code> listesi tüm arama boyunca tek bir referans olarak paylaşılır ve sürekli değiştirilir. Sonuç bulunduğunda o anki durumu dondurmak için mutlaka yeni bir kopya oluşturup <code>result</code> içine ekleriz.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="walkthrough.js"></script>
+</body>
+</html>

@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<base target="_blank">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>En Sık K Eleman</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --ink: #141b26;
+  --muted: #5a6779;
+  --line: #d6dce6;
+  --accent: #3346c8;
+  --accent-ink: #ffffff;
+  --range: #e3e9fb;
+  --range-ink: #1d2a6b;
+  --probe: #c46f00;
+  --good: #17824a;
+  --good-soft: #dcf1e4;
+  --good-soft-ink: #145c36;
+  --bad: #b8402a;
+  --code-bg: #f7f8fb;
+  --code-hl: #dfe5fb;
+  --kw: #7a3aa8;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+    --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+    --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+    --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+  --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+  --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+  --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+  color-scheme: dark;
+}
+
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 40px;
+}
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; color: var(--muted); margin: 0; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 6vw, 54px); line-height: 1.05; letter-spacing: -.02em; margin: 8px 0 14px; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0; font-size: 17px; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: -.01em; margin: 0 0 18px; text-wrap: balance; }
+code { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+
+.idea { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; list-style: none; padding: 0; margin: 0; }
+.idea li { border-top: 2px solid var(--ink); padding-top: 12px; min-width: 0; }
+.idea .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.idea h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 2px 0 6px; text-wrap: balance; }
+.idea p { margin: 0; color: var(--muted); font-size: 15px; }
+@media (max-width: 760px) { .idea { grid-template-columns: 1fr; gap: 20px; } }
+
+.stepper { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+@media (max-width: 560px) { .stepper { padding: 16px; } }
+.stepper h2 { margin: 0; }
+.controls { display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+.inputs-group { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+input[type="text"], input[type="number"] { max-width: 100%; box-sizing: border-box; font: 600 17px var(--font-mono); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+#list { width: 16em; }
+#k-input { width: 4.5em; }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.err { margin: 0; font-size: 13px; color: var(--bad); }
+button { font: 500 14px var(--font-body); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.presets button { font-size: 13px; padding: 7px 10px; }
+.presets .mono { font-family: var(--font-mono); font-weight: 700; margin-right: 4px; }
+.presets button[aria-pressed="true"] { border-color: var(--accent); background: var(--range); color: var(--range-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; }
+#play { min-width: 7.5em; }
+
+.step { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+.step-meta { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--range); color: var(--range-ink); }
+.tag[data-kind="skip"] { background: var(--code-bg); color: var(--muted); border: 1px solid var(--line); }
+.tag[data-kind="ok"] { background: var(--good); color: var(--surface); }
+#step-text { margin: 8px 0 0; font-size: 16.5px; max-width: 78ch; min-height: 3.2em; }
+
+.panel-label { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+.panel-label .hint { font-weight: 400; }
+
+.viz-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 760px) { .viz-grid { grid-template-columns: 1fr; } }
+.viz-box { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.mini-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 34px; }
+.mini { min-width: 36px; height: 32px; padding: 0 8px; box-sizing: border-box; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; font: 600 14px var(--font-mono); border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.mini.now { border-color: var(--accent); background: var(--range); color: var(--range-ink); outline: 2px solid var(--accent); outline-offset: 1px; }
+.mini.done { color: var(--muted); background: var(--code-bg); }
+.mini.good { background: var(--good-soft); color: var(--good-soft-ink); border-color: var(--good); }
+.mini .sub { font-size: 11px; color: var(--muted); }
+
+.buckets-scroll { overflow-x: auto; padding: 4px 2px 6px; }
+.buckets-row { display: flex; gap: 10px; min-width: max-content; }
+.bucket {
+  min-width: 72px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg);
+  padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.bucket.cur { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 2px; background: var(--range); }
+.bucket.picked { border-color: var(--good); background: var(--good-soft); }
+.bucket-hdr { font: 700 12px var(--font-mono); color: var(--muted); border-bottom: 1px solid var(--line); width: 100%; text-align: center; padding-bottom: 4px; }
+.bucket-items { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; min-height: 32px; align-items: center; }
+.b-chip { padding: 3px 8px; border-radius: 6px; font: 700 14px var(--font-mono); background: var(--surface); border: 1px solid var(--line); color: var(--ink); }
+.b-chip.taken { background: var(--good); color: var(--surface); border-color: var(--good); }
+.empty-note { color: var(--muted); font-size: 13px; font-family: var(--font-mono); }
+
+.board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 28px; }
+@media (max-width: 880px) { .board { grid-template-columns: 1fr; } }
+.col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.vars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.var { border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; background: var(--bg); min-width: 0; }
+.var dt { font: 400 12px var(--font-mono); color: var(--muted); }
+.var dd { margin: 0; font: 600 17px var(--font-mono); font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; }
+.var.changed { border-color: var(--accent); background: var(--range); }
+.var.changed dd { color: var(--range-ink); }
+.code { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 0; overflow-x: auto; font: 13px/1.6 var(--font-mono); }
+@media (max-width: 560px) { .code { font-size: 12px; } }
+.ln { display: block; padding: 0 14px 0 11px; white-space: pre; border-left: 3px solid transparent; }
+.ln.hl { background: var(--code-hl); border-left-color: var(--accent); }
+.kw { color: var(--kw); }
+
+.why-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 40px; }
+.why-grid > div { border-top: 1px solid var(--line); padding-top: 12px; min-width: 0; }
+.why h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 0 0 6px; text-wrap: balance; }
+.why p { margin: 0; color: var(--muted); }
+.why b { color: var(--ink); }
+@media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; gap: 20px; } }
+.foot { display: flex; flex-wrap: wrap; gap: 6px 20px; border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; color: var(--muted); }
+.foot a { color: var(--accent); }
+
+code, .code, .b-chip, .mini, .var dd, input[type="text"], input[type="number"] { font-variant-ligatures: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">LeetCode 347 · Top K Frequent Elements · Medium</p>
+    <h1>En Sık K Eleman</h1>
+    <p class="lead">Sayıları frekanslarına göre sıralamak O(n log n) sürer. Bunun yerine indeksleri <b>tekrar sayısını (frekansı)</b> temsil eden kovalar (bucket) kurarak en sık geçen <code>k</code> elemanı tam <b>O(n)</b> zamanda nasıl topladığımızı adım adım izle.</p>
+  </header>
+
+  <section aria-labelledby="idea-h">
+    <h2 id="idea-h">Fikir üç adımda</h2>
+    <ol class="idea">
+      <li>
+        <span class="n">1</span>
+        <h3>Frekansları say</h3>
+        <p>Diziyi tek geçişte tarayıp her sayının kaç kez geçtiğini <code>count</code> sözlüğüne kaydederiz.</p>
+      </li>
+      <li>
+        <span class="n">2</span>
+        <h3>Frekans kovalarına yerleştir</h3>
+        <p>Bir sayı en fazla <code>n</code> kez geçebilir. Boyutu <code>n + 1</code> olan <code>buckets</code> dizisinde <code>f</code> kez geçen sayıları <code>buckets[f]</code> listesine atarız.</p>
+      </li>
+      <li>
+        <span class="n">3</span>
+        <h3>En yüksek kovadan topla</h3>
+        <p><code>f = n</code>'den geriye doğru yürürüz; dolu kovalardaki sayıları <code>result</code> dizisine ekleriz ve <code>k</code> elemana ulaşınca dururuz.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="stepper" aria-labelledby="st-h">
+    <h2 id="st-h">Adım adım izle</h2>
+
+    <div class="controls">
+      <div class="row">
+        <div class="inputs-group">
+          <div class="field">
+            <label for="list">nums (virgülle ayır, en fazla 10 sayı)</label>
+            <input id="list" type="text" value="1, 1, 1, 2, 2, 3" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="k-input">k</label>
+            <input id="k-input" type="number" min="1" max="10" value="2">
+          </div>
+        </div>
+        <div class="nav">
+          <button type="button" id="reset">Baştan</button>
+          <button type="button" id="prev-btn">← Geri</button>
+          <button type="button" id="next-btn" class="primary">İleri →</button>
+          <button type="button" id="play">▶ Oynat</button>
+        </div>
+      </div>
+      <div class="presets" role="group" aria-label="Hazır örnekler">
+        <button type="button" data-l="1, 1, 1, 2, 2, 3" data-k="2"><span class="mono">[1,1,1,2,2,3], k=2</span></button>
+        <button type="button" data-l="4, 4, 4, 6, 6, 2, 2, 2, 2" data-k="2"><span class="mono">[4,4,4,6,6,2,2,2,2], k=2</span></button>
+        <button type="button" data-l="5, 3, 1, 1, 1, 3, 7, 1" data-k="2"><span class="mono">[5,3,1,1,1,3,7,1], k=2</span></button>
+        <button type="button" data-l="9" data-k="1"><span class="mono">[9], k=1</span>tek eleman</button>
+      </div>
+      <p class="err" id="list-err" hidden>1 ile 10 arasında tam sayı girin ve k değeri benzersiz eleman sayısını aşmasın.</p>
+    </div>
+
+    <div class="step" aria-live="polite">
+      <div class="step-meta"><span id="step-count"></span><span id="step-tag" class="tag"></span></div>
+      <p id="step-text"></p>
+    </div>
+
+    <div class="viz-grid">
+      <div class="viz-box">
+        <p class="panel-label">nums (girdi dizisi)</p>
+        <div class="mini-row" id="nums-row"></div>
+      </div>
+      <div class="viz-box">
+        <p class="panel-label">count (sayı → frekans)</p>
+        <div class="mini-row" id="count-row"></div>
+      </div>
+    </div>
+
+    <div>
+      <p class="panel-label">buckets[1..n] <span class="hint">(indeks = frekans; sağdan sola doğru taranır)</span></p>
+      <div class="buckets-scroll"><div class="buckets-row" id="buckets-row"></div></div>
+    </div>
+
+    <div class="viz-box">
+      <p class="panel-label">result (en sık k eleman)</p>
+      <div class="mini-row" id="result-row"></div>
+    </div>
+
+    <div class="board">
+      <div class="col">
+        <p class="panel-label">Değişkenler</p>
+        <dl class="vars" id="vars"></dl>
+      </div>
+      <div class="col">
+        <p class="panel-label">Kod (Solution.cs)</p>
+        <div class="code" id="code" role="region" aria-label="C# kodu" tabindex="0"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="why" aria-labelledby="why-h">
+    <h2 id="why-h">Neden bu kadar verimli?</h2>
+    <div class="why-grid">
+      <div>
+        <h3>Sıralama sınırını aşmak: O(n)</h3>
+        <p>Karşılaştırma tabanlı sıralamalar en iyi <b>O(n log n)</b> zamanda çalışır. Ancak bir sayının frekansı <code>1</code> ile <code>n</code> arasında bir tam sayı olmak zorundadır. Bu üst sınırı bildiğimiz için <b>Kova Sıralaması (Bucket Sort)</b> kullanarak karşılaştırma yapmadan O(n) zamanda sonuca ulaşırız.</p>
+      </div>
+      <div>
+        <h3>Min-Heap ile farkı nedir?</h3>
+        <p>Boyutu <code>k</code> olan bir öncelik kuyruğu (Min-Heap) kullanmak <b>O(n log k)</b> sürer. <code>k</code> çok küçük olduğunda heap de çok hızlıdır; fakat <code>k</code> değeri <code>n</code>'e yaklaştığında kova dizisi yaklaşımı sabit çarpanı küçük ve net bir <b>O(n)</b> sunar.</p>
+      </div>
+      <div>
+        <h3>Aynı frekanslı birden fazla sayı olursa?</h3>
+        <p>Her <code>buckets[f]</code> hücresi tek bir sayı değil, bir <code>List&lt;int&gt;</code> tutar. Dolayısıyla aynı frekansa sahip tüm sayılar aynı kovada çarpışmadan birikir ve sırayla sonuca eklenir.</p>
+      </div>
+      <div>
+        <h3>Bellek kullanımı</h3>
+        <p>Hem <code>count</code> sözlüğü hem de <code>buckets</code> dizisi en fazla <code>n</code> eleman barındırır. Bu nedenle ek bellek karmaşıklığı <b>O(n)</b>'dir.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="walkthrough.js"></script>
+</body>
+</html>

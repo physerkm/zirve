@@ -34,7 +34,7 @@ describe('adım adım anlatımlar', () => {
 
   it('adresleri üretir', () => {
     expect(hasWalkthrough('min-yigin')).toBe(true);
-    expect(hasWalkthrough('iki-sayinin-toplami')).toBe(false);
+    expect(hasWalkthrough('olmayan-problem')).toBe(false);
     expect(walkthroughFileUrl('min-yigin')).toBe('/walkthroughs/min-yigin/index.html');
     expect(walkthroughPath('min-yigin')).toBe('/problems/min-yigin/adim-adim');
   });

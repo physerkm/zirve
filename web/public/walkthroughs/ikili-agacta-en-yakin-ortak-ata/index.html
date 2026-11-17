@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<base target="_blank">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>İkili Ağaçta En Yakın Ortak Ata</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --ink: #141b26;
+  --muted: #5a6779;
+  --line: #d6dce6;
+  --accent: #3346c8;
+  --accent-ink: #ffffff;
+  --range: #e3e9fb;
+  --range-ink: #1d2a6b;
+  --probe: #c46f00;
+  --good: #17824a;
+  --good-soft: #dcf1e4;
+  --good-soft-ink: #145c36;
+  --bad: #b8402a;
+  --code-bg: #f7f8fb;
+  --code-hl: #dfe5fb;
+  --kw: #7a3aa8;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+    --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+    --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+    --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+  --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+  --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+  --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+  color-scheme: dark;
+}
+
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 40px;
+}
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; color: var(--muted); margin: 0; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 6vw, 54px); line-height: 1.05; letter-spacing: -.02em; margin: 8px 0 14px; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0; font-size: 17px; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: -.01em; margin: 0 0 18px; text-wrap: balance; }
+code { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+
+.idea { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; list-style: none; padding: 0; margin: 0; }
+.idea li { border-top: 2px solid var(--ink); padding-top: 12px; min-width: 0; }
+.idea .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.idea h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 2px 0 6px; text-wrap: balance; }
+.idea p { margin: 0; color: var(--muted); font-size: 15px; }
+@media (max-width: 760px) { .idea { grid-template-columns: 1fr; gap: 20px; } }
+
+.stepper { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+@media (max-width: 560px) { .stepper { padding: 16px; } }
+.stepper h2 { margin: 0; }
+.controls { display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+.field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+input[type="text"] { width: 14em; max-width: 100%; box-sizing: border-box; font: 600 18px var(--font-mono); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.err { margin: 0; font-size: 13px; color: var(--bad); }
+button { font: 500 14px var(--font-body); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.presets button { font-size: 13px; padding: 7px 10px; }
+.presets .mono { font-family: var(--font-mono); font-weight: 700; margin-right: 4px; }
+.presets button[aria-pressed="true"] { border-color: var(--accent); background: var(--range); color: var(--range-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; }
+#play { min-width: 7.5em; }
+
+.step { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+.step-meta { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--range); color: var(--range-ink); }
+.tag[data-kind="skip"] { background: var(--code-bg); color: var(--muted); border: 1px solid var(--line); }
+.tag[data-kind="ok"] { background: var(--good); color: var(--surface); }
+#step-text { margin: 8px 0 0; font-size: 16.5px; max-width: 78ch; min-height: 3.2em; }
+
+.panel-label { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+.panel-label .hint { font-weight: 400; }
+
+.tree-scroll { overflow-x: auto; padding: 8px 4px; }
+.tree-stage { position: relative; width: 640px; height: 270px; margin: 0 auto; }
+.tree-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.tree-edge { stroke: var(--line); stroke-width: 2; }
+.tree-node {
+  position: absolute; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.node-ret {
+  min-height: 16px; font: 600 11px/1.2 var(--font-mono); color: var(--good); white-space: nowrap;
+}
+.node-ret.null { color: var(--muted); }
+.chip {
+  min-width: 44px; height: 42px; padding: 0 8px; box-sizing: border-box; border-radius: 10px;
+  display: grid; place-items: center;
+  font: 700 17px var(--font-mono); font-variant-numeric: tabular-nums;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  transition: background-color .2s, color .2s, border-color .2s;
+}
+.chip[data-state="target"] { border-color: var(--probe); border-width: 2px; }
+.chip[data-state="visited"] { background: var(--range); color: var(--range-ink); border-color: transparent; }
+.chip[data-state="lca"] { background: var(--good-soft); color: var(--good-soft-ink); border-color: var(--good); border-width: 2px; }
+.chip.cur { outline: 2px solid var(--accent); outline-offset: 3px; }
+.node-sub { min-height: 15px; font: 700 10px/1.2 var(--font-mono); color: var(--probe); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 8px; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--line); }
+.sw.cur { background: transparent; border: 2px solid var(--accent); }
+.sw.target { background: transparent; border: 2px solid var(--probe); }
+.sw.visited { background: var(--range); border-color: transparent; }
+.sw.lca { background: var(--good-soft); border: 2px solid var(--good); }
+
+.mini-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 32px; }
+.mini { min-width: 34px; height: 30px; padding: 0 8px; box-sizing: border-box; border-radius: 7px; display: grid; place-items: center; font: 600 13px var(--font-mono); border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.mini.now { border-color: var(--accent); background: var(--range); color: var(--range-ink); }
+.rows { display: flex; flex-direction: column; gap: 10px; }
+.rows .lbl { font: 600 12px var(--font-mono); color: var(--muted); margin-bottom: 4px; }
+.empty-note { color: var(--muted); font-size: 14px; margin: 0; }
+
+.board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 28px; }
+@media (max-width: 880px) { .board { grid-template-columns: 1fr; } }
+.col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.vars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.var { border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; background: var(--bg); min-width: 0; }
+.var dt { font: 400 12px var(--font-mono); color: var(--muted); }
+.var dd { margin: 0; font: 600 17px var(--font-mono); font-variant-numeric: tabular-nums; }
+.var.changed { border-color: var(--accent); background: var(--range); }
+.var.changed dd { color: var(--range-ink); }
+.code { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 0; overflow-x: auto; font: 13px/1.6 var(--font-mono); }
+@media (max-width: 560px) { .code { font-size: 12px; } }
+.ln { display: block; padding: 0 14px 0 11px; white-space: pre; border-left: 3px solid transparent; }
+.ln.hl { background: var(--code-hl); border-left-color: var(--accent); }
+.kw { color: var(--kw); }
+
+.why-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 40px; }
+.why-grid > div { border-top: 1px solid var(--line); padding-top: 12px; min-width: 0; }
+.why h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 0 0 6px; text-wrap: balance; }
+.why p { margin: 0; color: var(--muted); }
+.why b { color: var(--ink); }
+@media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; gap: 20px; } }
+.foot { display: flex; flex-wrap: wrap; gap: 6px 20px; border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; color: var(--muted); }
+.foot a { color: var(--accent); }
+
+code, .code, .chip, .mini, .var dd, input[type="text"] { font-variant-ligatures: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">LeetCode 236 · Lowest Common Ancestor of a Binary Tree · Medium</p>
+    <h1>İkili Ağaçta En Yakın Ortak Ata</h1>
+    <p class="lead">Sırasız bir ikili ağaçta <code>p</code> ve <code>q</code> düğümlerinin en yakın ortak atasını (LCA) aşağıdan yukarıya bilgi taşıyan tek bir DFS geçişiyle nasıl bulduğumuzu adım adım izle.</p>
+  </header>
+
+  <section aria-labelledby="idea-h">
+    <h2 id="idea-h">Fikir üç adımda</h2>
+    <ol class="idea">
+      <li>
+        <span class="n">1</span>
+        <h3>Hedefe çarpınca dur</h3>
+        <p>İndiğimiz düğüm <code>null</code> ise veya değeri <code>p</code> ya da <code>q</code>'ya eşitse daha derine inmeyip doğrudan o düğümü yukarı döndürürüz.</p>
+      </li>
+      <li>
+        <span class="n">2</span>
+        <h3>Sol ve sağ alt ağaca sor</h3>
+        <p>Özyinelemeli olarak sol (<code>left</code>) ve sağ (<code>right</code>) alt ağaçlarda hedeflerden herhangi birinin bulunup bulunmadığını öğreniriz.</p>
+      </li>
+      <li>
+        <span class="n">3</span>
+        <h3>İki taraf da doluysa birleşme noktasıdır</h3>
+        <p>Hem <code>left</code> hem <code>right</code> dolu döndüyse hedefler ilk kez bu düğümde kavuşmuştur (LCA). Tek taraf doluysa onu yukarı iletiriz.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="stepper" aria-labelledby="st-h">
+    <h2 id="st-h">Adım adım izle</h2>
+
+    <div class="controls">
+      <div class="row">
+        <div class="field">
+          <label for="pair-input">Hedef düğümler p, q (ağaçtaki iki farklı değer)</label>
+          <input id="pair-input" type="text" value="5, 1" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="nav">
+          <button type="button" id="reset">Baştan</button>
+          <button type="button" id="prev-btn">← Geri</button>
+          <button type="button" id="next-btn" class="primary">İleri →</button>
+          <button type="button" id="play">▶ Oynat</button>
+        </div>
+      </div>
+      <div class="presets" role="group" aria-label="Hazır örnekler">
+        <button type="button" data-p="5, 1"><span class="mono">p=5, q=1</span>farklı kollarda (LCA=3)</button>
+        <button type="button" data-p="5, 4"><span class="mono">p=5, q=4</span>biri diğerinin atası (LCA=5)</button>
+        <button type="button" data-p="6, 4"><span class="mono">p=6, q=4</span>sol alt ağaçta (LCA=5)</button>
+        <button type="button" data-p="7, 4"><span class="mono">p=7, q=4</span>kardeş düğümler (LCA=2)</button>
+      </div>
+      <p class="err" id="pair-err" hidden>Ağaçta bulunan iki farklı düğüm değeri girin (3, 5, 1, 6, 2, 0, 8, 7, 4 arasından; örn. 6, 4).</p>
+    </div>
+
+    <div class="step" aria-live="polite">
+      <div class="step-meta"><span id="step-count"></span><span id="step-tag" class="tag"></span></div>
+      <p id="step-text"></p>
+    </div>
+
+    <div class="rows">
+      <div><div class="lbl">Çağrı yığını (aktif FindLca çağrıları)</div><div class="mini-row" id="stack-row"></div></div>
+    </div>
+
+    <div>
+      <p class="panel-label">İkili ağaç ve alt ağaçlardan dönen değerler <span class="hint">(düğümün üstündeki ok, o alt ağaçtan dönen sonucu gösterir)</span></p>
+      <div class="tree-scroll">
+        <div class="tree-stage" id="tree-stage"></div>
+      </div>
+      <div class="legend">
+        <span><i class="sw cur"></i>şu an incelenen düğüm</span>
+        <span><i class="sw target"></i>hedef düğüm (p veya q)</span>
+        <span><i class="sw visited"></i>döndürülen / taranan düğüm</span>
+        <span><i class="sw lca"></i>bulunan en yakın ortak ata (LCA)</span>
+      </div>
+    </div>
+
+    <div class="board">
+      <div class="col">
+        <p class="panel-label">Değişkenler (aktif çerçeve)</p>
+        <dl class="vars" id="vars"></dl>
+      </div>
+      <div class="col">
+        <p class="panel-label">Kod (FindLca metodu)</p>
+        <div class="code" id="code" role="region" aria-label="C# kodu" tabindex="0"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="why" aria-labelledby="why-h">
+    <h2 id="why-h">Neden bu kadar verimli?</h2>
+    <div class="why-grid">
+      <div>
+        <h3>Tek geçişte O(n) zaman</h3>
+        <p>Her düğümden kök-hedef yolunu ayrı ayrı kaydedip karşılaştırmak yerine tek bir DFS taramasıyla hem arama hem birleştirme yapılır. Her düğüme en fazla bir kez uğranır: <b>O(n) zaman</b> ve çağrı yığını için <b>O(h) alan</b>.</p>
+      </div>
+      <div>
+        <h3>Erken dönüş neden doğru?</h3>
+        <p>Örnek 2'de (<code>p=5, q=4</code>) düğüm 5'e ulaştığımızda altındaki 4'ü aramadan hemen 5 döndürürüz. Çünkü 4 eğer 5'in alt ağacındaysa ortak ata zaten 5'tir; 4 başka bir koldaysa da üstteki bir düğümde 5 ile 4'ün dalları birleşecektir.</p>
+      </div>
+      <div>
+        <h3>Yukarıya taşınan bilgi</h3>
+        <p><code>return left ?? right;</code> satırı iki farklı görevi tek ifadede çözer: henüz tek hedef bulunduysa o hedefin referansını yukarı taşır; alt ağaçta LCA çoktan bulunduysa bu kez LCA'nın kendisini köke kadar bozulmadan iletir.</p>
+      </div>
+      <div>
+        <h3>BST'den farkı nedir?</h3>
+        <p>İkili Arama Ağacında (LeetCode 235) düğüm değerlerine bakarak yalnız tek bir kola inebilir ve O(h) zamanda çözebiliriz. Standart ikili ağaçta ise sıralama özelliği olmadığından her iki alt ağacı da sorgulamak zorunludur.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <a href="https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-tree/">Soru: LeetCode 236</a>
+  </footer>
+</div>
+
+<script src="walkthrough.js"></script>
+</body>
+</html>
