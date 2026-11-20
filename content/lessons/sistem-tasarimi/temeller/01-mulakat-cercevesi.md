@@ -51,7 +51,7 @@ Ezberde tutmaya değer sayılar:
 | SSD'den rastgele okuma | ~0,1 milisaniye |
 | Kıtalar arası ağ gidiş dönüşü | ~150 milisaniye |
 
-Zirve (peak) yükü ortalamanın birkaç katı kabul edin. Tahmine fazla zaman harcamayın; tasarım kararını etkilemeyen hesap puan getirmez.
+Zirve (peak) yükü ortalamanın birkaç katı kabul edin. Tahmine fazla zaman harcamayın; tasarım kararını etkilemeyen hesap puan getirmez. Bilinmesi gereken sayıların tamamı ve uygulamalı örnekler [Kapasite Tahmini](/tracks/sistem-tasarimi/kapasite-tahmini) dersinde.
 
 ## 3. API'yi tanımlayın (3 dk)
 
@@ -126,3 +126,18 @@ Tasarımı iki cümleyle özetleyin, bilinen zayıf noktaları ve "daha fazla za
 1. Gereksinimler (işlevsel ve işlevsel olmayan) → 2. kapasite → 3. API → 4. veri modeli → 5. üst düzey tasarım → 6. derinleşme → 7. toparlama.
 2. Tasarımı gereksinimler ve sayılar yönlendirir; her bileşen bir gerekçeyle eklenir.
 3. Puanı getiren çizim değil, ödünleşimleri görüp karar verebilmenizdir.
+
+## Seviyeye göre beklenti
+
+| Seviye | Görüşmecinin beklediği |
+| --- | --- |
+| Mid-level | Çalışan, makul bir üst düzey tasarım; temel yapı taşlarını doğru yerde kullanmak; görüşmecinin yönlendirmesiyle bir iki konuda derinleşmek |
+| Senior | Görüşmeyi **siz** yönetirsiniz; darboğazları kendiniz bulur, alternatifleri karşılaştırır, en az iki konuda derinleşirsiniz (tutarlılık, hata durumları, ölçek) |
+| Staff ve üstü | Belirsizliği daraltmak, işletim ve maliyet (izleme, dağıtım, ekip sınırları) ve sistemin yıllar içindeki evrimi; derinleşmede gerçek dünya deneyimi |
+
+## Bu yolda sırada ne var
+
+- Sayılar: [Kapasite Tahmini](/tracks/sistem-tasarimi/kapasite-tahmini) ve [Ağ, İletişim ve API Tasarımı](/tracks/sistem-tasarimi/ag-ve-api-tasarimi).
+- Yapı taşları: önbellek, kuyruk, veritabanları, tutarlılık, dayanıklılık, arama ve konum, akış işleme ve hepsini bağlayan [Tekrarlayan Tasarım Kalıpları](/tracks/sistem-tasarimi/tekrarlayan-tasarim-kaliplari).
+- Bu çerçeveyle uçtan uca çözülmüş dokuz klasik soru: URL kısaltıcıdan dağıtık anahtar–değer deposuna.
+- Kurarak öğrenmek için beş proje: [Proje Yol Haritası](/tracks/sistem-tasarimi/proje-yol-haritasi).

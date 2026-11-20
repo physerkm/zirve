@@ -4,7 +4,7 @@ Bu belge, projenin başından bu yana yapılan her şeyi tek yerde toplar: ne in
 
 - **Konum:** `C:\Users\HP\Desktop\github\zirve`
 - **GitHub:** https://github.com/physerkm/zirve (açık depo, `main` dalı)
-- **Son güncelleme:** 17 Kasım 2026
+- **Son güncelleme:** 21 Kasım 2026
 - **Durum:** Platform uçtan uca çalışıyor ve testleri geçiyor. İçerik sınırlı. Docker dağıtımı yazıldı ama hiç çalıştırılmadı. Proje Git ile sürümleniyor (`main` dalı).
 
 ---
@@ -23,7 +23,7 @@ C#, .NET, React, JavaScript, TypeScript, algoritmalar ve sistem tasarımı konul
 | Runner (kod çalıştırma servisi) | Tamam, testli |
 | Frontend (React 19) | Tamam; lint, tip denetimi, testler ve derleme temiz |
 | Yerel geliştirme (`npm run dev`) | Çalışıyor (Docker gerektirmez) |
-| İçerik | 50 ders, 9 quiz (90 soru), 171 problem (hepsinde adım adım anlatım); 12 yolun hepsi yayında |
+| İçerik | 73 ders, 12 quiz (126 soru), 171 problem (hepsinde adım adım anlatım); 12 yolun hepsi yayında |
 | Docker / nginx / CI dosyaları | Yazıldı, **hiç çalıştırılmadı** |
 | Sürüm kontrolü ve CI | GitHub'da (`physerkm/zirve`); CI'ın iki işi de yeşil |
 
@@ -33,7 +33,7 @@ C#, .NET, React, JavaScript, TypeScript, algoritmalar ve sistem tasarımı konul
 | --- | --- | --- |
 | Mülakat Hazırlığı | 4 | — |
 | Algoritmalar ve Veri Yapıları | 7 | 1 (12 soru) |
-| Sistem Tasarımı | 4 | 1 (10 soru) |
+| Sistem Tasarımı | 27 | 4 (46 soru) |
 | C# | 3 | 1 (10 soru) |
 | .NET ve ASP.NET Core | 1 | 1 (8 soru) |
 | Pratik Projesi: Kütüphane Yönetim API'si | 18 | — |
@@ -45,6 +45,8 @@ C#, .NET, React, JavaScript, TypeScript, algoritmalar ve sistem tasarımı konul
 | Bilgisayar Bilimi Temelleri | 4 | 1 (12 soru) |
 
 Veritabanları dersleri: SQL sorguları ve join'ler; indeksler ve sorgu planları; transaction'lar ve izolasyon seviyeleri; veri modelleme ve normalizasyon. Bilgisayar Bilimi Temelleri dersleri: süreçler, thread'ler ve bellek; ağ temelleri (TCP, TLS, HTTP); SOLID ilkeleri; tasarım desenleri.
+
+Sistem Tasarımı (21 Kasım 2026): dört bölüm. Temeller (4): mülakat çerçevesi, ölçekleme, kapasite tahmini, ağ ve API tasarımı. Yapı Taşları (7): önbellek ve kuyruklar, veri depolama, tutarlılık ve uzlaşma, dayanıklılık ve gözlemlenebilirlik, arama/konum/büyük dosyalar, akış işleme ve olasılıksal yapılar, tekrarlayan tasarım kalıpları. Örnek Tasarımlar (9): URL kısaltıcı, hız sınırlayıcı, haber akışı, sohbet, video platformu, Uber, Ticketmaster, web tarayıcı, Dynamo tarzı anahtar–değer deposu. Uygulamalı Projeler ve Kaynaklar (7): proje yol haritası (Gossip Glomers, MIT 6.5840, CodeCrafters, PingCAP talent-plan), beş proje (URL kısaltıcı + k6 yük testi, dağıtık hız sınırlayıcı, outbox ve saga, kendi Redis'in, Raft KV) ve seçilmiş kaynaklar. İlk quizde doğru şıkların 8/10'u 2. sıradaydı; şıkların yeri değiştirildi.
 
 Pratik projesi (16 Kasım 2026): `Kutuphane-API-Uygulama-Rehberi.docx` belgesinden üretilen, kod içermeyen bir uygulama rehberi. Üç bölüm: Hazırlık (5), Fazlar (Faz 0–8, 9 ders), Başvuru (4). Belgedeki kişiye ve makineye özgü ifadeler (klasör yolu, kurulu araç envanteri) genelleştirildi; kabul kriterleri Markdown görev listesi olarak yazıldı.
 
@@ -319,7 +321,7 @@ Zirve.Runner  (:5081)
    - TypeScript: koşullu ve eşlenmiş tipler, `infer`, şablon değişmez tipleri.
    - C#: bellek yönetimi ve GC, eşzamanlılık (kilitler, `Channel`, eşzamanlı koleksiyonlar), modern C# (desen eşleme, `Span<T>`).
    - JavaScript: tipler ve dönüşümler, prototipler, modüller, bellek sızıntıları.
-3. **Sistem tasarımı örnekleri:** haber akışı, sohbet, hız sınırlayıcı, bildirim sistemi, dağıtık önbellek; ayrıca tutarlılık ve dağıtık işlemler dersi.
+3. ~~**Sistem tasarımı örnekleri.**~~ **Tamamlandı (21 Kasım 2026):** 23 yeni ders (8 örnek tasarım, 6 yapı taşı, 2 temel, 7 proje ve kaynak dersi) ve 3 yeni quiz. Kalanlar: bildirim sistemi, otomatik tamamlama, ödeme sistemi, Google Docs (OT/CRDT).
 4. **Algoritma dersleri:** graflar (ayrı ders), heap, geri izleme, açgözlü yöntemler, aralıklar.
 5. ~~**Yeni problemler.**~~ **Tamamlandı (17 Kasım 2026):** `leetcode.pdf`'teki 170 sorunun tamamı eklendi (toplam 171 problem, 25'i zor); hepsinin C# ve TypeScript çözümü ve adım adım anlatımı var.
 6. **Yeni quizler:** Mülakat Hazırlığı yolu için ve çok dersli yollarda bölüm başına birer quiz.

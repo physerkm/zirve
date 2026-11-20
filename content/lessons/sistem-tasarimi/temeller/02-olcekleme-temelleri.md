@@ -116,3 +116,5 @@ Seri bağlı bileşenlerin erişilebilirliği **çarpılır**: her biri %99,9 ol
 - Yazma yükü ve veri hacmi: parçalama gerektirir; pahalıdır, son çaredir.
 - CAP: bölünme anında tutarlılık ile erişilebilirlik arasında, veri türüne göre seçim yaparsınız.
 - Her ölçekleme adımı bir karmaşıklık bedeli öder; gereksinim yoksa eklemeyin.
+
+Kopyalama modelleri (tek liderli, çok liderli, lidersiz), quorum, parçalama stratejileri ve sıcak anahtarlar [Veri Depolama](/tracks/sistem-tasarimi/veri-depolama-ve-veritabani-secimi) dersinde; tutarlılık modelleri ve PACELC [Tutarlılık, Uzlaşma ve Dağıtık İşlemler](/tracks/sistem-tasarimi/tutarlilik-uzlasma-ve-dagitik-islemler) dersinde ayrıntılı işlenir.
