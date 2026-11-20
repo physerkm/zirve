@@ -1,0 +1,136 @@
+title: İletişim, Dayanıklılık ve Özel Yapı Taşları
+description: Kapasite hesabı, API ve gerçek zamanlı iletişim, yeniden deneme ve devre kesici, SLO, arama ve konum, büyük dosyalar, akış işleme ve olasılıksal veri yapıları.
+level: advanced
+timeLimitMinutes: 20
+questions:
+  - q: "Günde 100 milyon fotoğraf yükleniyor, fotoğraf başına ortalama 500 KB. Günlük ham medya depolaması yaklaşık ne kadardır?"
+    options:
+      - "~5 TB"
+      - "~50 GB"
+      - "~50 TB"
+      - "~500 TB"
+    answer: 3
+    difficulty: easy
+    why: |
+      10⁸ × 500 KB = 5 × 10¹⁰ KB = 5 × 10¹³ bayt = 50 TB. Yılda ~18 PB eder. Çıkarım: medya veritabanına değil nesne deposuna gider; meta veri ayrı hesaplanır. Üslerle çalışmak (10⁸ × 5 × 10⁵ bayt) hesabı saniyeler içinde yapmanızı sağlar.
+
+  - q: "Canlı skor güncellemelerini tarayıcıya iten, istemciden sunucuya mesaj gerektirmeyen bir özellik için en basit uygun teknik hangisidir?"
+    options:
+      - "Server-Sent Events (SSE)"
+      - "WebRTC"
+      - "Her saniye kısa yoklama (polling)"
+      - "gRPC çift yönlü akış"
+    answer: 1
+    difficulty: medium
+    why: |
+      Akış tek yönlüyse (sunucu → istemci) SSE en basit seçimdir: sıradan bir HTTP yanıtı akar, tarayıcı kopan bağlantıyı kendiliğinden yeniden kurar ve mevcut HTTP altyapısıyla (vekiller, kimlik doğrulama) uyumludur. WebSocket iki yönlü iletişim gerektiğinde (sohbet, oyun) gerekir. Kısa yoklama israflıdır ve gecikme ekler; WebRTC eşler arası ses/görüntü içindir.
+
+  - q: "Sonsuz kaydırmalı bir akış için `?offset=10000&limit=20` yerine imleçle (cursor) sayfalama önerilmesinin nedenleri nelerdir? (Birden fazla doğru yanıt vardır.)"
+    options:
+      - "Büyük ofsetlerde veritabanı atlanan satırları da okuduğu için sorgu yavaşlar; imleç indeksle sabit sürede çalışır."
+      - "İmleç, kullanıcının rastgele bir sayfaya (ör. 500. sayfa) atlamasını kolaylaştırır."
+      - "Sayfalar arasında yeni kayıt eklendiğinde ofsette tekrar ya da atlama olur; imleç son görülen kayda göre devam ettiği için bunu önler."
+      - "İmleç kullanınca indeks gerekmez."
+    answer: [1, 3]
+    difficulty: medium
+    why: |
+      `OFFSET 10000` veritabanının 10.020 satırı okuyup 10.000'ini atması demektir. İmleç son görülen sıralama anahtarını taşır (`WHERE (created_at, id) < (...)`) ve indeksle doğrudan o noktadan başlar. Araya yeni kayıt girdiğinde ofset kayar; imleç kaymaz. Bedeli: rastgele sayfaya atlanamaz ve sıralama sütunlarında indeks gerekir.
+
+  - q: "Üç katmanlı bir çağrı zincirinde (ağ geçidi → servis A → servis B) her katman başarısız isteği **3 kez** yeniden deniyor. B tamamen çökmüşse, tek bir kullanıcı isteği B'ye en fazla kaç istek olarak ulaşabilir?"
+    options:
+      - "3"
+      - "9"
+      - "27"
+      - "81"
+    answer: 3
+    difficulty: hard
+    why: |
+      Her katman toplam 3 deneme yapıyorsa çarpan katman başına 3'tür: ağ geçidinin her denemesi A'da 3 deneme, A'nın her denemesi B'ye 3 istek. 3 × 3 × 3 = 27. Bu "yeniden deneme fırtınası" zorlanan bir servisi bitirir. Çözümler: yeniden denemeyi tek bir katmanda yapmak, yeniden deneme bütçesi, üstel geri çekilme + jitter ve devre kesici.
+
+  - q: "Devre kesicinin **yarı açık** (half-open) durumunun amacı nedir?"
+    options:
+      - "Bütün isteklerin yarısını reddetmek"
+      - "Hatalı istekleri yarı hızla yeniden denemek"
+      - "Yalnızca okuma isteklerini geçirmek"
+      - "Bekleme süresinden sonra birkaç deneme isteği geçirerek bağımlılığın toparlanıp toparlanmadığını sınamak"
+    answer: 4
+    difficulty: easy
+    why: |
+      Kapalı durumda istekler geçer ve hatalar sayılır; hata eşiği aşılınca devre açılır ve istekler bağımlılığa hiç gitmeden reddedilir. Bekleme süresi dolunca devre yarı açığa geçer: birkaç deneme isteği gönderilir. Başarılılarsa devre kapanır, başarısızlarsa yeniden açılır. Bu, çökmüş bir bağımlılığı istek yağmuruna tutmadan toparlanmasını beklemenin yoludur.
+
+  - q: "Kubernetes'te bir servisin **canlılık** (liveness) denetimine veritabanı bağlantı kontrolü eklemek neden tehlikelidir?"
+    options:
+      - "Canlılık denetimleri yalnızca HTTP 200 kabul eder."
+      - "Veritabanı yavaşladığında bütün örnekler aynı anda başarısız sayılıp yeniden başlatılır; bu, kısa bir yavaşlamayı tam bir kesintiye çevirir."
+      - "Veritabanı bağlantısı canlılık denetiminde açılamaz."
+      - "Tehlikeli değildir; önerilen uygulamadır."
+    answer: 2
+    difficulty: medium
+    why: |
+      Canlılık denetimi "bu süreç kendini toparlayamayacak durumda mı?" sorusudur ve başarısızlığı yeniden başlatmaya yol açar. Bağımlılık sorunu sürecin sorunu değildir: yeniden başlatmak çözmez, üstelik bütün örnekler aynı anda yeniden başlar. Bağımlılık durumu en fazla hazırlık (readiness) denetimine yansıtılır (o da dikkatle), canlılık denetimi süreç içi sağlığı ölçer.
+
+  - q: "30 günlük pencerede %99,9 erişilebilirlik SLO'su yaklaşık ne kadar kesintiye (hata bütçesine) izin verir?"
+    options:
+      - "~4 dakika"
+      - "~43 dakika"
+      - "~7 saat"
+      - "~3 gün"
+    answer: 2
+    difficulty: easy
+    why: |
+      30 gün = 43.200 dakika; %0,1'i ≈ 43 dakika. Hata bütçesi, güvenilirlik ile geliştirme hızı arasındaki dengeyi yönetir: bütçe varken hızlı yayın yapılır, tükenince ekip güvenilirliğe odaklanır. %99,99 için bu süre ~4 dakikaya düşer.
+
+  - q: "Geohash ile \"yakınımdaki restoranlar\" sorgusunda kullanıcının yalnızca kendi hücresine bakmak neden yetmez?"
+    options:
+      - "Geohash yalnızca enlem kodlar."
+      - "Hücreler çok büyük olduğu için sonuç çok fazla olur."
+      - "Kullanıcı hücre kenarına yakınsa en yakın restoran komşu hücrede olabilir; bu yüzden 8 komşu hücre de taranır."
+      - "Geohash değerleri her sorguda değişir."
+    answer: 3
+    difficulty: medium
+    why: |
+      Geohash dünyayı sabit hücrelere böler; ortak öneki uzun olan noktalar yakındır ama tersi her zaman doğru değildir: sınırın iki yanındaki iki nokta birbirine çok yakın olduğu halde farklı hücrelerdedir. Standart sorgu, kullanıcının hücresi + 8 komşusunu tarar, sonra gerçek mesafeye göre süzer ve sıralar.
+
+  - q: "Kullanıcıların 2 GB'lık videoları yüklediği bir sistemde dosyayı uygulama sunucusundan geçirmek yerine **ön imzalı URL** ile doğrudan nesne deposuna yüklemenin faydası nedir?"
+    options:
+      - "Uygulama sunucusunun bant genişliği ve belleği büyük dosyalarla meşgul olmaz; yükleme nesne deposunun ölçeğinden yararlanır, sunucu yalnızca yetki ve meta veriyi yönetir."
+      - "Dosyalar otomatik olarak şifrelenir ve sıkıştırılır."
+      - "Video dönüştürme gereksiz hale gelir."
+      - "Ön imzalı URL'ler süresizdir, böylece kullanıcı istediği zaman yükleyebilir."
+    answer: 1
+    difficulty: medium
+    why: |
+      Ön imzalı URL, belirli bir nesneye belirli bir süre boyunca belirli bir işlemi yapma izni veren imzalı bir bağlantıdır. Uygulama yetki ve kota denetimini yapıp URL'yi verir; dosya doğrudan nesne deposuna gider. Parçalı (multipart) yüklemeyle birleşince paralel ve kaldığı yerden devam edebilen yükleme elde edilir. URL'ler kısa ömürlüdür; süresiz olmaları güvenlik açığı olurdu.
+
+  - q: "Bir web tarayıcı, 10 milyar URL'yi \"daha önce gördüm mü?\" diye denetlemek için Bloom süzgeci kullanıyor. Bloom süzgecinin hangi özelliği bunu kabul edilebilir kılar?"
+    options:
+      - "Yanlış pozitif de yanlış negatif de üretmez."
+      - "Yanlış negatif üretebilir ama yanlış pozitif üretmez; böylece hiçbir sayfa kaçırılmaz."
+      - "Her eleman için tam URL'yi sakladığı için kesindir."
+      - "Yanlış pozitif üretebilir ama yanlış negatif üretmez; en kötü ihtimalle birkaç yeni URL atlanır, hiçbir URL iki kez taranmaz."
+    answer: 4
+    difficulty: medium
+    why: |
+      Bloom süzgeci "kesinlikle yok" ya da "muhtemelen var" der. Yanlış pozitif = görülmemiş bir URL'yi görülmüş sanmak; tarayıcı için küçük bir kayıptır. Yanlış negatif hiç olmaz, yani aynı URL tekrar taranmaz. Eleman başına ~10 bit ile ~%1 yanlış pozitif elde edilir: 10 milyar URL için ~12 GB, tam kümeye göre çok küçük.
+
+  - q: "Bir günde siteye gelen **farklı** kullanıcı sayısını, 100 milyonluk kimlik kümesi tutmadan, birkaç KB bellek ve ~%1 hatayla tahmin etmek için hangi yapı kullanılır?"
+    options:
+      - "Count-Min Sketch"
+      - "HyperLogLog"
+      - "Bloom süzgeci"
+      - "Min-heap"
+    answer: 2
+    difficulty: medium
+    why: |
+      HyperLogLog tekil eleman sayısını (kardinalite) tahmin eder: hash değerlerindeki baştaki sıfır sayısının dağılımından yola çıkar, ~12 KB ile ~%0,8 hata verir ve birleştirilebilir (saatlik sayımlardan günlük tekil sayı). Count-Min Sketch sıklık, Bloom süzgeci üyelik, heap ise top-K içindir. Redis'te `PFADD`/`PFCOUNT` ile yerleşiktir.
+
+  - q: "Mobil uygulamadan gelen reklam tıklamaları bazen 10 dakika gecikmeyle sunucuya ulaşıyor. Dakika bazında doğru tıklama sayısı için akış işleyicide ne yapılmalıdır?"
+    options:
+      - "Olayları sunucuya ulaştıkları zamana (işlenme zamanı) göre pencerelemek"
+      - "Geç gelen olayları her zaman atmak"
+      - "Olayları olay zamanına göre pencerelemek ve geç gelenler için filigran (watermark) ile pencereyi ne zaman kapatacağına karar vermek"
+      - "Pencere kullanmadan toplam sayıyı tutmak"
+    answer: 3
+    difficulty: hard
+    why: |
+      Doğru toplama, tıklamanın gerçekleştiği zamana (olay zamanı) göre yapılır; işlenme zamanına göre pencerelemek gecikmeli olayları yanlış dakikaya yazar. Filigran, "bu zamandan önceki olayların büyük ölçüde geldiği" tahminidir; pencere filigran geçince kapanır. Daha da geç gelenler ya düzeltme olarak işlenir ya da atılır. Faturalama gibi kesinlik gereken durumlarda toplu işlemeyle mutabakat eklenir.

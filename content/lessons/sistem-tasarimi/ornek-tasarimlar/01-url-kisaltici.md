@@ -147,3 +147,5 @@ Okuma ve yazma yolları ayrıdır, çünkü yükleri ve gereksinimleri çok fark
 - Kimlik üretimi dağıtık sistemlerde başlı başına bir tasarım kararıdır.
 - Kritik yolu (yönlendirme) kritik olmayan işlerden (analitik) kuyrukla ayırın.
 - Her kararda en az bir alternatifi ve ödünleşimi söyleyin: 301/302, hash/sayaç, SQL/NoSQL.
+
+Bu tasarımı .NET, PostgreSQL, Redis ve Docker ile kurup yük altında ölçmek için: [Proje 1: Ölçeklenebilir URL Kısaltıcı ve Yük Testi](/tracks/sistem-tasarimi/proje-url-kisaltici-ve-yuk-testi).

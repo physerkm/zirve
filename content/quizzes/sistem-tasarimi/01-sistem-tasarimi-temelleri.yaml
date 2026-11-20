@@ -17,21 +17,21 @@ questions:
   - q: "CAP teoremine göre, **ağ bölünmesi** sırasında dağıtık bir veri deposu hangi seçimle karşı karşıyadır?"
     options:
       - "Hız ile maliyet arasında"
-      - "Tutarlılık ile erişilebilirlik arasında"
       - "Okuma ile yazma performansı arasında"
       - "Güvenlik ile kullanılabilirlik arasında"
-    answer: 2
+      - "Tutarlılık ile erişilebilirlik arasında"
+    answer: 4
     difficulty: medium
     why: |
       Düğümler birbirine ulaşamadığında sistem ya güncel olmayabilecek veriyle yanıt vermeye devam eder (erişilebilirlik, AP) ya da tutarsızlık riskine girmemek için isteği reddeder (tutarlılık, CP). Bölünme toleransından vazgeçmek gerçekçi değildir; ağ hataları kaçınılmazdır. Seçim, veri türüne göre yapılır: bakiye için CP, beğeni sayısı için AP.
 
   - q: "Veritabanına **okuma kopyaları** (read replica) eklemenin başlıca bedeli nedir?"
     options:
-      - "Yazma kapasitesi düşer."
       - "Kopyalama gecikmesi nedeniyle kopyadan okunan veri kısa süreliğine bayat olabilir."
+      - "Yazma kapasitesi düşer."
       - "Tablolar arasında join yapılamaz."
       - "Transaction'lar devre dışı kalır."
-    answer: 2
+    answer: 1
     difficulty: medium
     why: |
       Kopyalama çoğunlukla eşzamansızdır: yazma birincil düğümde onaylanır, kopyalara sonradan aktarılır. Kullanıcı bir şeyi kaydedip hemen ardından kopyadan okursa eski halini görebilir. Yaygın çözüm, kullanıcının kendi yazdığını kısa bir süre birincil düğümden okumaktır. Okuma kopyaları yazma kapasitesini artırmaz.
@@ -39,10 +39,10 @@ questions:
   - q: "Cache-aside deseninde veri güncellendiğinde önbellek için en yaygın ve güvenli yaklaşım hangisidir?"
     options:
       - "Önbelleğe hiç dokunmamak"
-      - "Veritabanını güncelleyip ilgili önbellek anahtarını silmek ve emniyet için bir TTL tanımlamak"
       - "Önce önbelleği güncelleyip veritabanını hiç güncellememek"
+      - "Veritabanını güncelleyip ilgili önbellek anahtarını silmek ve emniyet için bir TTL tanımlamak"
       - "Bütün önbelleği temizlemek"
-    answer: 2
+    answer: 3
     difficulty: medium
     why: |
       Anahtarı silmek, bir sonraki okumanın veriyi veritabanından taze yüklemesini sağlar ve iki eşzamanlı yazmanın önbellekte eski değer bırakma olasılığını, önbelleği doğrudan güncellemeye göre azaltır. TTL, silmenin başarısız olduğu ya da gözden kaçtığı durumlar için emniyet ağıdır.
@@ -50,21 +50,21 @@ questions:
   - q: "Bir mesaj kuyruğu **en az bir kez teslim** (at-least-once) garantisi veriyorsa tüketici nasıl tasarlanmalıdır?"
     options:
       - "Mesajları işlemeden önce onaylamalıdır."
-      - "Idempotent olmalıdır: aynı mesajı birden fazla kez işlemek sonucu değiştirmemelidir."
       - "Yalnızca tek bir örnek olarak çalışmalıdır."
       - "Her mesajı iki kez işlemelidir."
-    answer: 2
+      - "Idempotent olmalıdır: aynı mesajı birden fazla kez işlemek sonucu değiştirmemelidir."
+    answer: 4
     difficulty: medium
     why: |
       En az bir kez teslimde mesaj kaybolmaz ama **yinelenebilir**: tüketici işi yapıp onayı gönderemeden çökerse mesaj yeniden teslim edilir. Tüketici idempotent değilse çift ödeme, çift e-posta gibi hatalar oluşur. Çözümler: işlenen mesaj kimliklerini saklamak, benzersizlik kısıtı kullanmak ya da işlemi doğal olarak idempotent yazmak.
 
   - q: "Dağıtık önbelleklerde `hash(anahtar) % N` yerine **tutarlı hash** kullanılmasının nedeni nedir?"
     options:
-      - "Daha hızlı hash hesaplamak"
       - "Sunucu eklendiğinde ya da çıkarıldığında anahtarların yalnızca küçük bir bölümünün yer değiştirmesini sağlamak"
+      - "Daha hızlı hash hesaplamak"
       - "Anahtarları şifrelemek"
       - "Bütün anahtarları tek bir sunucuda toplamak"
-    answer: 2
+    answer: 1
     difficulty: medium
     why: |
       Modüler dağıtımda `N` değiştiğinde neredeyse bütün anahtarlar farklı sunucuya düşer; önbellek bir anda boşalmış gibi olur. Tutarlı hash'te sunucular ve anahtarlar bir halkaya yerleştirilir; bir sunucu değiştiğinde yalnızca komşu aralıktaki anahtarlar (ortalama 1/N) taşınır.
@@ -83,10 +83,10 @@ questions:
   - q: "İyi bir **parçalama (sharding) anahtarı** hangi özelliklere sahip olmalıdır? (Birden fazla doğru yanıt vardır.)"
     options:
       - "Veriyi ve yükü parçalar arasında dengeli dağıtmalıdır."
-      - "Sık kullanılan sorguların tek bir parçada karşılanmasını sağlamalıdır."
       - "Mümkün olduğunca az farklı değere sahip olmalıdır (ör. ülke kodu)."
+      - "Sık kullanılan sorguların tek bir parçada karşılanmasını sağlamalıdır."
       - "Zamanla sürekli artan bir değer olmalıdır ki yeni veriler hep son parçaya yazılsın."
-    answer: [1, 2]
+    answer: [1, 3]
     difficulty: hard
     why: |
       Anahtar eşit dağıtmalı ve yaygın sorguları tek parçaya yönlendirmelidir. Az sayıda farklı değeri olan anahtarlar (ülke kodu) bazı parçaları sıcak noktaya çevirir. Sürekli artan anahtarla aralık tabanlı parçalama, bütün yazmaları tek bir parçaya yığar.
@@ -94,10 +94,10 @@ questions:
   - q: "Uygulama sunucularının **durumsuz** (stateless) olması neden yatay ölçeklemeyi kolaylaştırır?"
     options:
       - "Durumsuz sunucular daha az bellek kullanır."
-      - "Herhangi bir istek herhangi bir sunucuya gidebilir; sunucular serbestçe eklenip çıkarılabilir."
       - "Durumsuz sunucular veritabanına ihtiyaç duymaz."
+      - "Herhangi bir istek herhangi bir sunucuya gidebilir; sunucular serbestçe eklenip çıkarılabilir."
       - "Yük dengeleyiciye gerek kalmaz."
-    answer: 2
+    answer: 3
     difficulty: easy
     why: |
       Sunucu, istekler arasında kullanıcıya özel veri tutmuyorsa (oturum bilgisi paylaşılan bir depoda ya da imzalı çerezde duruyorsa) bütün sunucular birbirinin yerine geçebilir. Yük dengeleyici istekleri dilediği gibi dağıtır; bir sunucu çökerse kullanıcı oturumu kaybolmaz.

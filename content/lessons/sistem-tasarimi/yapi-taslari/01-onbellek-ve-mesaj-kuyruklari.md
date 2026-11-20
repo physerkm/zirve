@@ -139,3 +139,5 @@ Her denemede hata veren bir mesaj kuyruğu tıkayabilir. Çözüm: sınırlı sa
 - Önbellek seli, toplu süre dolması ve var olmayan anahtar sorunlarını ve çözümlerini bilin.
 - Kuyruk; yanıt süresini kısaltır, yükü yumuşatır ve bileşenleri ayrıştırır; karşılığında nihai tutarlılık getirir.
 - En az bir kez teslimi varsayın ve tüketicileri idempotent yazın.
+
+Kuyrukların birden çok servise yayılan işlemlerdeki rolü (outbox, saga) [Tutarlılık, Uzlaşma ve Dağıtık İşlemler](/tracks/sistem-tasarimi/tutarlilik-uzlasma-ve-dagitik-islemler) dersinde; Kafka ile akış işleme [Toplu ve Akış İşleme](/tracks/sistem-tasarimi/akis-isleme-ve-olasiliksal-yapilar) dersinde. Önbelleği ve kalıcılığı içeriden görmek için: [Proje 4: Kendi Redis'ini Yaz](/tracks/sistem-tasarimi/proje-kendi-redisini-yaz).

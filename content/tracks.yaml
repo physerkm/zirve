@@ -36,19 +36,22 @@
 
 - slug: sistem-tasarimi
   title: Sistem Tasarımı
-  description: Ölçeklenebilir sistemleri tasarlamak ve bunu 45 dakikada anlatabilmek. Yapı taşları, ödünleşimler ve örnek tasarımlar.
+  description: Ölçeklenebilir sistemleri tasarlamak ve bunu 45 dakikada anlatabilmek. Yapı taşları, ödünleşimler, uçtan uca çözülmüş klasik sorular ve kendi elinle kuracağın dağıtık sistem projeleri.
   icon: network
   accent: sky
   modules:
     - slug: temeller
       title: Temeller
-      description: Mülakat çerçevesi, ölçekleme ve veri katmanı.
+      description: Mülakat çerçevesi, ölçekleme, kapasite tahmini, ağ ve API tasarımı.
     - slug: yapi-taslari
       title: Yapı Taşları
-      description: Önbellek, mesaj kuyrukları ve tutarlılık.
+      description: Önbellek, kuyruklar, veritabanları, tutarlılık ve uzlaşma, dayanıklılık, arama ve konum, akış işleme ve tekrarlayan kalıplar.
     - slug: ornek-tasarimlar
       title: Örnek Tasarımlar
-      description: Uçtan uca çözülmüş klasik sorular.
+      description: Mülakatlarda en sık sorulan sorular, gereksinimden derinleşmeye kadar uçtan uca çözülmüş halde.
+    - slug: projeler
+      title: Uygulamalı Projeler ve Kaynaklar
+      description: Okuyarak değil kurarak öğren. Yük testi, dağıtık hız sınırlama, outbox ve saga, kendi Redis'in, Raft ile kopyalanan anahtar–değer deposu ve seçilmiş kaynaklar.
 
 - slug: csharp
   title: C#

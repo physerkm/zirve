@@ -1,0 +1,136 @@
+title: Veri Katmanı, Tutarlılık ve Uzlaşma
+description: Depolama motorları, kopyalama ve quorum, parçalama ve sıcak anahtarlar, dağıtık kimlik, tutarlılık modelleri, Raft, dağıtık kilitler, outbox ve saga.
+level: advanced
+timeLimitMinutes: 20
+questions:
+  - q: "Saniyede yüz binlerce **ekleme** alan, güncellemenin neredeyse hiç olmadığı bir olay deposu için hangi depolama motoru yapısı daha uygundur ve neden?"
+    options:
+      - "B-ağacı; çünkü sayfaları yerinde güncellediği için yazmaları sıralı yapar."
+      - "LSM ağacı; çünkü yazmaları bellekte toplayıp diske sıralı dosyalar olarak döker."
+      - "Hash indeksi; çünkü aralık sorgularında en hızlısıdır."
+      - "Fark etmez; disk erişim deseni yazma hızını etkilemez."
+    answer: 2
+    difficulty: medium
+    why: |
+      LSM ağaçları (Cassandra, RocksDB, ScyllaDB) yazmayı önce commit log'a ve bellekteki memtable'a yapar, memtable dolunca diske değişmez ve sıralı bir SSTable olarak döker. Sıralı disk yazması rastgele yazmadan çok daha hızlıdır. Bedeli: okumalar birden çok dosyaya bakabilir (Bloom süzgeçleri yardım eder) ve arka planda sıkıştırma (compaction) çalışır. B-ağaçları sayfaları yerinde günceller; bu rastgele G/Ç demektir.
+
+  - q: "Lidersiz (Dynamo tarzı) bir depoda N = 3 kopya var. Aşağıdaki ayarlardan hangisi **okumanın en son onaylanmış yazmayı görmesini** quorum koşuluyla garanti eder?"
+    options:
+      - "W = 1, R = 1"
+      - "W = 1, R = 2"
+      - "W = 2, R = 2"
+      - "W = 2, R = 1"
+    answer: 3
+    difficulty: medium
+    why: |
+      Quorum koşulu W + R > N'dir. N = 3 için W = 2, R = 2 → 4 > 3: yazmayı onaylayan iki düğüm ile okumaya yanıt veren iki düğüm en az bir düğümde kesişir. Diğer seçeneklerde W + R = 2 ya da 3 olduğundan kesişme garanti değildir. Not: gevşek quorum ve eşzamanlı işlemlerde kenar durumlar yine de vardır; quorum tek başına doğrusallaştırılabilirlik sağlamaz.
+
+  - q: "Kullanıcı profil fotoğrafını değiştiriyor, sayfa yenilenince **eski** fotoğrafı görüyor. Sistem okumaları eşzamansız kopyalardan yapıyor. Bu hangi tutarlılık garantisinin eksikliğidir ve tipik çözüm nedir?"
+    options:
+      - "Kendi yazdığını okuma (read-your-writes); kullanıcının kendi verisini kısa bir süre liderden okumak"
+      - "Doğrusallaştırılabilirlik; bütün okumaları ve yazmaları iki aşamalı commit ile yapmak"
+      - "Nedensel tutarlılık; vektör saatleri eklemek"
+      - "Monotonik okuma; önbelleği tamamen kapatmak"
+    answer: 1
+    difficulty: medium
+    why: |
+      Kullanıcı kendi yaptığı değişikliği göremiyorsa eksik olan garanti read-your-writes'tır. Bütün sistemi güçlü tutarlı yapmak gerekmez: kullanıcının kendi verisi (ya da son yazmasından sonraki birkaç saniye) liderden okunur, diğer kullanıcıların okumaları kopyalardan devam eder. Alternatif: istemcinin son yazma konumunu (LSN) taşıması ve kopyanın o noktaya yetişmesini beklemek.
+
+  - q: "Bir ürün kampanyada viral oldu; o ürünün beğeni sayacı tek bir parçayı (shard) aşırı ısıtıyor. En uygun çözüm hangisidir?"
+    options:
+      - "Parça sayısını iki katına çıkarmak"
+      - "Sayacı birkaç alt anahtara bölmek (ör. `likes:42:0..9`), yazmaları rastgele dağıtmak ve okumada toplamak"
+      - "Ürünü ayrı bir veritabanına taşımak"
+      - "Beğenileri devre dışı bırakmak"
+    answer: 2
+    difficulty: hard
+    why: |
+      Sıcak anahtar sorununu parça sayısını artırmak çözmez: tek bir anahtar her zaman tek bir parçaya düşer. Anahtarı tuzlamak (alt anahtarlara bölmek) yazmaları birden çok parçaya yayar; okuma alt sayaçları toplar. Ek olarak artışları bellekte biriktirip periyodik toplu yazmak ve görünen sayıyı önbellekten vermek yaygın tamamlayıcılardır.
+
+  - q: "Snowflake tarzı 64 bitlik kimlikler (zaman damgası + makine kimliği + sıra numarası) için aşağıdakilerden hangileri doğrudur? (Birden fazla doğru yanıt vardır.)"
+    options:
+      - "Kimlikler zamana göre kabaca sıralıdır; bu, imleçli sayfalamayı kolaylaştırır."
+      - "Kimlik üretmek için her seferinde merkezi bir veritabanına gitmek gerekir."
+      - "Makinenin saati geri giderse yinelenen kimlik üretilebilir; üreteç bunu algılayıp beklemelidir."
+      - "128 bitlik UUID v4'ten daha fazla yer kaplar."
+    answer: [1, 3]
+    difficulty: medium
+    why: |
+      Snowflake kimliğinin en anlamlı bitleri zaman damgasıdır, bu yüzden kimlikler kabaca zamana göre sıralıdır. Her makine kendi kimliği ve sıra numarasıyla koordinasyonsuz üretir; merkezi bir veritabanına gerek yoktur (yalnızca makine kimliği bir kez atanır). Saat geri giderse (NTP düzeltmesi) aynı zaman damgası ve sıra numarası tekrar üretilebilir. 64 bit, UUID'nin 128 bitinin yarısıdır.
+
+  - q: "İki kopya aynı anahtar için şu vektör saatlerine sahip sürümler tutuyor: `[(A,2), (B,1)]` ve `[(A,2), (C,1)]`. Doğru yorum hangisidir?"
+    options:
+      - "İlki daha yenidir; B, C'den önce gelir."
+      - "İkincisi daha yenidir; çünkü C alfabede sonradır."
+      - "İkisi aynı sürümdür."
+      - "Sürümler eşzamanlıdır (çakışmadır); biri diğerinin atası değildir, birleştirilmeleri gerekir."
+    answer: 4
+    difficulty: hard
+    why: |
+      Bir sürüm diğerinin bütün sayaçlarına eşit ya da büyükse onun torunudur. Burada ilki B'de, ikincisi C'de güncellenmiş; hiçbiri diğerini kapsamaz. Bu, aynı kaydın iki farklı yerde eşzamanlı güncellendiği anlamına gelir. Dynamo bu durumda iki sürümü de saklar ve istemciye birleştirmesi için döndürür; "son yazan kazanır" kullanılsaydı yazmalardan biri sessizce kaybolurdu.
+
+  - q: "5 düğümlü bir Raft kümesi en fazla kaç düğümün aynı anda çökmesine dayanarak yazma kabul etmeye devam eder?"
+    options:
+      - "1"
+      - "2"
+      - "3"
+      - "4"
+    answer: 2
+    difficulty: easy
+    why: |
+      Raft'ta bir girdi çoğunluğa kopyalanınca kesinleşir; lider de çoğunluğun oyuyla seçilir. 5 düğümün çoğunluğu 3'tür, yani 2 düğüm çökse bile kalan 3 düğüm çalışır. Genel kural: 2f + 1 düğüm f çökmeye dayanır. Bu yüzden kümeler tek sayıda düğümle kurulur; 6 düğüm, 5 düğümden daha fazla çökmeye dayanmaz ama çoğunluk için daha çok onay bekler.
+
+  - q: "Dağıtık kilidi alan bir işlem uzun bir çöp toplama duraklamasına giriyor, kilidin süresi doluyor ve kilit başka bir işleme veriliyor. İki işlemin birden depoya yazmasını hangi mekanizma önler?"
+    options:
+      - "Kilidin süresini çok uzun (ör. 1 saat) yapmak"
+      - "Kilidi Redis yerine bellekte tutmak"
+      - "Fencing token: kilit her verilişte artan bir sayı döndürür, depo eski token'lı yazmaları reddeder"
+      - "Yazmadan önce kilidin hâlâ bizde olup olmadığını kontrol etmek"
+    answer: 3
+    difficulty: hard
+    why: |
+      Duraklamadaki işlem, kilidin süresinin dolduğundan habersizdir; "kontrol et, sonra yaz" yaklaşımı da kontrol ile yazma arasında duraklama olabileceği için yetmez. Fencing token'da kilit servisi her verişte artan bir sayı (33, 34, …) döndürür; korunan depo gördüğü en büyük token'dan küçük olanları reddeder. Uzun süre ise kilit sahibi gerçekten çöktüğünde sistemi uzun süre kilitler.
+
+  - q: "Sipariş servisi önce veritabanına yazıp ardından Kafka'ya `OrderCreated` olayı gönderiyor. İki adım arasında süreç çökerse olay hiç yayınlanmıyor. Standart çözüm hangisidir?"
+    options:
+      - "Transactional outbox: olayı iş verisiyle aynı transaction'da bir outbox tablosuna yazıp ayrı bir yayıncıyla (ya da CDC ile) göndermek"
+      - "Önce Kafka'ya gönderip sonra veritabanına yazmak"
+      - "Kafka'ya gönderimi üç kez denemek"
+      - "Veritabanı ile Kafka arasında iki aşamalı commit kullanmak"
+    answer: 1
+    difficulty: medium
+    why: |
+      Sorun "çift yazma" sorunudur: iki farklı sisteme atomik yazamazsınız. Sırayı ters çevirmek, bu kez var olmayan bir kaydın olayını yayınlar. Outbox'ta tek bir yerel transaction hem iş verisini hem olayı yazar; yayıncı en az bir kez gönderir, tüketiciler olay kimliğiyle idempotent olur. Kafka ile ilişkisel veritabanı arasında 2PC pratikte desteklenmez ve kullanılmaz.
+
+  - q: "Saga deseniyle ilgili aşağıdakilerden hangisi **yanlıştır**?"
+    options:
+      - "Her adım kendi yerel transaction'ıdır; başarısızlıkta önceki adımlar telafi işlemleriyle geri alınır."
+      - "Koreografide servisler olaylara tepki verir; orkestrasyonda merkezi bir koordinatör adımları yönetir."
+      - "Saga, adımlar arasındaki ara durumları diğer işlemlerden gizleyerek tam izolasyon sağlar."
+      - "Telafi işlemleri de idempotent olmalıdır."
+    answer: 3
+    difficulty: medium
+    why: |
+      Saga izolasyon **sağlamaz**: stok ayrılmış ama ödeme henüz alınmamışken bu ara durum diğer işlemlere görünür. Bunu "bekliyor" gibi ara durumlar, anlamsal kilitler ve iş kurallarıyla yönetirsiniz. Diğer üç ifade doğrudur.
+
+  - q: "PACELC'e göre DynamoDB ve Cassandra gibi sistemler (varsayılan ayarlarla) **bölünme olmadığında** hangi tercihi yapar?"
+    options:
+      - "Tutarlılığı seçer, gecikmeyi kabul eder."
+      - "Düşük gecikmeyi seçer, nihai tutarlılığı kabul eder."
+      - "Her yazmayı bütün bölgelere eşzamanlı kopyalar."
+      - "Bölünme yokken seçim yapmaya gerek yoktur."
+    answer: 2
+    difficulty: medium
+    why: |
+      PACELC: bölünmede (P) erişilebilirlik ile tutarlılık arasında (A/C), aksi halde (E) gecikme ile tutarlılık arasında (L/C) seçim yapılır. Dynamo ailesi PA/EL'dir: bölünmede erişilebilir kalır, normalde düşük gecikme için okumayı tek kopyadan da yapabilir. Spanner ve CockroachDB ise PC/EC'dir: her yazma uzlaşmadan geçer ve gecikmeyi kabul eder.
+
+  - q: "Bir kaydı veritabanına, Elasticsearch'e ve önbelleğe uygulama kodundan **ayrı ayrı** yazmak yerine CDC (değişiklik verisi yakalama) kullanmanın asıl faydası nedir?"
+    options:
+      - "Arama indeksinin her zaman veritabanıyla anında aynı olması"
+      - "Elasticsearch'e hiç ihtiyaç kalmaması"
+      - "Yazma gecikmesinin sıfıra inmesi"
+      - "Tek doğru kaynağın birincil veritabanı olması; türetilmiş depoların onun değişiklik günlüğünden sırayla ve kayıpsız beslenip gerektiğinde yeniden kurulabilmesi"
+    answer: 4
+    difficulty: hard
+    why: |
+      Uygulamadan çoklu yazmada biri başarılı olup diğeri başarısız olursa depolar sessizce ayrışır. CDC (ör. Debezium) veritabanının WAL/binlog'unu okur; değişiklikler commit sırasıyla ve kayıpsız olarak Kafka üzerinden türetilmiş depolara akar. Türetilmiş depolar yine de nihai tutarlıdır (birkaç saniye gecikebilir); "anında aynı" garantisi yoktur.

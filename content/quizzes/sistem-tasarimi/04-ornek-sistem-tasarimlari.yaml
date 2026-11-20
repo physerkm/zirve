@@ -1,0 +1,136 @@
+title: Örnek Tasarımlar
+description: URL kısaltıcı, hız sınırlayıcı, haber akışı, sohbet, video platformu, Uber, Ticketmaster, web tarayıcı ve dağıtık anahtar–değer deposundaki kilit kararlar.
+level: advanced
+timeLimitMinutes: 20
+questions:
+  - q: "Bir haber akışında ünlü hesapların (100 milyon takipçi) yol açtığı sorun ve yaygın çözüm hangisidir?"
+    options:
+      - "Ünlülerin gönderileri silinir; çözüm daha büyük veritabanı."
+      - "Yazma anında dağıtım, tek gönderiyi 100 milyon akış yazmasına çevirir; melez model: ünlülerin gönderileri dağıtılmaz, takipçinin akışı açılırken okuma anında birleştirilir."
+      - "Okuma anında birleştirme yavaşlar; çözüm bütün hesaplar için yazma anında dağıtımdır."
+      - "Ünlü hesaplar yalnızca önbellekte tutulur; çözüm CDN'dir."
+    answer: 2
+    difficulty: medium
+    why: |
+      Yazma anında dağıtım okumayı çok hızlandırır ama dağıtım maliyeti takipçi sayısıyla orantılıdır. Melez modelde sıradan hesaplar yazma anında dağıtılır; ünlü hesapların son gönderileri ise akış okunurken, kullanıcının takip ettiği az sayıdaki ünlüden çekilip önceden hesaplanmış listeyle birleştirilir. Pasif kullanıcılara dağıtım yapmamak da maliyeti düşürür.
+
+  - q: "Haber akışı önbelleğinde (Redis) kullanıcı başına gönderilerin **tam içeriği** yerine yalnızca **kimlikleri** tutulmasının nedenleri nelerdir? (Birden fazla doğru yanıt vardır.)"
+    options:
+      - "Bir gönderi milyonlarca akışta geçer; içeriği her listeye kopyalamak belleği katlar."
+      - "Gönderi düzenlendiğinde ya da silindiğinde yalnızca tek bir kayıt (gönderi önbelleği) güncellenir."
+      - "Kimlikler şifreli olduğu için güvenlidir."
+      - "Redis listeleri yalnızca sayı saklayabilir."
+    answer: [1, 2]
+    difficulty: medium
+    why: |
+      Akış listesi kimlikleri tutar; içerik ayrı bir gönderi önbelleğinde bir kez saklanır ve okuma sırasında toplu (`MGET`) çözümlenir. Bu hem belleği hem güncelleme maliyetini düşürür. Redis listeleri her türlü dizgiyi saklayabilir; kimliklerin şifreli olması gibi bir özellik de yoktur.
+
+  - q: "Bir sohbet uygulamasında bir sohbetin mesajlarını doğru **sırayla** göstermek için en güvenilir yöntem hangisidir?"
+    options:
+      - "Gönderen cihazın saatine göre sıralamak"
+      - "Mesajı alan bağlantı sunucusunun saatine göre sıralamak"
+      - "Mesaj kimliklerini alfabetik sıralamak"
+      - "Sohbet başına tek bir sahibin verdiği artan sıra numarası (seq) kullanmak"
+    answer: 4
+    difficulty: medium
+    why: |
+      İstemci saatleri güvenilmezdir ve sunucu saatleri birbirinden kayar. Sohbet başına artan sıra numarası (ör. sohbet bölümünün sahibi ya da sohbet kimliğine göre bölümlenmiş bir işleyici tarafından verilen) kesin bir sıra kurar. İstemci son aldığı sıra numarasını bilir; yeniden bağlandığında "şundan sonrasını ver" der ve boşlukları fark edebilir.
+
+  - q: "Sohbet uygulamasında gönderene ✓ (gönderildi) onayı hangi noktada verilmelidir?"
+    options:
+      - "Mesaj alıcının cihazına ulaştığında"
+      - "Mesaj kalıcı depoya yazıldıktan sonra"
+      - "Mesaj bağlantı sunucusunun belleğine alındığında"
+      - "Mesaj kuyruğa gönderilmeden önce"
+    answer: 2
+    difficulty: medium
+    why: |
+      "Önce kalıcı depo, sonra onay": onay verildiyse, sunucu çökse bile mesaj kaybolmamalıdır. Bellekteyken onay vermek çökmede kayba yol açar. Alıcıya ulaşması ise ayrı bir aşamadır (✓✓, iletildi) ve alıcı çevrimdışıyken saatler sürebilir; gönderen o zamana kadar belirsizlikte bırakılmaz.
+
+  - q: "Bilet satış sisteminde kullanıcı ödeme ekranında birkaç dakika geçirirken koltuğu korumanın önerilen yolu hangisidir?"
+    options:
+      - "Ödeme bitene kadar açık tutulan bir veritabanı transaction'ı ve `SELECT ... FOR UPDATE` kilidi"
+      - "Koltuğu istemcinin belleğinde işaretlemek"
+      - "Koşullu atomik güncellemeyle koltuğa süreli bir ayırtma yazmak (`status = 'reserved', reserved_until = now() + 10 dk`) ve süresi dolan ayırtmayı boş saymak"
+      - "Koltuğu hemen satılmış saymak ve ödeme başarısız olursa iade etmek"
+    answer: 3
+    difficulty: medium
+    why: |
+      Dakikalarca açık kalan transaction'lar bağlantı havuzunu tüketir ve kullanıcı sekmeyi kapatınca kilidin ne zaman bırakılacağı belirsizdir. Süreli ayırtma kısa bir transaction'la yazılır; süre dolunca koltuk kendiliğinden (sorguda) boş sayılır. Son savunma hattı `tickets (event_id, seat_id)` üzerindeki benzersizlik kısıtıdır.
+
+  - q: "20.000 koltuk için aynı anda 2 milyon kullanıcı geliyor. Sanal bekleme odasının asıl amacı nedir?"
+    options:
+      - "Arkadaki sisteme kaldırabileceği kadar kullanıcıyı (kabul belirteciyle) almak; çekişmeyi ve yükü sistem girişinde sınırlamak"
+      - "Kullanıcıları reklam izlemeye yönlendirmek"
+      - "Biletleri piyango ile dağıtmak"
+      - "Veritabanını önbellekle değiştirmek"
+    answer: 1
+    difficulty: easy
+    why: |
+      Herkesi aynı anda koltuk seçimine bırakmak aynı satırlar üzerinde devasa çekişme yaratır, kullanıcıların çoğu "az önce alındı" hatası görür ve sistem çöker. Bekleme odası bir giriş kontrolüdür: sıradaki kullanıcıları kapasite kadar içeri alır, diğerlerine sıra ve tahmini süre gösterir. Bot koruması ve kişi başı bilet sınırı da bu katmanda uygulanır.
+
+  - q: "Uber benzeri bir sistemde 2 milyon sürücünün 4 saniyede bir gönderdiği konumlar (~500.000 yazma/saniye) için en uygun yaklaşım hangisidir?"
+    options:
+      - "Her güncellemeyi ilişkisel veritabanına yazıp PostGIS indeksini güncellemek"
+      - "Konumları yalnızca istemcide tutmak"
+      - "Her güncellemeyi ayrı bir HTTP isteğiyle göndermek ve dosyaya yazmak"
+      - "Anlık konumları bölgeye göre parçalanmış bellek içi bir coğrafi indekste (Redis GEO / H3 hücreleri) tutmak; ham akışı analiz için Kafka'ya yazmak"
+    answer: 4
+    difficulty: medium
+    why: |
+      Yalnızca en güncel konum önemlidir ve kaybolan bir güncelleme birkaç saniye sonra yenisiyle düzelir; veri de küçüktür (~200 MB). Bu yüzden anlık konumlar bellekte, TTL'li tutulur; kalıcı coğrafi indeksi saniyede yüz binlerce kez güncellemek gereksiz pahalıdır. Ham akış rota kaydı, varış süresi tahmini ve fiyatlandırma için ayrıca günlüğe yazılır.
+
+  - q: "Video platformunda **uyarlanabilir bit hızı** (HLS/DASH) nasıl çalışır?"
+    options:
+      - "Sunucu, kullanıcının ağ hızını ölçüp tek bir uygun dosya üretir."
+      - "Video birkaç saniyelik segmentlere ve birden çok kaliteye bölünür; oynatıcı her segmentten sonra ağ hızını ölçüp bir sonraki segmentin kalitesini seçer."
+      - "Video tek parça indirilir ve gerektiğinde istemcide sıkıştırılır."
+      - "Kalite yalnızca kullanıcı elle değiştirince değişir."
+    answer: 2
+    difficulty: easy
+    why: |
+      Manifest dosyası mevcut kaliteleri, her kalitenin oynatma listesi de segmentleri listeler. Oynatıcı ağ yavaşlarsa düşük kaliteye iner, hızlanırsa çıkar; sonuç takılma yerine kısa süreli kalite düşüşüdür. Segmentler sıradan HTTP dosyaları olduğu için CDN'de çok iyi önbelleğe alınır.
+
+  - q: "Web tarayıcıda **nezaket** (bir siteyi aşırı yüklememe) kuralı en iyi nasıl uygulanır?"
+    options:
+      - "Her alan adı (host) için ayrı bir kuyruk ve her kuyruk için \"bir sonraki ne zaman çekilebilir\" zamanı; host'lar işçilere parçalanarak atanır"
+      - "Bütün URL'leri tek bir küresel FIFO kuyruğundan çekmek"
+      - "İşçi sayısını azaltmak"
+      - "robots.txt'yi yok saymak ve her siteye aynı hızda gitmek"
+    answer: 1
+    difficulty: medium
+    why: |
+      Tek bir küresel kuyrukta aynı sitenin binlerce sayfası ardışık durabilir ve işçiler o siteye aynı anda yüklenir. Host başına kuyruk + hazır olma zamanı (bir min-heap ile en erken hazır host) nezaketi garanti eder; host'a göre parçalama da kuralın koordinasyonsuz, yerel uygulanmasını sağlar. Öncelik kuyrukları bu katmanın önünde durur.
+
+  - q: "Kayan pencere sayacıyla çalışan bir hız sınırlayıcıda sınır dakikada 100. Saat 12:01:15; önceki dakikada (12:00) 80, bu dakikada (12:01) 30 istek gelmiş. Tahmini istek sayısı kaçtır ve istek kabul edilir mi?"
+    options:
+      - "110; reddedilir"
+      - "50; kabul edilir"
+      - "90; kabul edilir"
+      - "30; kabul edilir"
+    answer: 3
+    difficulty: hard
+    why: |
+      Kayan pencere 12:00:15–12:01:15 aralığıdır; önceki dakikanın %75'i (45 saniye) bu pencerenin içindedir. Tahmin = 30 + 80 × 0,75 = 90 < 100, istek kabul edilir. Yöntem, trafiğin önceki dakika içinde eşit dağıldığını varsayar; anahtar başına yalnızca iki sayaç tuttuğu için ucuzdur ve hatası pratikte küçüktür.
+
+  - q: "Redis tabanlı hız sınırlayıcıda Redis'e ulaşılamıyor. Genel bir API için genellikle hangi davranış seçilir ve hangi uç noktalar istisnadır?"
+    options:
+      - "Kapalı başarısızlık her yerde: bütün istekler reddedilir."
+      - "Açık başarısızlık her yerde, istisnasız."
+      - "API yeniden başlatılır."
+      - "Açık başarısızlık (istekler sınırlamasız geçer); giriş denemesi, SMS ve ödeme gibi kötüye kullanımın pahalı olduğu uç noktalarda kapalı başarısızlık"
+    answer: 4
+    difficulty: medium
+    why: |
+      Sınırlayıcı yüzünden bütün API'yi düşürmek, kısa süre korumasız kalmaktan genellikle daha kötüdür; bu yüzden çoğu uç nokta açık başarısız olur. Kaba kuvvet ve maliyetli kötüye kullanım riski olan uç noktalar ise kapalı başarısız olur. Her durumda Redis çağrısına kısa zaman aşımı ve devre kesici konur; yerel bir yedek sınırlayıcıya düşmek iyi bir orta yoldur.
+
+  - q: "Dynamo tarzı bir depoda tercih listesindeki düğümlerden biri geçici olarak erişilemezken yazmanın yine de kabul edilmesini sağlayan teknik hangisidir?"
+    options:
+      - "Merkle ağaçları"
+      - "Gevşek quorum ve ipucu bırakma (hinted handoff)"
+      - "İki aşamalı commit"
+      - "Raft lider seçimi"
+    answer: 2
+    difficulty: hard
+    why: |
+      Gevşek quorum'da yazma, erişilebilir ilk N sağlıklı düğüme yapılır; asıl sahibin yerine veriyi alan düğüm bir ipucuyla saklar ve sahibi geri dönünce aktarır. Böylece "her zaman yazılabilir" hedefi korunur. Merkle ağaçları kalıcı sapmaları bulup onarmak içindir; 2PC ve Raft ise erişilebilirlik yerine tutarlılığı seçen (CP) mekanizmalardır.
