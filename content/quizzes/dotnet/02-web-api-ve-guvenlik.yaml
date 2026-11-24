@@ -1,0 +1,136 @@
+title: Web API Tasarımı ve Güvenlik
+description: HTTP fiilleri ve durum kodları, idempotency, sayfalama, versiyonlama, JWT, OAuth ve OIDC, yetkilendirme, OWASP riskleri, arka plan işleri, gRPC ve SignalR.
+level: intermediate
+timeLimitMinutes: 18
+questions:
+  - q: "Bir istemci `PUT /api/products/42` isteğini ağ hatası yüzünden üç kez gönderiyor. Gövde her seferinde aynı. Sonuç ne olur?"
+    options:
+      - "Ürün üç kez güncellenir ama son durum tek bir güncellemeyle aynıdır; PUT idempotenttir."
+      - "Üç ayrı ürün oluşur."
+      - "İkinci ve üçüncü istek her zaman 409 Conflict döner."
+      - "PUT güvenli (safe) bir fiil olduğu için sunucu durumu hiç değişmez."
+    answer: 1
+    difficulty: easy
+    why: |
+      Idempotent, aynı isteğin bir ya da birden fazla kez uygulanmasının aynı son durumu üretmesi demektir. PUT kaynağı gönderilen gövdeyle bütünüyle değiştirdiği için idempotenttir. POST ise idempotent değildir. Aynı isteği tekrar göndermek yeni kayıtlar oluşturabilir. "Güvenli" (safe) fiiller yalnızca GET, HEAD ve OPTIONS'tır: sunucu durumunu hiç değiştirmezler.
+
+  - q: "Oturum açmış bir kullanıcı, yalnızca yöneticilerin silebildiği bir kaydı silmeye çalışıyor. Hangi durum kodu dönmelidir?"
+    options:
+      - "400 Bad Request"
+      - "401 Unauthorized"
+      - "403 Forbidden"
+      - "404 Not Found her zaman zorunludur"
+    answer: 3
+    difficulty: easy
+    why: |
+      401, kimliğin doğrulanmadığını ("kimsin?") söyler. Burada kullanıcı oturum açmıştır, yani kimliği bellidir ama yetkisi yoktur: 403. Kaynağın varlığını bile sızdırmak istemediğiniz durumlarda (ör. başka kullanıcıya ait siparişler) 404 dönmek de bilinçli bir tercih olabilir, ama zorunlu değildir.
+
+  - q: "Ödeme uç noktasında istemci, zaman aşımı sonrası isteği tekrar gönderiyor ve müşteriden iki kez para çekiliyor. En uygun çözüm hangisidir?"
+    options:
+      - "İstemcide yeniden denemeyi tamamen kapatmak"
+      - "Ödeme uç noktasını GET yapmak"
+      - "Sunucu zaman aşımını artırmak"
+      - "İstemcinin her işlem için benzersiz bir `Idempotency-Key` göndermesi; sunucunun anahtarı sonucuyla saklayıp tekrar gelen isteğe aynı yanıtı dönmesi"
+    answer: 4
+    difficulty: medium
+    why: |
+      Ağ koptuğunda istemci isteğin işlenip işlenmediğini bilemez. Yeniden denemeyi kapatmak ödemelerin kaybolmasına yol açar. Zaman aşımını artırmak sorunu yalnızca seyrekleştirir. Idempotency anahtarı, sunucunun aynı işlemi ikinci kez yapmadan saklanan sonucu dönmesini sağlar. Anahtar benzersiz indeksli bir tabloda ya da Redis'te tutulur.
+
+  - q: "Milyonlarca satırlık bir sipariş listesinde `?page=50000&pageSize=20` istekleri çok yavaş. Neden ve ne önerirsiniz?"
+    options:
+      - "JSON serileştirme yavaştır; yanıtı sıkıştırmak gerekir."
+      - "OFFSET, veritabanının atlanan bütün satırları okumasını gerektirir; (CreatedAt, Id) gibi indeksli bir anahtarla cursor (keyset) sayfalama kullanılmalıdır."
+      - "pageSize küçüktür; 1000 yapılmalıdır."
+      - "Sayfalama yerine bütün liste önbelleğe alınmalıdır."
+    answer: 2
+    difficulty: medium
+    why: |
+      `OFFSET 1000000` veritabanının bir milyon satırı okuyup atması demektir ve maliyet sayfa numarasıyla doğrusal artar. Cursor sayfalama son görülen anahtarın sonrasını ister ve indeksle doğrudan konumlanır. Bu yüzden her sayfada sabit hızdadır. Ayrıca sayfalar arasında kayıt eklendiğinde satırların kayması sorununu da çözer.
+
+  - q: "Bir JWT ile ilgili hangisi **doğrudur**?"
+    options:
+      - "İmza, içeriğin değiştirilmediğini kanıtlar; payload ise Base64Url kodludur ve herkes okuyabilir."
+      - "Payload şifrelidir, bu yüzden içine kullanıcının parolası güvenle konabilir."
+      - "JWT sunucuda saklandığı için istendiği an iptal edilebilir."
+      - "Audience doğrulamasına gerek yoktur; imza yeterlidir."
+    answer: 1
+    difficulty: medium
+    why: |
+      Standart JWT (JWS) imzalıdır, şifreli değildir. Bu yüzden içine gizli veri konmaz. Token kendi kendine yeterlidir ve sunucuda saklanmadığı için süresi dolmadan doğrudan iptal edilemez. Bu nedenle kısa ömür ve refresh token rotasyonu kullanılır. Audience doğrulanmazsa başka bir servis için verilmiş geçerli bir token sizin API'nizde de kabul edilir.
+
+  - q: "OAuth 2.0 ile OpenID Connect arasındaki ilişkiyi en iyi hangisi anlatır?"
+    options:
+      - "İkisi aynı protokolün farklı adlarıdır."
+      - "OAuth kimlik doğrulama, OIDC yetkilendirme protokolüdür."
+      - "OIDC, OAuth 2.0'ın üzerine kimlik katmanı ekler ve kullanıcının kim olduğunu anlatan bir ID token verir; OAuth tek başına yetki devri içindir."
+      - "OIDC yalnızca servisler arası çağrılarda kullanılır."
+    answer: 3
+    difficulty: medium
+    why: |
+      OAuth 2.0 bir uygulamaya kullanıcı adına bir kaynağa erişim yetkisi vermek içindir ve access token üretir. Kullanıcının kimliğini standart bir şekilde söylemez. OpenID Connect bunun üzerine kurulur ve ID token ile kimlik bilgisini taşır. "Google ile giriş yap" OIDC'dir.
+
+  - q: "Bir SPA (tarayıcı uygulaması) kullanıcı girişi için hangi OAuth akışını kullanmalıdır?"
+    options:
+      - "Implicit flow"
+      - "Resource Owner Password Credentials"
+      - "Authorization Code + PKCE"
+      - "Client Credentials"
+    answer: 3
+    difficulty: medium
+    why: |
+      Implicit ve Resource Owner Password akışları güvenlik sorunları nedeniyle artık önerilmez ve OAuth 2.1 bunları kaldırır. Client Credentials kullanıcı olmadan servisten servise çağrı içindir. Kullanıcının oturum açtığı her istemci (web, SPA, mobil) için doğru akış Authorization Code + PKCE'dir. PKCE, çalınan yetki kodunun `code_verifier` olmadan işe yaramamasını sağlar.
+
+  - q: "Kullanıcı `GET /api/orders/123` isteğindeki numarayı değiştirerek başka kullanıcıların siparişlerini görebiliyor. Uç nokta `RequireAuthorization()` ile korunuyor. Sorun nedir?"
+    options:
+      - "JWT imzası doğrulanmıyor."
+      - "CORS yanlış yapılandırılmış."
+      - "HTTPS kullanılmıyor."
+      - "Kaynak sahipliği kontrol edilmiyor (IDOR); sorgu kullanıcıya göre filtrelenmeli ya da kaynak tabanlı yetkilendirme uygulanmalı."
+    answer: 4
+    difficulty: medium
+    why: |
+      `RequireAuthorization()` yalnızca kullanıcının oturum açtığını doğrular. Siparişin o kullanıcıya ait olup olmadığını kontrol etmez. Buna IDOR (Insecure Direct Object Reference) denir ve OWASP'ın birinci sıradaki riski olan Broken Access Control'ün parçasıdır. Çözüm, sorguyu baştan kullanıcıya göre filtrelemek ya da kaynak tabanlı bir yetkilendirme işleyicisi kullanmaktır.
+
+  - q: "Bir `BackgroundService` içinde yakalanmayan bir istisna oluştu. .NET 6 ve sonrasında varsayılan davranış nedir?"
+    options:
+      - "İstisna sessizce yutulur, servis çalışmaya devam eder."
+      - "Yalnızca o arka plan servisi durur, uygulama çalışmaya devam eder."
+      - "Uygulamanın tamamı (host) durdurulur."
+      - "Servis otomatik olarak yeniden başlatılır."
+    answer: 3
+    difficulty: hard
+    why: |
+      .NET 6'dan beri `BackgroundServiceExceptionBehavior` varsayılan olarak `StopHost`'tur: `ExecuteAsync`'ten kaçan istisna bütün uygulamayı durdurur. Bu yüzden döngü içindeki her tur `try/catch` ile korunmalı ve hata loglanmalıdır. Eski davranış (yalnızca servisin durması) ayarla geri getirilebilir ama sessiz arızalara yol açar.
+
+  - q: "SignalR kullanan bir uygulama üç sunucu örneğine çıkarıldı. Bir örnekte oluşan bildirim, başka örneğe bağlı kullanıcılara ulaşmıyor. Çözüm nedir?"
+    options:
+      - "Redis backplane ya da Azure SignalR Service kullanmak"
+      - "Her örnekte ayrı hub adı kullanmak"
+      - "WebSocket yerine long polling'e zorlamak"
+      - "Bildirimleri HTTP yanıtıyla göndermek"
+    answer: 1
+    difficulty: medium
+    why: |
+      SignalR bağlantıları bağlandıkları sunucu sürecine aittir. Bir örnek yalnızca kendi bağlantılarına mesaj gönderebilir. Örnekler arasında mesajları dağıtmak için bir backplane (Redis pub/sub) ya da bağlantıları kendisi yöneten Azure SignalR Service gerekir.
+
+  - q: "gRPC ile ilgili hangileri doğrudur? (Birden fazla seçin)"
+    options:
+      - "HTTP/2 üzerinde çalışır ve mesajları ikili Protocol Buffers ile kodlar."
+      - "Tarayıcılardan ek bir katman olmadan doğrudan çağrılabilir."
+      - "Sunucu, istemci ve çift yönlü akışı yerleşik olarak destekler."
+      - "`.proto` dosyasında bir alanın numarası değiştirilirse eski istemciler etkilenmez."
+    answer: [1, 3]
+    difficulty: medium
+    why: |
+      gRPC HTTP/2 ve Protobuf kullanır ve akışı yerleşik olarak destekler. Tarayıcılar gRPC'nin gerektirdiği HTTP/2 özelliklerini doğrudan açmadığı için gRPC-Web ya da JSON transcoding gerekir. Protobuf'ta alan numaraları kablo üzerindeki sözleşmedir. Numarayı değiştirmek eski istemcilerin veriyi yanlış alana okumasına yol açar. Silinen alanların numaraları `reserved` ile kilitlenir.
+
+  - q: "ASP.NET Core'un yerleşik hız sınırlayıcısı (`AddRateLimiter`) ile ilgili hangisi doğrudur?"
+    options:
+      - "Bütün örnekler arasında otomatik olarak paylaşılan tek bir sayaç kullanır."
+      - "Sayaçları süreç içinde tutar; birden fazla örnek çalışıyorsa toplam sınır örnek sayısıyla çarpılır."
+      - "Yalnızca IP adresine göre bölümleme yapabilir."
+      - "Sınırı aşan isteklere varsayılan olarak 500 döner ve bu değiştirilemez."
+    answer: 2
+    difficulty: medium
+    why: |
+      Yerleşik sınırlayıcı bellekte çalışır. Üç örnekli bir dağıtımda her örnek kendi sayacını tutar, yani dakikada 100 isteklik sınır pratikte 300 olur. Dağıtık sınır için Redis tabanlı bir sınırlayıcı ya da API ağ geçidi gerekir. Bölümleme kullanıcıya, IP'ye ya da herhangi bir anahtara göre yapılabilir. Reddetme kodu `RejectionStatusCode` ile 429 yapılır.

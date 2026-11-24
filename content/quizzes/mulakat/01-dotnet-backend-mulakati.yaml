@@ -1,0 +1,136 @@
+title: .NET Backend Mülakat Provası
+description: Türkiye'de ve yurt dışında .NET backend ve full-stack mülakatlarının teknik turunda en sık gelen sorulardan karma bir prova. C#, ASP.NET Core, EF Core, veritabanı, mimari, mesajlaşma ve pratikler.
+level: intermediate
+timeLimitMinutes: 20
+questions:
+  - q: "`IEnumerable<T>` ile `IQueryable<T>` arasındaki temel fark nedir?"
+    options:
+      - "`IQueryable<T>` bir ifade ağacı taşır ve sağlayıcı (ör. EF Core) tarafından SQL'e çevrilir; `IEnumerable<T>` bellekte LINQ to Objects ile çalışır."
+      - "`IEnumerable<T>` yalnızca dizilerle, `IQueryable<T>` yalnızca listelerle çalışır."
+      - "İkisi aynıdır; `IQueryable<T>` eski adıdır."
+      - "`IQueryable<T>` her zaman daha yavaştır."
+    answer: 1
+    difficulty: easy
+    why: |
+      `IQueryable<T>` üzerindeki `Where`, `Select` gibi operatörler ifade ağacına eklenir ve sonlandırıcı çağrıda tek bir SQL sorgusuna çevrilir. `IEnumerable<T>`'ye geçildiği an sonraki operatörler bellekte çalışır. Bu çizginin yanlış yerde olması gereksiz yere bütün tablonun çekilmesine yol açar.
+
+  - q: "`string` tipinin değişmez (immutable) olmasının pratik sonucu hangisidir?"
+    options:
+      - "`string` değişkenine yeni değer atanamaz."
+      - "Döngüde `+=` ile birleştirme her adımda yeni bir dizgi oluşturur; çok sayıda birleştirmede `StringBuilder` kullanılır."
+      - "`string` değer tipidir."
+      - "`string` karşılaştırmaları her zaman referans karşılaştırmasıdır."
+    answer: 2
+    difficulty: easy
+    why: |
+      Dizgi nesnesinin içeriği değiştirilemez. `+=` mevcut dizgiyi değiştirmez, yeni bir dizgi oluşturur ve değişken yenisini gösterir. Büyük döngülerde bu O(n²) kopyalama ve çok sayıda tahsis demektir. `string` referans tipidir ama `==` operatörü içerik karşılaştırması yapar.
+
+  - q: "Bir singleton servisin kurucusunda scoped bir servis almasının adı ve sonucu nedir?"
+    options:
+      - "Servis bulucu; performans düşer."
+      - "Döngüsel bağımlılık; uygulama açılmaz."
+      - "Tutsak bağımlılık; scoped servis uygulama boyunca yaşar ve istekler arasında paylaşılır (ör. DbContext için eşzamanlılık hataları ve bayat veri)."
+      - "Sorun yoktur; DI kapsayıcısı ömrü otomatik ayarlar."
+    answer: 3
+    difficulty: medium
+    why: |
+      Singleton bir kez oluşturulur ve aldığı bağımlılığı uygulama boyunca tutar. Scoped bir `DbContext` bu şekilde bütün isteklerde paylaşılır. Thread güvenli olmadığı için eşzamanlı isteklerde bozulur. Kural: bir servis yalnızca kendisiyle aynı ya da daha uzun ömürlü servislere bağımlı olabilir. Gerekirse `IServiceScopeFactory` ile kapsam açılır.
+
+  - q: "ASP.NET Core'da `HttpClient` kullanırken önerilen yaklaşım hangisidir?"
+    options:
+      - "Her istekte `using var client = new HttpClient();`"
+      - "Uygulama boyunca tek bir statik `HttpClient`, DNS değişiklikleri önemsiz"
+      - "`HttpClient` yerine her zaman `WebRequest`"
+      - "`IHttpClientFactory` (`AddHttpClient`), typed client'lar ve gerekirse dayanıklılık işleyicileri"
+    answer: 4
+    difficulty: medium
+    why: |
+      Her seferinde yeni `HttpClient` oluşturmak yük altında soket tükenmesine yol açar. Tek bir statik örnek ise DNS değişikliklerini kaçırabilir. `IHttpClientFactory` mesaj işleyicilerini havuzlar ve belirli aralıklarla yeniler. Retry ve circuit breaker gibi dayanıklılık katmanlarının eklenmesini de kolaylaştırır.
+
+  - q: "Bir PUT uç noktası, istemcinin göndermediği alanları `null` yapıyor ve kullanıcılar veri kaybediyor. İstemci yalnızca değiştirmek istediği alanları gönderiyor. Doğru tasarım hangisidir?"
+    options:
+      - "Kısmi güncelleme için PATCH kullanmak ya da PUT'ta istemcinin her zaman kaynağın tamamını göndermesini şart koşmak"
+      - "PUT'u POST yapmak"
+      - "Bütün alanları zorunlu kılıp istemciyi değiştirmemek"
+      - "Gelen `null` değerleri her zaman görmezden gelmek"
+    answer: 1
+    difficulty: medium
+    why: |
+      PUT kaynağı bütünüyle değiştirir: gönderilmeyen alan "boş" demektir. Kısmi güncelleme PATCH'in anlamıdır. Gelen bütün `null`'ları görmezden gelmek ise bir alanı bilerek temizlemeyi imkânsız kılar. Sözleşme açık olmalıdır: tam değiştirme için PUT, kısmi güncelleme için PATCH.
+
+  - q: "İki eşzamanlı istek aynı ürünün son stoğunu satıyor ve stok -1'e düşüyor. Hangi çözüm bu yarışı **tek başına** doğru şekilde engeller?"
+    options:
+      - "Önce `SELECT` ile stoğu kontrol edip sonra `UPDATE` yapmak"
+      - "Atomik koşullu güncelleme: `UPDATE Products SET Stock = Stock - 1 WHERE Id = @id AND Stock >= 1` ve etkilenen satır sayısını kontrol etmek"
+      - "Kontrolü uygulama tarafında `if` ile yapmak"
+      - "Stoğu önbellekte tutmak"
+    answer: 2
+    difficulty: hard
+    why: |
+      "Önce kontrol et, sonra güncelle" iki ayrı adımdır ve arada başka bir istek araya girer (check-then-act yarışı). Koşulu güncellemenin içine almak işlemi veritabanında atomik yapar. Etkilenen satır 0 ise stok tükenmiştir. Alternatif olarak iyimser eşzamanlılık belirteci ya da satır kilidi (`SELECT ... FOR UPDATE` / `UPDLOCK`) kullanılabilir.
+
+  - q: "Hangi durum bir indeksin **zarar** verebileceği bir senaryodur?"
+    options:
+      - "Sık sorgulanan ve seçiciliği yüksek bir kolon"
+      - "Sıralama ve aralık sorgularında kullanılan bir tarih kolonu"
+      - "Çok yoğun yazma alan bir tabloda, neredeyse hiç sorgulanmayan kolonlar üzerindeki çok sayıda indeks"
+      - "Yabancı anahtar kolonu üzerindeki indeks"
+    answer: 3
+    difficulty: medium
+    why: |
+      Her indeks her `INSERT`, `UPDATE` ve `DELETE`'te ayrıca güncellenir ve yer kaplar. Sorgulanmayan kolonlardaki indeksler yalnızca maliyettir. Seçiciliği yüksek, sık filtrelenen kolonlar ve join'de kullanılan yabancı anahtarlar indeks için iyi adaylardır.
+
+  - q: "Mikroservis mimarisinde 'servis başına veritabanı' kuralının bir sonucu hangisidir?"
+    options:
+      - "Servisler birbirinin tablolarına doğrudan JOIN yapabilir."
+      - "İki fazlı commit ile dağıtık transaction'lar standart çözümdür."
+      - "Bütün servisler aynı şemayı paylaşmak zorundadır."
+      - "Başka servisin verisi API ile istenir ya da olaylarla yerel bir kopyada tutulur; servisler arası tutarlılık saga ve outbox ile nihai olarak sağlanır."
+    answer: 4
+    difficulty: medium
+    why: |
+      Her servis kendi verisinin sahibidir ve başka servisin şemasına bağımlı olmaz. Bu yüzden JOIN yapılamaz ve 2PC pratik değildir. Veri API'yle istenir ya da olaylarla yerel bir kopyada tutulur. Birden fazla servisi kapsayan iş akışları saga ile, mesaj yayımlama tutarlılığı outbox ile sağlanır.
+
+  - q: "Bir mesaj kuyruğu tüketicisinin idempotent olması neden gereklidir?"
+    options:
+      - "Mesajlar her zaman tam olarak bir kez teslim edildiği için gerekli değildir."
+      - "Pratikteki teslim garantisi 'en az bir kez'dir; tüketici işleyip onay vermeden çökerse mesaj tekrar gelir ve ikinci işleme yan etkiyi tekrarlamamalıdır."
+      - "Idempotency yalnızca performans içindir."
+      - "Broker'lar idempotency'yi otomatik sağlar."
+    answer: 2
+    difficulty: medium
+    why: |
+      Çoğu sistem en az bir kez teslim eder. Onay gelmeden yaşanan bir çökme, broker'ın mesajı yeniden teslim etmesine yol açar. Fatura kesme ya da para çekme gibi işlemler iki kez yapılmamalıdır. İşlenmiş mesaj kimliği tablosu ya da iş anahtarında benzersiz indeks bunu sağlar.
+
+  - q: "Unit test ile integration test arasındaki farkı en iyi hangisi anlatır?"
+    options:
+      - "Unit test tek bir birimin davranışını dış bağımlılıklar olmadan, hızlı ve yalıtılmış doğrular; integration test bileşenlerin (API, veritabanı, serileştirme) gerçekten birlikte çalıştığını doğrular."
+      - "Unit test yalnızca private metotları test eder."
+      - "Integration test yalnızca arayüzü test eder."
+      - "İkisi aynı şeydir, yalnızca test süresi farklıdır."
+    answer: 1
+    difficulty: easy
+    why: |
+      Birim testleri hızlı geri bildirim verir ve iş kurallarını yalıtılmış olarak doğrular. Entegrasyon testleri birimlerin birlikte doğru çalıştığını gösterir. WebApplicationFactory ve Testcontainers ile gerçek HTTP hattı ve gerçek veritabanı kullanılabilir. İkisi birbirinin yerine geçmez, birbirini tamamlar.
+
+  - q: "Ev ödevi (take-home) olarak bir API yazdınız. Değerlendirmede hangisi **en az** önemlidir?"
+    options:
+      - "Projenin tek komutla çalışması ve README'de varsayımların ve ödünleşimlerin anlatılması"
+      - "İş kuralları için testlerin bulunması"
+      - "Projede olabildiğince çok tasarım deseni ve katman kullanılması"
+      - "Gizli bilgilerin depoda olmaması ve anlamlı bir commit geçmişi"
+    answer: 3
+    difficulty: easy
+    why: |
+      Değerlendiren kişi çalışır, okunur, test edilmiş ve gerekçelendirilmiş bir çözüm arar. Küçük bir ödev için gereksiz katman ve desen eklemek aşırı mühendislik olarak görülür ve eksi puan getirir. Yapı, problemin büyüklüğüyle orantılı olmalı ve README'de gerekçesi anlatılmalıdır.
+
+  - q: "Mülakatta 'Üretimde yavaşlayan bir uç noktayı nasıl teşhis edersin?' sorusuna en iyi cevap hangisidir?"
+    options:
+      - "Kodu baştan yazarım."
+      - "Sunucuya daha fazla CPU eklerim."
+      - "Önbellek eklerim."
+      - "Metriklerle kapsamı (hangi uç nokta, hangi yüzdelik, ne zamandan beri), dağıtık izlerle zamanın nerede harcandığını bulurum; son değişikliklere bakarım. Sorun kodda ise profil çıkarır, veritabanındaysa sorgu planını incelerim."
+    answer: 4
+    difficulty: medium
+    why: |
+      Görüşmeci yöntem arar: önce ölçmek ve daralmak. Yavaşlığın büyük kısmı veritabanı sorgularından ya da dış çağrılardan gelir ve izler bunu hemen gösterir. Ölçmeden yapılan değişiklikler (daha fazla CPU, rastgele önbellek) sorunu gizleyebilir ya da hiç çözmeyebilir.

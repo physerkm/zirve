@@ -4,10 +4,12 @@ import {
   BookOpen,
   Braces,
   Building2,
+  Cloud,
   Compass,
   Cpu,
   Database,
   FileCode2,
+  GitBranch,
   Hammer,
   Hash,
   Network,
@@ -30,6 +32,8 @@ const icons: Record<string, LucideIcon> = {
   cpu: Cpu,
   building: Building2,
   hammer: Hammer,
+  cloud: Cloud,
+  git: GitBranch,
 };
 
 const boxSizes = { sm: 'size-8 rounded-lg', md: 'size-11 rounded-xl', lg: 'size-14 rounded-2xl' };

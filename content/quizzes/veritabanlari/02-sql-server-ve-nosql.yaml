@@ -1,0 +1,114 @@
+title: SQL Server ve NoSQL
+description: Clustered ve nonclustered indeksler, key lookup, RCSI ve NOLOCK, parameter sniffing, SARGable sorgular, MongoDB modelleme, Elasticsearch'te text ve keyword, sorgu türleri ve senkronizasyon.
+level: intermediate
+timeLimitMinutes: 18
+questions:
+  - q: "SQL Server'da clustered indeks ile ilgili hangisi doğrudur?"
+    options:
+      - "Bir tabloda istenen sayıda clustered indeks olabilir."
+      - "Clustered indeks tablonun kendisidir; satırlar bu anahtara göre sıralı bir B-ağacında saklanır ve tablo başına yalnızca bir tane olabilir."
+      - "Clustered indeks ayrı bir yapıdır ve satırları işaret eden bir heap adresi tutar."
+      - "Birincil anahtar hiçbir zaman clustered olamaz."
+    answer: 2
+    difficulty: easy
+    why: |
+      Clustered indeksin yaprak düğümleri satırların kendisidir, bu yüzden tablo başına bir tane olabilir. Varsayılan olarak birincil anahtar clustered olur. Nonclustered indeksler ayrı yapılardır ve satıra ulaşmak için clustered anahtarı taşır.
+
+  - q: "Bir sorgunun execution plan'ında çok sayıda Key Lookup görülüyor. Sorgu `CustomerId` ile filtreleyip `Total` ve `Status` kolonlarını seçiyor. En uygun çözüm hangisidir?"
+    options:
+      - "`CustomerId` üzerindeki nonclustered indekse `INCLUDE (Total, Status)` eklemek (kapsayan indeks)"
+      - "Tabloya `WITH (NOLOCK)` eklemek"
+      - "Clustered indeksi silmek"
+      - "Sorguya `SELECT *` yazmak"
+    answer: 1
+    difficulty: medium
+    why: |
+      Key lookup, nonclustered indeksten bulunan her satır için eksik kolonları almak üzere clustered indekse dönülmesidir. Çok satırda pahalıdır ve optimizer'ı tablo taramasına itebilir. `INCLUDE` kolonları indeksin yaprağında saklar. Sorgunun ihtiyacı olan her şey indekste bulunur ve lookup ortadan kalkar.
+
+  - q: "Rastgele GUID (`NEWID()`) değerini clustered birincil anahtar olarak kullanmanın sakıncası nedir?"
+    options:
+      - "GUID'ler benzersiz olmadığı için çakışma olur."
+      - "SQL Server GUID'leri indeksleyemez."
+      - "Her ekleme B-ağacının rastgele bir sayfasına gider; sayfa bölünmelerine, parçalanmaya ve geniş anahtar yüzünden bütün nonclustered indekslerin büyümesine yol açar."
+      - "Sakıncası yoktur; en iyi uygulama budur."
+    answer: 3
+    difficulty: medium
+    why: |
+      İyi bir clustered anahtar dar, benzersiz, değişmez ve sürekli artan olmalıdır. Rastgele GUID son koşulu bozar: yeni satırlar sona değil rastgele yerlere eklenir. Ayrıca 16 baytlık anahtar her nonclustered indekste tekrar eder. Sıralı GUID (`NEWSEQUENTIALID()`, `Guid.CreateVersion7()`) ya da `BIGINT IDENTITY` daha iyi seçeneklerdir.
+
+  - q: "Yoğun bir SQL Server veritabanında okuma sorguları, yazma transaction'larının kilitlerini beklediği için yavaş. En doğru çözüm hangisidir?"
+    options:
+      - "Bütün sorgulara `WITH (NOLOCK)` eklemek"
+      - "Read Committed Snapshot Isolation'ı (RCSI) açmak; okuyucular kilit beklemeden son commit edilmiş sürümü okur"
+      - "İzolasyon seviyesini Serializable yapmak"
+      - "Bütün indeksleri silmek"
+    answer: 2
+    difficulty: medium
+    why: |
+      NOLOCK, commit edilmemiş (geri alınabilecek) veriyi okur ve aynı satırı iki kez okumak ya da hiç okumamak gibi tutarsızlıklara yol açar. RCSI, satır sürümlemesiyle okuyucuların yazıcıları beklememesini sağlar ve tutarlı veri verir. Serializable engellemeyi artırır.
+
+  - q: "Bir stored procedure bazı parametrelerle milisaniyeler, bazılarıyla dakikalar sürüyor. İçerik değişmemiş. En olası sebep nedir?"
+    options:
+      - "Ağ gecikmesi"
+      - "Parameter sniffing: plan ilk çalıştırmadaki parametre değerine göre derlenip önbelleğe alındı ve çok farklı veri dağılımına sahip diğer değerler için uygun değil"
+      - "Stored procedure'lar her zaman yavaştır."
+      - "Veritabanında boş alan kalmamış."
+    answer: 2
+    difficulty: hard
+    why: |
+      SQL Server planı ilk parametre değerine göre seçip önbelleğe alır. Az satır döndüren bir değer için seçilen indeks arama planı, milyonlarca satır döndüren bir değer için felakete dönüşebilir. Çözümler: `OPTION (RECOMPILE)`, `OPTIMIZE FOR`, Query Store ile iyi planı zorlamak.
+
+  - q: "Hangi `WHERE` koşulu `CreatedAt` kolonundaki indeksi kullanabilir (SARGable)?"
+    options:
+      - "`WHERE YEAR(CreatedAt) = 2026`"
+      - "`WHERE CONVERT(varchar(10), CreatedAt, 120) LIKE '2026%'`"
+      - "`WHERE DATEADD(day, 1, CreatedAt) > GETDATE()`"
+      - "`WHERE CreatedAt >= '2026-01-01' AND CreatedAt < '2027-01-01'`"
+    answer: 4
+    difficulty: medium
+    why: |
+      Kolonu bir fonksiyona sokmak, indeksteki sıralı değerlerle doğrudan karşılaştırmayı engeller ve genellikle tarama yapılır. Kolonu çıplak bırakıp sabit değerlerle aralık koşulu yazmak indeks aramasını mümkün kılar. Bu kural PostgreSQL için de geçerlidir.
+
+  - q: "MongoDB'de bir ürünün yorumları sınırsız büyüyebiliyor ve yorumlar ürün sayfasından bağımsız sayfalanarak okunuyor. Nasıl modellenmelidir?"
+    options:
+      - "Yorumları ürün belgesine dizi olarak gömmek"
+      - "Yorumları ayrı bir koleksiyonda tutup `productId` ile referans vermek ve `productId` + tarih üzerine indeks koymak"
+      - "Her yorum için ayrı bir veritabanı oluşturmak"
+      - "Yorumları ürün adının içine metin olarak eklemek"
+    answer: 2
+    difficulty: medium
+    why: |
+      Sınırsız büyüyen diziler belge boyutu sınırına (16 MB) ve büyük belgelerin sürekli yeniden yazılmasına yol açar. Bağımsız okunan ve sınırsız büyüyen veri referansla ayrı koleksiyonda tutulur. Gömme, birlikte okunan ve sınırlı büyüyen veri (sipariş kalemleri, adresler) için uygundur.
+
+  - q: "Elasticsearch'te `category` alanı `text` olarak eşlenmiş. `term` sorgusuyla `\"Klavye\"` arandığında sonuç dönmüyor. Neden?"
+    options:
+      - "`text` alanlar analyzer'dan geçer ve küçük harfe çevrilip terimlere bölünerek indekslenir; `term` sorgusu analiz edilmediği için \"Klavye\" terimi indekste yoktur. Filtre için alan `keyword` olarak eşlenmelidir."
+      - "Elasticsearch büyük harf desteklemez."
+      - "`term` sorgusu yalnızca sayısal alanlarda çalışır."
+      - "İndeks henüz oluşturulmamıştır."
+    answer: 1
+    difficulty: medium
+    why: |
+      `text` alanlar tam metin arama içindir. Değer analyzer'dan geçer ve "klavye" gibi normalleştirilmiş terimler olarak saklanır. `term` sorgusu girdiyi analiz etmez ve birebir "Klavye" terimini arar. Kategori, marka ve durum gibi tam eşleşme, filtre, sıralama ve toplama gereken alanlar `keyword` olarak eşlenir.
+
+  - q: "Elasticsearch `bool` sorgusunda `must` ile `filter` arasındaki fark nedir?"
+    options:
+      - "Fark yoktur."
+      - "`filter` sonuçları sıralar, `must` sıralamaz."
+      - "`filter` yalnızca sayısal alanlarda çalışır."
+      - "`must` alaka skoruna katkı verir; `filter` yalnızca eler, skor hesaplamaz ve önbelleğe alınabilir. Evet/hayır koşulları `filter`'a konur."
+    answer: 4
+    difficulty: medium
+    why: |
+      Tam metin arama koşulları (`match`) belgenin ne kadar alakalı olduğunu belirlediği için `must`'ta durur. Kategori, fiyat aralığı ve stok durumu gibi evet/hayır koşulları skoru etkilememelidir. `filter`'a konduklarında hem daha hızlı çalışır hem de önbelleğe alınabilir.
+
+  - q: "Ürün verisi SQL Server'da, arama Elasticsearch'te. İkisini tutarlı tutmak için hangi yaklaşımdan **kaçınılmalıdır**?"
+    options:
+      - "Outbox tablosu, mesaj kuyruğu ve indeksleyici servis"
+      - "Değişiklik verisi yakalama (CDC, ör. Debezium)"
+      - "Uygulamanın aynı istekte hem veritabanına hem Elasticsearch'e ayrı ayrı yazması (dual write)"
+      - "Belgeye sürüm numarası koyup eski güncellemeleri reddetmek"
+    answer: 3
+    difficulty: medium
+    why: |
+      Dual write'ta iki yazmadan biri başarısız olursa (ağ hatası, süreç çökmesi) sistemler sessizce ayrışır ve bunu fark edecek bir mekanizma yoktur. Outbox ya da CDC, değişikliği güvenilir bir kaynaktan alır ve yeniden denenebilir şekilde iletir. Sürüm numarası sıralama sorunlarına karşı korur.

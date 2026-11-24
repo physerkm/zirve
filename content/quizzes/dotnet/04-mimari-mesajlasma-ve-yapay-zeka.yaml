@@ -1,0 +1,147 @@
+title: Mimari, Mesajlaşma ve Yapay Zekâ
+description: Clean Architecture, Vertical Slice ve CQRS, DDD yapı taşları, modüler monolit ve mikroservisler, teslim garantileri, RabbitMQ, Kafka ve Azure Service Bus, outbox, LLM entegrasyonu ve RAG.
+level: advanced
+timeLimitMinutes: 22
+questions:
+  - q: "Clean Architecture'da `IEmailSender` arayüzü hangi katmanda tanımlanır, SMTP ile gönderen sınıf hangi katmanda yer alır?"
+    options:
+      - "İkisi de Infrastructure katmanında"
+      - "Arayüz Domain'de, uygulaması API katmanında"
+      - "Arayüz Application katmanında, uygulaması Infrastructure katmanında"
+      - "Arayüz Infrastructure'da, uygulaması Application katmanında"
+    answer: 3
+    difficulty: medium
+    why: |
+      Bağımlılık kuralı bağımlılıkların içe doğru akmasını ister. Application "bir e-posta göndericiye ihtiyacım var" diyerek arayüzü kendi içinde tanımlar. Infrastructure bu arayüzü SMTP ile uygular ve Application'a bağımlıdır, tersi değil. Böylece iş mantığı altyapıdan bağımsız kalır ve testte sahte bir gönderici kullanılabilir.
+
+  - q: "CQRS ile ilgili hangisi doğrudur?"
+    options:
+      - "CQRS her zaman ayrı bir okuma veritabanı gerektirir."
+      - "CQRS, Event Sourcing olmadan uygulanamaz."
+      - "Basit hali, aynı veritabanında komut tarafının domain modelini, sorgu tarafının doğrudan DTO projeksiyonunu kullanmasıdır."
+      - "CQRS yalnızca MediatR ile uygulanabilir."
+    answer: 3
+    difficulty: medium
+    why: |
+      CQRS, durumu değiştiren işlemlerle okuyan işlemleri farklı modellerle yazmaktır. En yaygın ve ucuz hali aynı veritabanını kullanır: komutlar zengin domain modelinden geçer, sorgular ekranın ihtiyacı olan DTO'ya doğrudan projeksiyon yapar. Ayrı okuma modeli ve Event Sourcing isteğe bağlı ek adımlardır. MediatR yalnızca uygulama yollarından biridir.
+
+  - q: "DDD'de aggregate ile ilgili hangileri doğrudur? (Birden fazla seçin)"
+    options:
+      - "Değişmez iş kuralları (invariant) aggregate sınırı içinde korunur."
+      - "Aggregate'ler birbirine nesne referansıyla değil, kimlikle referans verir."
+      - "Bir transaction'da mümkün olduğunca çok aggregate değiştirilmelidir."
+      - "Aggregate'ler mümkün olduğunca büyük tutulmalıdır ki tutarlılık artsın."
+    answer: [1, 2]
+    difficulty: hard
+    why: |
+      Aggregate bir tutarlılık sınırıdır: kuralları kök korur ve dışarıdan yalnızca kök üzerinden erişilir. Başka aggregate'lere kimlikle referans verilir. Bir transaction genellikle tek bir aggregate'i değiştirir. Birden fazlası gerekiyorsa domain olayları ve nihai tutarlılık kullanılır. Büyük aggregate'ler kilit çakışmasına ve performans sorunlarına yol açar, bu yüzden küçük tutulur.
+
+  - q: "Value object ile entity arasındaki temel fark nedir?"
+    options:
+      - "Value object kimliğiyle, entity değerleriyle tanımlanır."
+      - "Entity kimliğiyle tanımlanır ve ömrü boyunca değişebilir; value object değerleriyle tanımlanır ve değişmezdir."
+      - "Value object veritabanında saklanamaz."
+      - "Entity'ler her zaman struct, value object'ler her zaman class olmalıdır."
+    answer: 2
+    difficulty: easy
+    why: |
+      İki sipariş aynı tutar ve tarihe sahip olsa da kimlikleri farklıysa farklı entity'lerdir. `Money(100, "TRY")` gibi bir value object ise yalnızca değerleriyle tanımlanır: aynı değerlere sahip iki örnek eşittir ve değişmezdir. Value object'ler EF Core'da owned ya da complex type olarak aynı tabloda saklanabilir.
+
+  - q: "Bir ekip 'mikroservislere geçtik' diyor, ama bir servisi dağıtmak için diğer üçünü de aynı anda dağıtmaları gerekiyor ve servisler aynı tabloları okuyup yazıyor. Bu duruma ne denir?"
+    options:
+      - "Modüler monolit"
+      - "Strangler fig"
+      - "Bounded context"
+      - "Dağıtık monolit"
+    answer: 4
+    difficulty: easy
+    why: |
+      Dağıtık monolit, monolitin sıkı bağlılığını dağıtık sistemin bütün zorluklarıyla birleştirir: bağımsız dağıtılamayan, ortak veritabanını paylaşan, senkron zincirlerle birbirine bağlı servisler. İyi servis sınırları bounded context'leri izler, her servis kendi verisine sahiptir ve servisler bağımsız dağıtılabilir.
+
+  - q: "20 yıllık bir sistemi kesintisiz modernleştirmek için önerilen yaklaşım hangisidir?"
+    options:
+      - "Sistemi bir kerede sıfırdan yeniden yazıp tek seferde geçiş yapmak"
+      - "Önüne bir yönlendirici koyup yetenekleri tek tek yeni sisteme taşımak, aradaki modeli bir anti-corruption layer ile çevirmek ve taşınan parçayı eskiden silmek (strangler fig)"
+      - "Eski sistemin veritabanını yeni servislere doğrudan paylaştırmak"
+      - "Eski sistemi dondurup yeni özellikleri yalnızca yeni sistemde yapmak, geçişi hiç yapmamak"
+    answer: 2
+    difficulty: medium
+    why: |
+      Büyük patlama (big bang) yeniden yazımları yüksek risklidir: yeni sistem yıllarca yetişemez ve eski sistem değişmeye devam eder. Strangler fig deseni trafiği yetenek yetenek yeni sisteme yönlendirir. Her adım küçük ve geri alınabilirdir. Anti-corruption layer yeni sistemin eski modelle kirlenmesini önler.
+
+  - q: "Bir tüketici mesajı işleyip veritabanına yazdı, ancak broker'a onay (ack) göndermeden çöktü. En az bir kez teslim garantisi olan bir sistemde ne olur ve ne yapılmalıdır?"
+    options:
+      - "Mesaj kaybolur; at-most-once teslime geçilmelidir."
+      - "Broker mesajı tekrar teslim eder; tüketici idempotent yazılmalıdır (ör. işlenmiş mesaj kimliği tablosu ya da iş anahtarında benzersiz indeks)."
+      - "Broker mesajı otomatik olarak DLQ'ya taşır."
+      - "Veritabanı yazması otomatik olarak geri alınır."
+    answer: 2
+    difficulty: medium
+    why: |
+      Onay gelmediği için broker mesajı işlenmemiş sayar ve yeniden teslim eder. Bu en az bir kez tesliminin doğal sonucudur. Tam olarak bir kez teslim uçtan uca pratikte yoktur. Etkisi, tüketiciyi idempotent yazarak sağlanır: mesaj kimliği iş verisiyle aynı transaction'da benzersiz bir tabloya yazılır ve tekrar gelen mesaj atlanır.
+
+  - q: "Kafka'da 6 partition'lı bir topic'i aynı consumer group içindeki 10 tüketiciyle okuyorsunuz. Ne olur?"
+    options:
+      - "Her mesaj 10 tüketicinin hepsine teslim edilir."
+      - "Partition'lar 10 parçaya bölünür."
+      - "Kafka otomatik olarak partition sayısını 10'a çıkarır."
+      - "Yalnızca 6 tüketici partition alır; 4'ü boşta bekler."
+    answer: 4
+    difficulty: medium
+    why: |
+      Bir consumer group içinde her partition yalnızca bir tüketiciye atanır. Bu yüzden paralellik partition sayısıyla sınırlıdır ve fazla tüketiciler boşta kalır. Farklı consumer group'lar ise aynı mesajları bağımsız olarak okur. Partition sayısı otomatik artmaz ve sonradan artırmak anahtar–partition eşlemesini değiştirir.
+
+  - q: "Bir siparişe ait olayların (Created, Paid, Shipped) Kafka'da sırayla işlenmesi gerekiyor. Ne yapmalısınız?"
+    options:
+      - "Mesaj anahtarı olarak sipariş kimliğini kullanmak; aynı anahtarlı mesajlar aynı partition'a gider ve partition içinde sıra korunur."
+      - "Topic'i tek partition'lı yapmak tek doğru çözümdür."
+      - "Mesajlara rastgele anahtar vermek."
+      - "Kafka sıralamayı topic genelinde zaten garanti eder."
+    answer: 1
+    difficulty: medium
+    why: |
+      Kafka sıralamayı yalnızca partition içinde garanti eder. Aynı anahtar her zaman aynı partition'a gittiği için sipariş kimliğini anahtar yapmak bir siparişin olaylarının sırasını korur ve farklı siparişler yine paralel işlenebilir. Tek partition da sırayı korur ama bütün paralelliği öldürür.
+
+  - q: "Bir tüketicide her seferinde istisna fırlatan 'zehirli' bir RabbitMQ mesajı için en uygun yaklaşım hangisidir?"
+    options:
+      - "`BasicNack` ile `requeue: true` göndererek mesajı hemen kuyruğun başına geri koymak"
+      - "Mesajı onaylamadan bekletmek"
+      - "Sınırlı sayıda gecikmeli yeniden deneme, ardından mesajı dead-letter exchange üzerinden bir DLQ'ya göndermek ve alarm kurmak"
+      - "Tüketiciyi durdurmak"
+    answer: 3
+    difficulty: medium
+    why: |
+      Hemen requeue etmek, mesajı saniyede yüzlerce kez yeniden işleyen sıcak bir döngü yaratır ve kuyruğu tıkar. Doğru yaklaşım: TTL'li bir bekleme kuyruğuyla gecikmeli yeniden deneme, sınır aşılınca `requeue: false` ile reddedip DLX üzerinden DLQ'ya düşürmek. DLQ için bir alarm ve yeniden işleme süreci gerekir.
+
+  - q: "Sipariş veritabanına kaydedildikten sonra `OrderCreated` olayı yayımlanıyor. İkisinin tutarlı olmasını (biri olup diğerinin olmamasını önlemeyi) hangi desen sağlar?"
+    options:
+      - "İki fazlı commit (2PC)"
+      - "Transactional outbox: olay, siparişle aynı transaction'da bir outbox tablosuna yazılır ve ayrı bir süreç onu broker'a iletir."
+      - "Önce olayı yayımlayıp sonra siparişi kaydetmek"
+      - "Olayı yayımladıktan sonra `Thread.Sleep` ile beklemek"
+    answer: 2
+    difficulty: medium
+    why: |
+      Veritabanı ve broker aynı transaction'a katılamaz. Hangi sırada yazılırsa yazılsın arada çökme tutarsızlık yaratır. Outbox, olayı iş verisiyle aynı yerel transaction'da saklar. Ayrı bir süreç olayları en az bir kez iletir, bu yüzden tüketiciler yine idempotent olmalıdır. 2PC mikroservislerde ve çoğu broker'da pratik değildir.
+
+  - q: "Şirket içi iade politikası hakkında soruları cevaplayan bir asistan yapıyorsunuz. Model bazen politikada olmayan kurallar uyduruyor. Hangisi en uygun yaklaşımdır?"
+    options:
+      - "Modelin temperature değerini 1'in üstüne çıkarmak"
+      - "Politika belgelerini parçalayıp embedding'leriyle bir vektör deposuna koymak, soru anında en ilgili parçaları bulup 'yalnızca bu belgelere dayanarak cevap ver, yoksa bilmediğini söyle' talimatıyla modele vermek (RAG) ve sonuçları bir değerlendirme kümesiyle ölçmek"
+      - "Bütün politika belgesini her soruda kısaltmadan sistem mesajına eklemek ve hiç ölçmemek"
+      - "Modelin cevabını doğrudan veritabanına yazmak"
+    answer: 2
+    difficulty: medium
+    why: |
+      Halüsinasyonun en etkili çaresi modele doğru ve ilgili bağlamı vermektir. RAG belgeleri soru anında bulur, cevabın kaynağını gösterir ve belgeler güncellendiğinde model yeniden eğitilmeden güncel kalır. Yüksek temperature rastgeleliği artırır. Bütün belgeyi her seferinde göndermek maliyetli ve bağlam penceresini zorlar. Değerlendirme kümesi olmadan iyileşme ölçülemez.
+
+  - q: "LLM'e `IssueRefund(orderId, amount)` fonksiyonunu araç olarak verdiniz. Güvenlik açısından hangisi doğrudur?"
+    options:
+      - "Model bir yetki sınırıdır; yalnızca uygun durumlarda fonksiyonu çağırır."
+      - "Sistem mesajına 'yalnızca yetkili kullanıcılar için iade yap' yazmak yeterlidir."
+      - "Fonksiyonun içinde kullanıcının o sipariş üzerindeki yetkisi ve iş kuralları kodla kontrol edilmeli, geri alınamaz işlemler için ek onay istenmelidir; model prompt injection ile yönlendirilebilir."
+      - "Function calling hiçbir zaman güvenli değildir, kullanılmamalıdır."
+    answer: 3
+    difficulty: hard
+    why: |
+      Model, kullanıcı girdisi ya da RAG ile getirilen bir belge tarafından yönlendirilebilir (prompt injection). Bu yüzden asla yetki sınırı sayılmaz. Talimatlar bir savunma katmanı olabilir ama yeterli değildir. Yetki ve iş kuralı kontrolleri fonksiyonun içinde, kodla yapılır. Para iadesi gibi geri alınamaz işlemler için insan onayı ya da ek doğrulama gerekir.
