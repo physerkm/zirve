@@ -5,23 +5,138 @@ import { JudgeResultPanel } from '@/components/JudgeResultPanel';
 import { Markdown } from '@/components/Markdown';
 import { SplitPane } from '@/components/SplitPane';
 import { Badge, Button, ButtonLink, DifficultyBadge, ErrorNotice, PageError, PageLoading, Spinner } from '@/components/ui';
-import { cn, formatRelative, languageLabels, tagLabel, verdictLabels } from '@/lib/format';
+import { defineMessages, useMessages } from '@/i18n/messages';
+import { cn, formatRelative, languageLabels, tagLabel, verdictLabel } from '@/lib/format';
 import { useMediaQuery } from '@/lib/hooks';
 import { useEditorial, useJudge, useProblem, useSubmission, useSubmissions, useUser } from '@/lib/queries';
 import { readStorage, removeStorage, writeStorage } from '@/lib/storage';
 import type { Language, ProblemDetail } from '@/lib/types';
 import { hasWalkthrough, walkthroughPath } from '@/lib/walkthroughs';
 
+const messages = defineMessages({
+  tr: {
+    tabs: {
+      description: 'Açıklama',
+      hints: 'İpuçları',
+      editorial: 'Çözüm',
+      submissions: 'Gönderimler',
+    },
+    workspace: {
+      languageSelect: 'Programlama dili',
+      resetTitle: 'Başlangıç koduna dön',
+      confirmReset: 'Emin misiniz?',
+      reset: 'Sıfırla',
+      run: 'Çalıştır',
+      submit: 'Gönder',
+      signInBefore: 'Kodunuzu çalıştırmak ve göndermek için ',
+      signInLink: 'giriş yapın',
+      signInAfter: '. Yazdığınız kod bu tarayıcıda saklanır.',
+      editorLoading: 'Editör yükleniyor',
+      editorLabel: (title: string, language: string) => `${title} için ${language} kod editörü`,
+      results: 'Sonuçlar',
+      view: 'Görünüm',
+      viewInfo: 'Problem',
+      viewCode: 'Kod',
+    },
+    info: {
+      tabList: 'Problem bilgileri',
+    },
+    description: {
+      allProblems: 'Bütün problemler',
+      solved: 'Çözüldü',
+      problemNav: 'Problemler arası gezinme',
+    },
+    hints: {
+      none: 'Bu problem için ipucu yok.',
+      intro: 'İpuçlarını sırayla açın. Her biri sizi çözüme biraz daha yaklaştırır; çözümün kendisini vermez.',
+      hint: (n: number) => `İpucu ${n}`,
+      showFirst: 'İlk ipucunu göster',
+      showNext: (next: number, total: number) => `Sonraki ipucunu göster (${next}/${total})`,
+      allSeen: 'Bütün ipuçlarını gördünüz. Hâlâ takılıyorsanız Çözüm sekmesinden cevabı açabilirsiniz.',
+    },
+    editorial: {
+      none: 'Bu problem için henüz çözüm anlatımı yok.',
+      tryFirst: 'Cevaba bakmadan önce kendiniz deneyin',
+      tryFirstBody:
+        'En çok, takılıp uğraştığınız problemlerden öğrenirsiniz. Önce ipuçlarını deneyin; en az 20–30 dakika uğraştıysanız cevabı açın.',
+      showAnswer: 'Cevabı göster',
+      walkthroughTitle: 'Çözümü adım adım izleyin',
+      walkthroughBody: 'Kodun her satırının ne yaptığını kendi örneklerinizle, etkileşimli olarak görün.',
+      walkthroughButton: 'Adım adım göster',
+    },
+    submissions: {
+      signInPrompt: 'Gönderim geçmişinizi görmek için giriş yapın.',
+      signIn: 'Giriş yap',
+      empty: 'Henüz gönderim yapmadınız.',
+      submissionOf: (language: string) => `${language} gönderimi`,
+      loadIntoEditor: 'Editöre yükle',
+    },
+  },
+  en: {
+    tabs: {
+      description: 'Description',
+      hints: 'Hints',
+      editorial: 'Solution',
+      submissions: 'Submissions',
+    },
+    workspace: {
+      languageSelect: 'Programming language',
+      resetTitle: 'Restore the starter code',
+      confirmReset: 'Are you sure?',
+      reset: 'Reset',
+      run: 'Run',
+      submit: 'Submit',
+      signInBefore: '',
+      signInLink: 'Sign in',
+      signInAfter: ' to run and submit your code. The code you write is saved in this browser.',
+      editorLoading: 'Loading editor',
+      editorLabel: (title: string, language: string) => `${language} code editor for ${title}`,
+      results: 'Results',
+      view: 'View',
+      viewInfo: 'Problem',
+      viewCode: 'Code',
+    },
+    info: {
+      tabList: 'Problem details',
+    },
+    description: {
+      allProblems: 'All problems',
+      solved: 'Solved',
+      problemNav: 'Problem navigation',
+    },
+    hints: {
+      none: 'This problem has no hints.',
+      intro: 'Reveal the hints one at a time. Each one brings you a little closer to the solution without giving it away.',
+      hint: (n: number) => `Hint ${n}`,
+      showFirst: 'Show the first hint',
+      showNext: (next: number, total: number) => `Show the next hint (${next}/${total})`,
+      allSeen: "You've seen all the hints. If you're still stuck, you can reveal the answer in the Solution tab.",
+    },
+    editorial: {
+      none: "This problem doesn't have a solution write-up yet.",
+      tryFirst: 'Try it yourself before you look at the answer',
+      tryFirstBody:
+        "You learn the most from the problems you struggle with. Try the hints first, and reveal the answer only after you've worked on it for at least 20–30 minutes.",
+      showAnswer: 'Show answer',
+      walkthroughTitle: 'Step through the solution',
+      walkthroughBody: 'See what each line of the code does, interactively, with your own examples.',
+      walkthroughButton: 'Show step by step',
+    },
+    submissions: {
+      signInPrompt: 'Sign in to see your submission history.',
+      signIn: 'Sign in',
+      empty: "You haven't submitted anything yet.",
+      submissionOf: (language: string) => `${language} submission`,
+      loadIntoEditor: 'Load into editor',
+    },
+  },
+});
+
 const CodeEditor = lazy(() => import('@/components/CodeEditor'));
 
 type InfoTab = 'description' | 'hints' | 'editorial' | 'submissions';
 
-const infoTabs: { id: InfoTab; label: string }[] = [
-  { id: 'description', label: 'Açıklama' },
-  { id: 'hints', label: 'İpuçları' },
-  { id: 'editorial', label: 'Çözüm' },
-  { id: 'submissions', label: 'Gönderimler' },
-];
+const infoTabs: readonly InfoTab[] = ['description', 'hints', 'editorial', 'submissions'];
 
 const fileExtensions: Record<Language, string> = { csharp: 'cs', javascript: 'js', typescript: 'ts' };
 
@@ -42,6 +157,7 @@ function initialLanguage(problem: ProblemDetail): Language {
 }
 
 function Workspace({ problem }: { problem: ProblemDetail }) {
+  const t = useMessages(messages).workspace;
   const isWide = useMediaQuery('(min-width: 1024px)');
   const { user } = useUser();
   const location = useLocation();
@@ -118,7 +234,7 @@ function Workspace({ problem }: { problem: ProblemDetail }) {
     <div className="flex h-full min-h-0 flex-col bg-surface">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
         <label>
-          <span className="sr-only">Programlama dili</span>
+          <span className="sr-only">{t.languageSelect}</span>
           <select
             value={language}
             onChange={(event) => changeLanguage(event.target.value as Language)}
@@ -132,30 +248,30 @@ function Workspace({ problem }: { problem: ProblemDetail }) {
           </select>
         </label>
 
-        <Button variant="ghost" size="sm" onClick={resetCode} title="Başlangıç koduna dön">
+        <Button variant="ghost" size="sm" onClick={resetCode} title={t.resetTitle}>
           <RotateCcw className="size-3.5" aria-hidden />
-          {confirmingReset ? 'Emin misiniz?' : 'Sıfırla'}
+          {confirmingReset ? t.confirmReset : t.reset}
         </Button>
 
         <div className="ml-auto flex items-center gap-2">
           <Button variant="secondary" size="sm" onClick={() => execute('run')} disabled={!user} loading={judge.isPending && mode === 'run'}>
             {!(judge.isPending && mode === 'run') && <Play className="size-3.5" aria-hidden />}
-            Çalıştır
+            {t.run}
           </Button>
           <Button variant="success" size="sm" onClick={() => execute('submit')} disabled={!user} loading={judge.isPending && mode === 'submit'}>
             {!(judge.isPending && mode === 'submit') && <Send className="size-3.5" aria-hidden />}
-            Gönder
+            {t.submit}
           </Button>
         </div>
       </div>
 
       {!user && (
         <p className="border-b border-border bg-primary-soft px-4 py-2 text-sm">
-          Kodunuzu çalıştırmak ve göndermek için{' '}
+          {t.signInBefore}
           <Link to="/login" state={{ from: location.pathname }} className="font-medium text-primary-text underline underline-offset-2">
-            giriş yapın
+            {t.signInLink}
           </Link>
-          . Yazdığınız kod bu tarayıcıda saklanır.
+          {t.signInAfter}
         </p>
       )}
 
@@ -163,7 +279,7 @@ function Workspace({ problem }: { problem: ProblemDetail }) {
         <Suspense
           fallback={
             <div className="flex h-full items-center justify-center">
-              <Spinner label="Editör yükleniyor" />
+              <Spinner label={t.editorLoading} />
             </div>
           }
         >
@@ -176,12 +292,12 @@ function Workspace({ problem }: { problem: ProblemDetail }) {
             errorLine={selectedTest?.errorLine}
             onRun={() => execute('run')}
             onSubmit={() => execute('submit')}
-            ariaLabel={`${problem.title} için ${languageLabels[language]} kod editörü`}
+            ariaLabel={t.editorLabel(problem.title, languageLabels[language])}
           />
         </Suspense>
       </div>
 
-      <section aria-label="Sonuçlar" className="min-h-48 flex-[2] basis-0 border-t border-border">
+      <section aria-label={t.results} className="min-h-48 flex-[2] basis-0 border-t border-border">
         <JudgeResultPanel
           spec={problem.spec}
           mode={mode}
@@ -205,7 +321,7 @@ function Workspace({ problem }: { problem: ProblemDetail }) {
         </div>
       ) : (
         <div className="flex h-[calc(100dvh-4rem-1px)] flex-col">
-          <div role="tablist" aria-label="Görünüm" className="grid grid-cols-2 border-b border-border bg-surface text-sm font-medium">
+          <div role="tablist" aria-label={t.view} className="grid grid-cols-2 border-b border-border bg-surface text-sm font-medium">
             {(['info', 'code'] as const).map((view) => (
               <button
                 key={view}
@@ -215,7 +331,7 @@ function Workspace({ problem }: { problem: ProblemDetail }) {
                 onClick={() => setMobileView(view)}
                 className={cn('border-b-2 py-2.5', mobileView === view ? 'border-primary text-fg' : 'border-transparent text-muted')}
               >
-                {view === 'info' ? 'Problem' : 'Kod'}
+                {view === 'info' ? t.viewInfo : t.viewCode}
               </button>
             ))}
           </div>
@@ -234,25 +350,26 @@ function InfoPanel({ problem, solved, onLoadCode }: { problem: ProblemDetail; so
   // Adım adım anlatımdan dönen kullanıcı cevabı zaten açmıştı: çözüm sekmesi açık gelir.
   const returningToAnswer = (useLocation().state as { showAnswer?: boolean } | null)?.showAnswer === true;
   const [tab, setTab] = useState<InfoTab>(returningToAnswer ? 'editorial' : 'description');
+  const t = useMessages(messages);
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-bg">
-      <div role="tablist" aria-label="Problem bilgileri" className="scrollbar-thin flex shrink-0 gap-1 overflow-x-auto border-b border-border bg-surface px-2">
-        {infoTabs.map((item) => (
+      <div role="tablist" aria-label={t.info.tabList} className="scrollbar-thin flex shrink-0 gap-1 overflow-x-auto border-b border-border bg-surface px-2">
+        {infoTabs.map((id) => (
           <button
-            key={item.id}
+            key={id}
             type="button"
             role="tab"
-            id={`tab-${item.id}`}
-            aria-selected={tab === item.id}
-            aria-controls={`panel-${item.id}`}
-            onClick={() => setTab(item.id)}
+            id={`tab-${id}`}
+            aria-selected={tab === id}
+            aria-controls={`panel-${id}`}
+            onClick={() => setTab(id)}
             className={cn(
               'shrink-0 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors',
-              tab === item.id ? 'border-primary text-fg' : 'border-transparent text-muted hover:text-fg',
+              tab === id ? 'border-primary text-fg' : 'border-transparent text-muted hover:text-fg',
             )}
           >
-            {item.label}
+            {t.tabs[id]}
           </button>
         ))}
       </div>
@@ -268,11 +385,13 @@ function InfoPanel({ problem, solved, onLoadCode }: { problem: ProblemDetail; so
 }
 
 function DescriptionTab({ problem, solved }: { problem: ProblemDetail; solved: boolean }) {
+  const t = useMessages(messages).description;
+
   return (
     <article>
       <Link to="/problems" className="inline-flex items-center gap-1 text-sm text-muted hover:text-fg">
         <List className="size-4" aria-hidden />
-        Bütün problemler
+        {t.allProblems}
       </Link>
 
       <h1 className="mt-3 text-2xl font-bold tracking-tight">
@@ -284,7 +403,7 @@ function DescriptionTab({ problem, solved }: { problem: ProblemDetail; solved: b
         {solved && (
           <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
             <CircleCheck className="size-3.5" aria-hidden />
-            Çözüldü
+            {t.solved}
           </Badge>
         )}
         {problem.tags.map((tag) => (
@@ -298,7 +417,7 @@ function DescriptionTab({ problem, solved }: { problem: ProblemDetail; solved: b
         {problem.statement}
       </Markdown>
 
-      <nav aria-label="Problemler arası gezinme" className="mt-8 flex justify-between gap-3 border-t border-border pt-5 text-sm">
+      <nav aria-label={t.problemNav} className="mt-8 flex justify-between gap-3 border-t border-border pt-5 text-sm">
         {problem.previous ? (
           <Link to={`/problems/${problem.previous.slug}`} className="inline-flex items-center gap-1 text-muted hover:text-fg">
             <ArrowLeft className="size-4" aria-hidden />
@@ -319,20 +438,21 @@ function DescriptionTab({ problem, solved }: { problem: ProblemDetail; solved: b
 }
 
 function HintsTab({ hints }: { hints: string[] }) {
+  const t = useMessages(messages).hints;
   const [revealed, setRevealed] = useState(0);
 
   if (hints.length === 0) {
-    return <p className="text-sm text-muted">Bu problem için ipucu yok.</p>;
+    return <p className="text-sm text-muted">{t.none}</p>;
   }
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted">İpuçlarını sırayla açın. Her biri sizi çözüme biraz daha yaklaştırır; çözümün kendisini vermez.</p>
+      <p className="text-sm text-muted">{t.intro}</p>
       {hints.slice(0, revealed).map((hint, index) => (
         <div key={index} className="animate-fade-in rounded-lg border border-border bg-surface p-4">
           <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-amber-700 uppercase dark:text-amber-400">
             <Lightbulb className="size-3.5" aria-hidden />
-            İpucu {index + 1}
+            {t.hint(index + 1)}
           </p>
           <Markdown size="sm" className="mt-1">
             {hint}
@@ -342,10 +462,10 @@ function HintsTab({ hints }: { hints: string[] }) {
       {revealed < hints.length ? (
         <Button variant="secondary" onClick={() => setRevealed((value) => value + 1)}>
           <Lightbulb className="size-4" aria-hidden />
-          {revealed === 0 ? 'İlk ipucunu göster' : `Sonraki ipucunu göster (${revealed + 1}/${hints.length})`}
+          {revealed === 0 ? t.showFirst : t.showNext(revealed + 1, hints.length)}
         </Button>
       ) : (
-        <p className="text-sm text-muted">Bütün ipuçlarını gördünüz. Hâlâ takılıyorsanız Çözüm sekmesinden cevabı açabilirsiniz.</p>
+        <p className="text-sm text-muted">{t.allSeen}</p>
       )}
     </div>
   );
@@ -353,23 +473,22 @@ function HintsTab({ hints }: { hints: string[] }) {
 
 function EditorialTab({ problem, initiallyRevealed }: { problem: ProblemDetail; initiallyRevealed: boolean }) {
   // Cevap kendiliğinden görünmez; "Cevabı göster"e basılana kadar sunucudan da istenmez.
+  const t = useMessages(messages).editorial;
   const [revealed, setRevealed] = useState(initiallyRevealed);
   const editorial = useEditorial(problem.slug, revealed && problem.hasEditorial);
 
   if (!problem.hasEditorial) {
-    return <p className="text-sm text-muted">Bu problem için henüz çözüm anlatımı yok.</p>;
+    return <p className="text-sm text-muted">{t.none}</p>;
   }
 
   if (!revealed) {
     return (
       <div className="rounded-xl border border-dashed border-border-strong p-6 text-center">
-        <p className="font-medium">Cevaba bakmadan önce kendiniz deneyin</p>
-        <p className="mx-auto mt-2 max-w-sm text-sm text-muted">
-          En çok, takılıp uğraştığınız problemlerden öğrenirsiniz. Önce ipuçlarını deneyin; en az 20–30 dakika uğraştıysanız cevabı açın.
-        </p>
+        <p className="font-medium">{t.tryFirst}</p>
+        <p className="mx-auto mt-2 max-w-sm text-sm text-muted">{t.tryFirstBody}</p>
         <Button variant="secondary" className="mt-4" onClick={() => setRevealed(true)}>
           <Eye className="size-4" aria-hidden />
-          Cevabı göster
+          {t.showAnswer}
         </Button>
       </div>
     );
@@ -380,12 +499,12 @@ function EditorialTab({ problem, initiallyRevealed }: { problem: ProblemDetail; 
       {hasWalkthrough(problem.slug) && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface p-4">
           <div className="min-w-0 flex-1 basis-56">
-            <p className="text-sm font-medium">Çözümü adım adım izleyin</p>
-            <p className="mt-0.5 text-sm text-muted">Kodun her satırının ne yaptığını kendi örneklerinizle, etkileşimli olarak görün.</p>
+            <p className="text-sm font-medium">{t.walkthroughTitle}</p>
+            <p className="mt-0.5 text-sm text-muted">{t.walkthroughBody}</p>
           </div>
           <ButtonLink to={walkthroughPath(problem.slug)} size="sm">
             <ListOrdered className="size-4" aria-hidden />
-            Adım adım göster
+            {t.walkthroughButton}
           </ButtonLink>
         </div>
       )}
@@ -398,6 +517,7 @@ function EditorialTab({ problem, initiallyRevealed }: { problem: ProblemDetail; 
 }
 
 function SubmissionsTab({ slug, onLoadCode }: { slug: string; onLoadCode: LoadCode }) {
+  const t = useMessages(messages).submissions;
   const { user } = useUser();
   const location = useLocation();
   const submissions = useSubmissions(slug, Boolean(user));
@@ -407,9 +527,9 @@ function SubmissionsTab({ slug, onLoadCode }: { slug: string; onLoadCode: LoadCo
   if (!user) {
     return (
       <div className="text-sm text-muted">
-        <p>Gönderim geçmişinizi görmek için giriş yapın.</p>
+        <p>{t.signInPrompt}</p>
         <ButtonLink to="/login" state={{ from: location.pathname }} variant="secondary" size="sm" className="mt-3">
-          Giriş yap
+          {t.signIn}
         </ButtonLink>
       </div>
     );
@@ -417,7 +537,7 @@ function SubmissionsTab({ slug, onLoadCode }: { slug: string; onLoadCode: LoadCo
 
   if (submissions.isPending) return <Spinner />;
   if (submissions.isError) return <ErrorNotice error={submissions.error} onRetry={() => submissions.refetch()} />;
-  if (submissions.data.length === 0) return <p className="text-sm text-muted">Henüz gönderim yapmadınız.</p>;
+  if (submissions.data.length === 0) return <p className="text-sm text-muted">{t.empty}</p>;
 
   return (
     <div className="space-y-4">
@@ -431,7 +551,7 @@ function SubmissionsTab({ slug, onLoadCode }: { slug: string; onLoadCode: LoadCo
               className={cn('flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-surface-2', submission.id === selectedId && 'bg-surface-2')}
             >
               <span className={cn('font-medium', submission.verdict === 'accepted' ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400')}>
-                {verdictLabels[submission.verdict]}
+                {verdictLabel(submission.verdict)}
               </span>
               <span className="text-muted">{languageLabels[submission.language]}</span>
               <span className="text-muted tabular-nums">
@@ -448,9 +568,9 @@ function SubmissionsTab({ slug, onLoadCode }: { slug: string; onLoadCode: LoadCo
       {selectedId && selected.data && (
         <div className="animate-fade-in overflow-hidden rounded-xl border border-border bg-code-bg">
           <div className="flex items-center justify-between border-b border-border px-3 py-2">
-            <span className="text-xs font-medium text-muted">{languageLabels[selected.data.language]} gönderimi</span>
+            <span className="text-xs font-medium text-muted">{t.submissionOf(languageLabels[selected.data.language])}</span>
             <Button variant="ghost" size="sm" onClick={() => onLoadCode(selected.data.language, selected.data.code)}>
-              Editöre yükle
+              {t.loadIntoEditor}
             </Button>
           </div>
           <pre className="scrollbar-thin max-h-96 overflow-auto p-4 font-mono text-[13px] leading-relaxed text-code-fg">{selected.data.code}</pre>

@@ -77,6 +77,7 @@ public static class CatalogEndpoints
     private static async Task<Ok<List<TrackSummary>>> ListTracksAsync(AppDbContext db, HttpContext http, CancellationToken cancellationToken)
     {
         var userId = http.User.GetUserId();
+        var en = Localization.IsEnglish;
 
         var tracks = await db.Tracks
             .AsNoTracking()
@@ -85,8 +86,8 @@ public static class CatalogEndpoints
             {
                 track.Id,
                 track.Slug,
-                track.Title,
-                track.Description,
+                Title = en ? track.TitleEn : track.Title,
+                Description = en ? track.DescriptionEn : track.Description,
                 track.Icon,
                 track.Accent,
                 LessonCount = db.Lessons.Count(lesson => lesson.TrackId == track.Id),
@@ -113,10 +114,12 @@ public static class CatalogEndpoints
     private static async Task<Results<Ok<TrackDetail>, NotFound>> GetTrackAsync(
         string trackSlug, AppDbContext db, HttpContext http, CancellationToken cancellationToken)
     {
+        var en = Localization.IsEnglish;
+
         var track = await db.Tracks
             .AsNoTracking()
             .Where(t => t.Slug == trackSlug)
-            .Select(t => new { t.Id, t.Slug, t.Title, t.Description, t.Icon, t.Accent })
+            .Select(t => new { t.Id, t.Slug, Title = en ? t.TitleEn : t.Title, Description = en ? t.DescriptionEn : t.Description, t.Icon, t.Accent })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (track is null)
@@ -130,7 +133,7 @@ public static class CatalogEndpoints
             .AsNoTracking()
             .Where(module => module.TrackId == track.Id)
             .OrderBy(module => module.Order)
-            .Select(module => new { module.Id, module.Slug, module.Title, module.Description })
+            .Select(module => new { module.Id, module.Slug, Title = en ? module.TitleEn : module.Title, Description = en ? module.DescriptionEn : module.Description })
             .ToListAsync(cancellationToken);
 
         // Ders içeriği (büyük Markdown metni) bilerek seçilmiyor.
@@ -138,14 +141,32 @@ public static class CatalogEndpoints
             .AsNoTracking()
             .Where(lesson => lesson.TrackId == track.Id)
             .OrderBy(lesson => lesson.Order)
-            .Select(lesson => new { lesson.Id, lesson.ModuleId, lesson.Slug, lesson.Title, lesson.Summary, lesson.Minutes, lesson.Level })
+            .Select(lesson => new
+            {
+                lesson.Id,
+                lesson.ModuleId,
+                lesson.Slug,
+                Title = en ? lesson.TitleEn : lesson.Title,
+                Summary = en ? lesson.SummaryEn : lesson.Summary,
+                lesson.Minutes,
+                lesson.Level,
+            })
             .ToListAsync(cancellationToken);
 
         var quizzes = await db.Quizzes
             .AsNoTracking()
             .Where(quiz => quiz.TrackId == track.Id)
             .OrderBy(quiz => quiz.Order)
-            .Select(quiz => new { quiz.Id, quiz.Slug, quiz.Title, quiz.Description, quiz.Level, quiz.TimeLimitMinutes, QuestionCount = quiz.Questions.Count })
+            .Select(quiz => new
+            {
+                quiz.Id,
+                quiz.Slug,
+                Title = en ? quiz.TitleEn : quiz.Title,
+                Description = en ? quiz.DescriptionEn : quiz.Description,
+                quiz.Level,
+                quiz.TimeLimitMinutes,
+                QuestionCount = quiz.Questions.Count,
+            })
             .ToListAsync(cancellationToken);
 
         var completedLessons = new HashSet<int>();
@@ -181,13 +202,15 @@ public static class CatalogEndpoints
     private static async Task<Results<Ok<LessonDetail>, NotFound>> GetLessonAsync(
         string trackSlug, string lessonSlug, AppDbContext db, HttpContext http, CancellationToken cancellationToken)
     {
+        var en = Localization.IsEnglish;
+
         // Yolun okuma sırası: önce bölüm sırası, sonra ders sırası.
         var outline = await db.Lessons
             .AsNoTracking()
             .Where(lesson => lesson.Track.Slug == trackSlug)
             .OrderBy(lesson => lesson.Module.Order)
             .ThenBy(lesson => lesson.Order)
-            .Select(lesson => new { lesson.Id, lesson.Slug, lesson.Title })
+            .Select(lesson => new { lesson.Id, lesson.Slug, Title = en ? lesson.TitleEn : lesson.Title })
             .ToListAsync(cancellationToken);
 
         var index = outline.FindIndex(lesson => lesson.Slug == lessonSlug);
@@ -204,13 +227,13 @@ public static class CatalogEndpoints
             .Select(l => new
             {
                 l.Slug,
-                l.Title,
-                l.Summary,
+                Title = en ? l.TitleEn : l.Title,
+                Summary = en ? l.SummaryEn : l.Summary,
                 l.Minutes,
                 l.Level,
-                l.Content,
-                Track = new LessonLink(l.Track.Slug, l.Track.Title),
-                Module = new LessonLink(l.Module.Slug, l.Module.Title),
+                Content = en ? l.ContentEn : l.Content,
+                Track = new LessonLink(l.Track.Slug, en ? l.Track.TitleEn : l.Track.Title),
+                Module = new LessonLink(l.Module.Slug, en ? l.Module.TitleEn : l.Module.Title),
             })
             .FirstAsync(cancellationToken);
 

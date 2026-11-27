@@ -1,0 +1,110 @@
+title: Example Designs
+description: The key decisions in a URL shortener, rate limiter, news feed, chat, video platform, Uber, Ticketmaster, web crawler and distributed key-value store.
+questions:
+  - q: "In a news feed, what problem do celebrity accounts (100 million followers) cause, and what is the common solution?"
+    options:
+      - "Celebrities' posts get deleted; the solution is a bigger database."
+      - "Fan-out on write turns a single post into 100 million feed writes; the hybrid model: celebrities' posts aren't fanned out but merged at read time when a follower opens their feed."
+      - "Merging at read time becomes slow; the solution is fan-out on write for all accounts."
+      - "Celebrity accounts are kept only in the cache; the solution is a CDN."
+    why: |
+      Fan-out on write makes reads very fast, but the cost of fan-out is proportional to the number of followers. In the hybrid model, ordinary accounts are fanned out on write; celebrity accounts' recent posts are pulled at read time from the few celebrities the user follows and merged with the precomputed list. Not fanning out to inactive users also lowers the cost.
+
+  - q: "Why does a news feed cache (Redis) keep only post **IDs** per user instead of the **full content** of the posts? (More than one answer is correct.)"
+    options:
+      - "A post appears in millions of feeds; copying its content into every list multiplies memory use."
+      - "When a post is edited or deleted, only a single record (the post cache) is updated."
+      - "IDs are secure because they are encrypted."
+      - "Redis lists can store only numbers."
+    why: |
+      The feed list holds IDs; the content is stored once in a separate post cache and resolved in bulk (`MGET`) at read time. This lowers both memory use and update cost. Redis lists can store any kind of string, and IDs have no property such as being encrypted.
+
+  - q: "In a chat app, what is the most reliable way to show a conversation's messages in the correct **order**?"
+    options:
+      - "Sort by the sending device's clock"
+      - "Sort by the clock of the connection server that received the message"
+      - "Sort message IDs alphabetically"
+      - "Use an increasing sequence number (seq) assigned by a single owner per conversation"
+    why: |
+      Client clocks are unreliable, and server clocks drift apart. An increasing sequence number per conversation (e.g. assigned by the owner of the conversation's partition, or by a handler partitioned by conversation ID) establishes a definitive order. The client knows the last sequence number it received; when it reconnects it says "give me everything after this one" and can detect gaps.
+
+  - q: "In a chat app, at what point should the sender get the ✓ (sent) acknowledgment?"
+    options:
+      - "When the message reaches the recipient's device"
+      - "After the message has been written to durable storage"
+      - "When the message has been taken into the connection server's memory"
+      - "Before the message is sent to the queue"
+    why: |
+      "Durable storage first, then acknowledge": once acknowledged, the message must not be lost even if the server crashes. Acknowledging while it is in memory leads to loss on a crash. Reaching the recipient is a separate stage (✓✓, delivered) and can take hours while the recipient is offline; the sender shouldn't be left uncertain until then.
+
+  - q: "In a ticketing system, what is the recommended way to hold a seat while the user spends a few minutes on the payment screen?"
+    options:
+      - "A database transaction kept open until payment completes, with a `SELECT ... FOR UPDATE` lock"
+      - "Mark the seat in the client's memory"
+      - "Write a time-limited reservation on the seat with an atomic conditional update (`status = 'reserved', reserved_until = now() + 10 min`) and treat an expired reservation as free"
+      - "Treat the seat as sold immediately and refund if the payment fails"
+    why: |
+      Transactions that stay open for minutes exhaust the connection pool, and when the user closes the tab it is unclear when the lock will be released. A time-limited reservation is written in a short transaction; when it expires, the seat automatically counts as free (in the query). The last line of defense is a uniqueness constraint on `tickets (event_id, seat_id)`.
+
+  - q: "2 million users arrive at once for 20,000 seats. What is the main purpose of a virtual waiting room?"
+    options:
+      - "Let into the backend only as many users as it can handle (with an admission token); limit contention and load at the system's entrance"
+      - "Redirect users to watch ads"
+      - "Distribute tickets by lottery"
+      - "Replace the database with a cache"
+    why: |
+      Letting everyone into seat selection at once creates massive contention on the same rows, most users see a "just taken" error, and the system crashes. The waiting room is admission control: it lets users in from the queue up to capacity and shows the others their position and estimated wait. Bot protection and per-person ticket limits are also enforced in this layer.
+
+  - q: "In an Uber-like system, what is the best approach for the locations that 2 million drivers send every 4 seconds (~500,000 writes/second)?"
+    options:
+      - "Write every update to a relational database and update the PostGIS index"
+      - "Keep locations only on the client"
+      - "Send every update as a separate HTTP request and write it to a file"
+      - "Keep current locations in an in-memory geospatial index sharded by region (Redis GEO / H3 cells); write the raw stream to Kafka for analytics"
+    why: |
+      Only the latest location matters, and a lost update is corrected by a new one a few seconds later; the data is also small (~200 MB). That is why current locations are kept in memory with a TTL; updating a durable geospatial index hundreds of thousands of times per second is needlessly expensive. The raw stream is logged separately for trip recording, ETA prediction and pricing.
+
+  - q: "How does **adaptive bitrate** streaming (HLS/DASH) work on a video platform?"
+    options:
+      - "The server measures the user's network speed and produces a single suitable file."
+      - "The video is split into segments a few seconds long and into multiple qualities; after each segment, the player measures network speed and picks the quality of the next segment."
+      - "The video is downloaded in one piece and compressed on the client when needed."
+      - "The quality changes only when the user changes it manually."
+    why: |
+      The manifest file lists the available qualities, and each quality's playlist lists the segments. The player drops to a lower quality when the network slows and goes back up when it speeds up; the result is a brief drop in quality instead of stalling. Because segments are ordinary HTTP files, they cache very well on a CDN.
+
+  - q: "What is the best way to enforce the **politeness** rule (not overloading a site) in a web crawler?"
+    options:
+      - "A separate queue for each host, and a \"next time it can be fetched\" timestamp for each queue; hosts are assigned to workers by sharding"
+      - "Pull all URLs from a single global FIFO queue"
+      - "Reduce the number of workers"
+      - "Ignore robots.txt and hit every site at the same rate"
+    why: |
+      In a single global queue, thousands of pages from the same site can sit back to back, and workers hammer that site at the same time. A queue per host + a ready time (with a min-heap giving the earliest ready host) guarantees politeness; sharding by host also lets the rule be enforced locally, without coordination. Priority queues sit in front of this layer.
+
+  - q: "A rate limiter using a sliding window counter has a limit of 100 per minute. It is 12:01:15; 80 requests came in the previous minute (12:00) and 30 in this minute (12:01). What is the estimated request count, and is the request accepted?"
+    options:
+      - "110; rejected"
+      - "50; accepted"
+      - "90; accepted"
+      - "30; accepted"
+    why: |
+      The sliding window is 12:00:15–12:01:15; 75% of the previous minute (45 seconds) falls inside this window. Estimate = 30 + 80 × 0.75 = 90 < 100, so the request is accepted. The method assumes traffic was evenly spread across the previous minute; because it keeps only two counters per key it is cheap, and its error is small in practice.
+
+  - q: "A Redis-based rate limiter can't reach Redis. Which behavior is usually chosen for a general API, and which endpoints are the exception?"
+    options:
+      - "Fail closed everywhere: all requests are rejected."
+      - "Fail open everywhere, with no exceptions."
+      - "The API is restarted."
+      - "Fail open (requests pass without limits); fail closed on endpoints where abuse is expensive, such as login attempts, SMS and payments"
+    why: |
+      Taking down the whole API because of the limiter is usually worse than being unprotected for a short time; that is why most endpoints fail open. Endpoints at risk of brute force and costly abuse fail closed. In every case, the Redis call gets a short timeout and a circuit breaker; falling back to a local backup limiter is a good middle ground.
+
+  - q: "In a Dynamo-style store, which technique lets a write still be accepted while one of the nodes in the preference list is temporarily unreachable?"
+    options:
+      - "Merkle trees"
+      - "Sloppy quorum and hinted handoff"
+      - "Two-phase commit"
+      - "Raft leader election"
+    why: |
+      With a sloppy quorum, the write goes to the first N healthy reachable nodes; the node that takes the data in place of the real owner stores it with a hint and hands it over when the owner comes back. This preserves the "always writable" goal. Merkle trees are for finding and repairing persistent divergence; 2PC and Raft are mechanisms that choose consistency over availability (CP).

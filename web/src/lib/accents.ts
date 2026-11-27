@@ -13,6 +13,8 @@ const accents: Record<string, { icon: string; bar: string }> = {
   rose: { icon: 'bg-rose-500/12 text-rose-700 dark:text-rose-400', bar: 'bg-rose-500' },
   orange: { icon: 'bg-orange-500/12 text-orange-700 dark:text-orange-400', bar: 'bg-orange-500' },
   slate: { icon: 'bg-slate-500/12 text-slate-700 dark:text-slate-300', bar: 'bg-slate-500' },
+  lime: { icon: 'bg-lime-500/15 text-lime-700 dark:text-lime-400', bar: 'bg-lime-500' },
+  fuchsia: { icon: 'bg-fuchsia-500/12 text-fuchsia-700 dark:text-fuchsia-400', bar: 'bg-fuchsia-500' },
 };
 
 const fallback = { icon: 'bg-primary-soft text-primary-text', bar: 'bg-primary' };

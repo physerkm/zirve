@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<base target="_blank">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Find All Numbers Disappeared in an Array</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: one reading column; the stepper is a single tool panel (controls, step card, array, then variables + result | code) that stacks on phones. */
+:root {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --ink: #141b26;
+  --muted: #5a6779;
+  --line: #d6dce6;
+  --accent: #3346c8;
+  --accent-ink: #ffffff;
+  --range: #e3e9fb;
+  --range-ink: #1d2a6b;
+  --good: #17824a;
+  --miss: #b86a00;
+  --miss-soft: #fdeccc;
+  --miss-soft-ink: #6b3d00;
+  --bad: #b8402a;
+  --code-bg: #f7f8fb;
+  --code-hl: #dfe5fb;
+  --kw: #7a3aa8;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+    --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff;
+    --good: #3fbf7a; --miss: #e6a23c; --miss-soft: #3a2a10; --miss-soft-ink: #f5c77a; --bad: #ff7d66;
+    --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+  --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff;
+  --good: #3fbf7a; --miss: #e6a23c; --miss-soft: #3a2a10; --miss-soft-ink: #f5c77a; --bad: #ff7d66;
+  --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+  color-scheme: dark;
+}
+
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 40px;
+}
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; color: var(--muted); margin: 0; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 6vw, 54px); line-height: 1.05; letter-spacing: -.02em; margin: 8px 0 14px; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0; font-size: 17px; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: -.01em; margin: 0 0 18px; text-wrap: balance; }
+code { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+
+/* Idea */
+.idea { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; list-style: none; padding: 0; margin: 0; }
+.idea li { border-top: 2px solid var(--ink); padding-top: 12px; min-width: 0; }
+.idea .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.idea h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 2px 0 6px; text-wrap: balance; }
+.idea p { margin: 0; color: var(--muted); font-size: 15px; }
+@media (max-width: 760px) { .idea { grid-template-columns: 1fr; gap: 20px; } }
+
+/* Stepper panel */
+.stepper { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+@media (max-width: 560px) { .stepper { padding: 16px; } }
+.stepper h2 { margin: 0; }
+.controls { display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+.field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+input[type="text"] { width: 16em; max-width: 100%; box-sizing: border-box; font: 600 18px var(--font-mono); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.err { margin: 0; font-size: 13px; color: var(--bad); }
+button { font: 500 14px var(--font-body); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.presets button { font-size: 13px; padding: 7px 10px; }
+.presets .mono { font-family: var(--font-mono); font-weight: 700; margin-right: 4px; }
+.presets button[aria-pressed="true"] { border-color: var(--accent); background: var(--range); color: var(--range-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; }
+#play { min-width: 7.5em; }
+
+.step { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+.step-meta { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--range); color: var(--range-ink); }
+.tag[data-kind="ok"] { background: var(--good); color: var(--surface); }
+.tag[data-kind="phase2"] { background: var(--miss-soft); color: var(--miss-soft-ink); }
+#step-text { margin: 8px 0 0; font-size: 16.5px; max-width: 78ch; min-height: 3.2em; }
+
+.panel-label { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+
+/* Array: one cell per box; the label under it says which number the box stands for. */
+.arr-scroll { overflow-x: auto; padding: 4px 6px 6px; }
+.arr { display: flex; gap: 8px; width: max-content; }
+.cell { display: flex; flex-direction: column; align-items: center; width: 58px; }
+.tags { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-height: 36px; padding-bottom: 6px; font: 600 11px/1.35 var(--font-mono); }
+.t-num { color: var(--ink); }
+.t-box { color: var(--accent); }
+.box {
+  width: 58px; height: 48px; box-sizing: border-box; border-radius: 10px;
+  display: grid; place-items: center;
+  font: 700 18px var(--font-mono); font-variant-numeric: tabular-nums;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  transition: background-color .2s, color .2s, border-color .2s;
+}
+.box[data-state="marked"] { background: var(--range); color: var(--range-ink); border-color: transparent; }
+.box[data-state="missing"] { background: var(--miss-soft); color: var(--miss-soft-ink); border-color: var(--miss); }
+.box.reading { outline: 2px dashed var(--muted); outline-offset: 3px; }
+.box.target { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .box { transition: none; } }
+.idx { margin-top: 8px; font: 500 12px var(--font-mono); color: var(--muted); }
+.owner { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.owner b { color: var(--ink); font-family: var(--font-mono); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 6px; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--line); }
+.sw.marked { background: var(--range); border-color: transparent; }
+.sw.missing { background: var(--miss-soft); border-color: var(--miss); }
+.sw.reading { background: transparent; border: 2px dashed var(--muted); }
+.sw.target { background: transparent; border: 2px solid var(--accent); }
+
+/* Variables + result | code */
+.board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 28px; }
+@media (max-width: 880px) { .board { grid-template-columns: 1fr; } }
+.col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.vars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.var { border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; background: var(--bg); min-width: 0; }
+.var dt { font: 400 12px var(--font-mono); color: var(--muted); }
+.var dd { margin: 0; font: 600 18px var(--font-mono); font-variant-numeric: tabular-nums; }
+.var.changed { border-color: var(--accent); background: var(--range); }
+.var.changed dd { color: var(--range-ink); }
+.out { margin-top: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; background: var(--bg); }
+.out.changed { border-color: var(--accent); }
+.out span { display: block; font-size: 12px; color: var(--muted); }
+.out b { font: 600 16px var(--font-mono); overflow-wrap: anywhere; }
+.code { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 0; overflow-x: auto; font: 13px/1.6 var(--font-mono); }
+@media (max-width: 560px) { .code { font-size: 12px; } }
+.ln { display: block; padding: 0 14px 0 11px; white-space: pre; border-left: 3px solid transparent; }
+.ln.hl { background: var(--code-hl); border-left-color: var(--accent); }
+.kw { color: var(--kw); }
+
+/* Two columns keep lines short enough to read while still using the page width. */
+.why-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 40px; }
+.why-grid > div { border-top: 1px solid var(--line); padding-top: 12px; min-width: 0; }
+.why h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 0 0 6px; text-wrap: balance; }
+.why p { margin: 0; color: var(--muted); }
+.why b { color: var(--ink); }
+@media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; gap: 20px; } }
+.foot { display: flex; flex-wrap: wrap; gap: 6px 20px; border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; color: var(--muted); }
+.foot a { color: var(--accent); }
+
+/* No ligatures: `>` and `-` combos should look the way they are typed.
+   Kept last because the `font` shorthand above would reset it. */
+code, .code, .box, .var dd, .out b, input[type="text"] { font-variant-ligatures: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">LeetCode 448 · Find All Numbers Disappeared in an Array · Easy</p>
+    <h1>Find All Numbers Disappeared in an Array</h1>
+    <p class="lead">You can follow every step of the solution here. Pick an array, press <b>Next</b> or click <b>Play</b>, and see how the box of every number we see gets marked and how the boxes left unmarked reveal the missing numbers.</p>
+  </header>
+
+  <section aria-labelledby="idea-h">
+    <h2 id="idea-h">The idea in three steps</h2>
+    <ol class="idea">
+      <li>
+        <span class="n">1</span>
+        <h3>Every number has a box</h3>
+        <p>The numbers are between 1 and n, and the array has exactly n boxes. The box of number <code>x</code> is <code>nums[x - 1]</code>: 1's box is <code>nums[0]</code>, 2's box is <code>nums[1]</code>, and so on.</p>
+      </li>
+      <li>
+        <span class="n">2</span>
+        <h3>Mark the box of each number you see</h3>
+        <p>When you see a number, make the value in its box negative. The value isn't lost, only its sign changes; when reading, you get the original number back with <code>Math.Abs</code>.</p>
+      </li>
+      <li>
+        <span class="n">3</span>
+        <h3>Boxes that stay positive are missing</h3>
+        <p>If <code>nums[i]</code> is still positive at the end, the number <code>i + 1</code> never appears in the array. While collecting, we also flip the negative boxes back to restore the array to its original state.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="stepper" aria-labelledby="st-h">
+    <h2 id="st-h">Step through it</h2>
+
+    <div class="controls">
+      <div class="row">
+        <div class="field">
+          <label for="list">Array (comma-separated, at most 10 numbers)</label>
+          <input id="list" type="text" value="4, 3, 2, 7, 8, 2, 3, 1" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="nav">
+          <button type="button" id="reset">Restart</button>
+          <button type="button" id="prev-btn">← Back</button>
+          <button type="button" id="next-btn" class="primary">Next →</button>
+          <button type="button" id="play">▶ Play</button>
+        </div>
+      </div>
+      <div class="presets" role="group" aria-label="Preset examples">
+        <button type="button" data-l="4, 3, 2, 7, 8, 2, 3, 1"><span class="mono">[4,3,2,7,8,2,3,1]</span></button>
+        <button type="button" data-l="1, 1"><span class="mono">[1,1]</span></button>
+        <button type="button" data-l="5, 5, 5, 5, 5"><span class="mono">[5,5,5,5,5]</span>all the same number</button>
+        <button type="button" data-l="3, 1, 2"><span class="mono">[3,1,2]</span>nothing missing</button>
+      </div>
+      <p class="err" id="list-err" hidden>Enter at least 1 and at most 10 comma-separated integers. Each number must be between 1 and the array length; for example, a 3-element array can only contain 1, 2 and 3.</p>
+    </div>
+
+    <div class="step" aria-live="polite">
+      <div class="step-meta"><span id="step-count"></span><span id="step-tag" class="tag"></span></div>
+      <p id="step-text"></p>
+    </div>
+
+    <div>
+      <p class="panel-label">nums (under each box it says which number the box belongs to)</p>
+      <div class="arr-scroll"><div class="arr" id="arr"></div></div>
+      <div class="legend">
+        <span><i class="sw marked"></i>negative: this number was seen</span>
+        <span><i class="sw missing"></i>missing number, added to result</span>
+        <span><i class="sw reading"></i>element being read (num)</span>
+        <span><i class="sw target"></i>box being checked (box or i)</span>
+      </div>
+    </div>
+
+    <div class="board">
+      <div class="col">
+        <p class="panel-label">Variables</p>
+        <dl class="vars" id="vars"></dl>
+        <div class="out" id="out"><span>result</span><b id="result"></b></div>
+      </div>
+      <div class="col">
+        <p class="panel-label">Code (the method in Solution.cs)</p>
+        <div class="code" id="code" role="region" aria-label="C# code" tabindex="0"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="why" aria-labelledby="why-h">
+    <h2 id="why-h">Why O(1) extra space?</h2>
+    <div class="why-grid">
+      <div>
+        <h3>O(n) time</h3>
+        <p>We walk the array twice: first we mark the numbers we see, then we collect the boxes left unmarked. The work grows in proportion to the array length: <b>O(n) time</b>.</p>
+      </div>
+      <div>
+        <h3>O(1) extra space</h3>
+        <p>We keep the marks not in a separate array but in the sign of the numbers in <code>nums</code>'s own boxes. The only extras are a few variables such as <code>num</code>, <code>box</code> and <code>i</code>: <b>O(1) extra space</b>. The list we return doesn't count toward this.</p>
+      </div>
+      <div>
+        <h3>Why does the easier solution need more memory?</h3>
+        <p>There is an easier solution too: mark the numbers you see in a <code>bool[] seen = new bool[n + 1]</code> array, then collect the ones left <code>false</code>. It also runs in O(n) time, but because it allocates a separate array of n + 1 elements it uses <b>O(n) space</b>. The solution on this page does the same marking inside <code>nums</code>, so that array isn't needed.</p>
+      </div>
+      <div>
+        <h3>Why does the array return to its original state?</h3>
+        <p>In the second loop we turn the negative boxes positive again. That way the calling code gets its array back exactly as it passed it in. This doesn't need a separate loop either; it happens in the same pass that collects the missing numbers.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <a href="https://leetcode.com/problems/find-all-numbers-disappeared-in-an-array/">Problem: LeetCode 448</a>
+    <a href="https://github.com/physerkm/leetcode-solutions/blob/main/src/LeetCode/Problems/P0448_FindAllNumbersDisappearedInAnArray/Solution.cs">Code: Solution.cs</a>
+    <a href="https://github.com/physerkm/leetcode-solutions">Repo: physerkm/leetcode-solutions</a>
+  </footer>
+</div>
+
+<script src="walkthrough.js"></script>
+</body>
+</html>

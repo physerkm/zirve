@@ -1,0 +1,130 @@
+title: Complexity Analysis and Core Data Structures
+description: A core concepts quiz on Big-O, arrays, hash tables, stacks, queues, heaps and trees.
+questions:
+  - q: |
+      What is the time complexity of the following function?
+
+      ```csharp
+      int Count(int n)
+      {
+          var count = 0;
+          for (var i = 1; i < n; i *= 2)
+              for (var j = 0; j < n; j++)
+                  count++;
+          return count;
+      }
+      ```
+    options:
+      - "O(n)"
+      - "O(n log n)"
+      - "O(n²)"
+      - "O(log n)"
+    why: |
+      In the outer loop, `i` doubles on every step, so it runs about `log₂ n` times. The inner loop takes `n` steps each time. The total work is `n · log n`.
+
+  - q: "How many comparisons does binary search on a sorted array make in the worst case?"
+    options:
+      - "O(1)"
+      - "O(log n)"
+      - "O(n)"
+      - "O(n log n)"
+    why: |
+      Each comparison halves the search range. For `n` elements, the range can be halved at most `log₂ n` times.
+
+  - q: "What are the average and worst-case complexities of a lookup in a hash table (C# `Dictionary`, JavaScript `Map`)?"
+    options:
+      - "Average O(1), worst O(1)"
+      - "Average O(log n), worst O(n)"
+      - "Average O(1), worst O(n)"
+      - "Average O(n), worst O(n)"
+    why: |
+      With a well-distributed hash function, each bucket holds a constant number of elements and a lookup is O(1). If all keys land in the same bucket (a bad hash function or a deliberate collision attack), the lookup walks through every element in that bucket: O(n).
+
+  - q: "Why is the **amortized** cost of appending to the end of a dynamic array (C# `List<T>`, a JavaScript array) considered O(1)?"
+    options:
+      - "Because the array is never resized."
+      - "Because the capacity doubles when it fills up; the expensive copies are rare and their cost is spread across all the appends."
+      - "Because the elements are stored as a linked list."
+      - "Because only one element is copied on each append."
+    why: |
+      When the capacity fills up, a new array is allocated and every element is copied; that single operation is O(n). But because the capacity doubles each time, the total copying over `n` appends is `n + n/2 + n/4 + … < 2n`. The average cost per append is constant.
+
+  - q: "Which pair of data structures shows **LIFO** and **FIFO** behavior, respectively?"
+    options:
+      - "Queue and stack"
+      - "Stack and queue"
+      - "Heap and stack"
+      - "Linked list and hash table"
+    why: |
+      In a stack, the last item in is the first out (Last In, First Out). In a queue, the first item in is the first out (First In, First Out). Depth-first search (DFS) uses a stack; breadth-first search (BFS) uses a queue.
+
+  - q: "On a binary min-heap, what are the complexities of **reading** the smallest element and **removing** the smallest element, respectively?"
+    options:
+      - "O(1) and O(1)"
+      - "O(log n) and O(log n)"
+      - "O(1) and O(log n)"
+      - "O(1) and O(n)"
+    why: |
+      The smallest element is always at the root, so reading it is O(1). On removal, the last element moves to the root and is swapped downward to restore the heap property (sift-down). The height of the tree is `log n`, so removal takes O(log n).
+
+  - q: "Search in a balanced binary search tree (BST) is O(log n). What happens in the worst case if the tree is unbalanced?"
+    options:
+      - "It stays O(log n)."
+      - "It becomes O(n); the tree can effectively turn into a linked list."
+      - "It becomes O(n log n)."
+      - "It becomes O(1)."
+    why: |
+      If elements are inserted in sorted order, every node has only a right child and the tree's height becomes `n`. That is why self-balancing trees (red-black, AVL) are used in practice; C# `SortedDictionary` is a red-black tree.
+
+  - q: "What is the worst-case lower bound for a comparison-based sorting algorithm?"
+    options:
+      - "Ω(n)"
+      - "Ω(n log n)"
+      - "Ω(n²)"
+      - "Ω(log n)"
+    why: |
+      `n` elements have `n!` possible orderings. Each comparison can at most halve the possibilities, so at least `log₂(n!) ≈ n log n` comparisons are needed. O(n) algorithms such as counting sort are not bound by this limit, because they make no comparisons and rely on assumptions about the range of the input.
+
+  - q: |
+      What is the time complexity of the following recursive function?
+
+      ```javascript
+      function fib(n) {
+        if (n < 2) return n;
+        return fib(n - 1) + fib(n - 2);
+      }
+      ```
+    options:
+      - "O(n)"
+      - "O(n log n)"
+      - "O(n²)"
+      - "O(2ⁿ)"
+    why: |
+      Each call spawns two new calls and the call tree has depth `n`, so the number of nodes grows exponentially (the tight bound is about `O(1.618ⁿ)`; `O(2ⁿ)` is given as the upper bound). The same subproblems are solved over and over. Storing the results (memoization) brings this down to O(n); this is the starting point of dynamic programming.
+
+  - q: "In which of the following cases is a hash table **not a good fit**? (More than one answer is correct.)"
+    options:
+      - "When you need to iterate over the keys in sorted order"
+      - "When you need all keys within a range (e.g. between 10 and 20)"
+      - "When you need to check quickly whether a key exists"
+      - "When you need to count how many times each element occurs"
+    why: |
+      A hash table does not keep its keys in any particular order; sorted iteration and range queries need a balanced tree (`SortedDictionary`, a B-tree). Membership checks and frequency counting, on the other hand, are exactly what a hash table does best.
+
+  - q: "In a singly linked list, what are the complexities of inserting an element at the **head** and **accessing** the element at a given index, respectively?"
+    options:
+      - "O(1) and O(1)"
+      - "O(1) and O(n)"
+      - "O(n) and O(1)"
+      - "O(n) and O(n)"
+    why: |
+      Inserting at the head only means pointing the new node's `next` pointer at the old head: O(1). Accessing by index means starting at the head and following the nodes one by one: O(n). For an array it is the other way around: access is O(1), inserting at the front is O(n).
+
+  - q: "Which of the following is taken into account when calculating an algorithm's **space complexity**?"
+    options:
+      - "Only the space taken by the input"
+      - "Only explicitly created arrays and tables"
+      - "Extra data structures and the space the recursion takes on the call stack"
+      - "Only the space taken by the output"
+    why: |
+      Auxiliary space covers everything the algorithm uses besides its input. Even if a recursive solution allocates no arrays, each call holds a frame on the stack: a recursion of depth `n` uses O(n) space. This is a point candidates often forget in interviews.

@@ -1,0 +1,92 @@
+title: System Design Fundamentals
+description: Capacity estimation, scaling, CAP, caching, message queues and idempotency.
+questions:
+  - q: "A service receives 10 million requests per day. Roughly what is the average number of requests per second (QPS)?"
+    options:
+      - "~12"
+      - "~120"
+      - "~1,200"
+      - "~12,000"
+    why: |
+      A day has about 86,400 (roughly 10⁵) seconds. 10,000,000 / 86,400 ≈ 116. A shortcut worth memorizing: 1 million requests per day ≈ 12 QPS. For peak load, multiply this average by a few times.
+
+  - q: "According to the CAP theorem, what choice does a distributed data store face during a **network partition**?"
+    options:
+      - "Between speed and cost"
+      - "Between read and write performance"
+      - "Between security and availability"
+      - "Between consistency and availability"
+    why: |
+      When nodes can't reach each other, the system either keeps responding with data that may be out of date (availability, AP) or rejects the request to avoid the risk of inconsistency (consistency, CP). Giving up partition tolerance isn't realistic; network failures are inevitable. The choice depends on the kind of data: CP for an account balance, AP for a like count.
+
+  - q: "What is the main cost of adding **read replicas** to a database?"
+    options:
+      - "Because of replication lag, data read from a replica can be briefly stale."
+      - "Write capacity drops."
+      - "You can't join tables."
+      - "Transactions are disabled."
+    why: |
+      Replication is usually asynchronous: a write is acknowledged on the primary and propagated to the replicas afterward. If a user saves something and immediately reads from a replica, they may see the old version. A common fix is to read the user's own writes from the primary for a short time. Read replicas don't increase write capacity.
+
+  - q: "In the cache-aside pattern, what is the most common and safest approach to the cache when data is updated?"
+    options:
+      - "Don't touch the cache at all"
+      - "Update the cache first and never update the database"
+      - "Update the database, delete the corresponding cache key, and set a TTL as a safety net"
+      - "Clear the entire cache"
+    why: |
+      Deleting the key makes the next read load fresh data from the database, and compared with updating the cache directly, it reduces the chance that two concurrent writes leave a stale value in the cache. The TTL is a safety net for cases where the delete fails or is missed.
+
+  - q: "If a message queue guarantees **at-least-once delivery**, how should the consumer be designed?"
+    options:
+      - "It should acknowledge messages before processing them."
+      - "It should run as a single instance only."
+      - "It should process every message twice."
+      - "It should be idempotent: processing the same message more than once must not change the result."
+    why: |
+      With at-least-once delivery, messages aren't lost but can be **duplicated**: if the consumer does the work and crashes before it can send the acknowledgment, the message is redelivered. If the consumer isn't idempotent, you get bugs such as double payments or duplicate emails. Solutions: store processed message IDs, use a uniqueness constraint, or write the operation so it is naturally idempotent.
+
+  - q: "Why do distributed caches use **consistent hashing** instead of `hash(key) % N`?"
+    options:
+      - "So that only a small fraction of keys move when a server is added or removed"
+      - "To compute hashes faster"
+      - "To encrypt the keys"
+      - "To gather all keys on a single server"
+    why: |
+      With modulo distribution, when `N` changes almost every key lands on a different server; it's as if the cache were emptied all at once. With consistent hashing, servers and keys are placed on a ring; when a server changes, only the keys in the neighboring range (1/N on average) move.
+
+  - q: "If you want to count clicks in a URL shortener, which status code is better for the redirect?"
+    options:
+      - "301 Moved Permanently; the browser caches it permanently."
+      - "302 Found; every click goes through the server."
+      - "200 OK"
+      - "404 Not Found"
+    why: |
+      A 301 response is cached permanently by the browser: later clicks never reach your server. That reduces load, but you can't count clicks or change the link's target later. A 302 brings every click to the server; that is what you need for analytics and expiration dates.
+
+  - q: "What properties should a good **sharding key** have? (More than one answer is correct.)"
+    options:
+      - "It should spread data and load evenly across shards."
+      - "It should have as few distinct values as possible (e.g. a country code)."
+      - "It should let frequent queries be served from a single shard."
+      - "It should be a value that keeps increasing over time, so new data is always written to the last shard."
+    why: |
+      The key should distribute evenly and route common queries to a single shard. Keys with few distinct values (a country code) turn some shards into hot spots. Range-based sharding on a constantly increasing key piles all writes onto a single shard.
+
+  - q: "Why does making application servers **stateless** make horizontal scaling easier?"
+    options:
+      - "Stateless servers use less memory."
+      - "Stateless servers don't need a database."
+      - "Any request can go to any server; servers can be added and removed freely."
+      - "You no longer need a load balancer."
+    why: |
+      If a server doesn't keep user-specific data between requests (session data lives in a shared store or in a signed cookie), all servers are interchangeable. The load balancer can distribute requests however it likes; if a server crashes, the user's session isn't lost.
+
+  - q: "Three services are each 99.9% available, and a request must pass through **all of them in sequence**. What is the overall availability, roughly?"
+    options:
+      - "99.99%"
+      - "99.9%"
+      - "99.7%"
+      - "97%"
+    why: |
+      The availabilities of components in series multiply: 0.999 × 0.999 × 0.999 ≈ 0.997. Every dependency added to the chain lowers overall availability. Ways to improve it: redundancy (parallel components), decoupling non-critical dependencies with a queue, and being able to keep working, even in a degraded mode, when a dependency goes down.

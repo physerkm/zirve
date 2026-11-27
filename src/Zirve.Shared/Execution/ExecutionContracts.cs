@@ -55,6 +55,9 @@ public sealed record ExecutionRequest
     public ProblemSpec? Spec { get; init; }
 
     public IReadOnlyList<TestCaseInput> Tests { get; init; } = [];
+
+    /// <summary>Kullanıcıya dönen iletilerin dili: "tr" (varsayılan) ya da "en".</summary>
+    public string Locale { get; init; } = "tr";
 }
 
 public sealed record CompileDiagnostic(int Line, int Column, string Message);

@@ -1,0 +1,130 @@
+title: İleri C#
+description: Yarış durumu, lock, Interlocked ve SemaphoreSlim, eşzamanlı koleksiyonlar, thread havuzu açlığı, Span ve ArrayPool, GC nesilleri ve LOH, record'lar, desen eşleme, nullable reference types ve primary constructor.
+level: advanced
+timeLimitMinutes: 18
+questions:
+  - q: |
+      Aşağıdaki kod sonunda neden her zaman 100000 yazdırmaz?
+
+      ```csharp
+      var counter = 0;
+      Parallel.For(0, 100_000, _ => counter++);
+      Console.WriteLine(counter);
+      ```
+    options:
+      - "`Parallel.For` bazı yinelemeleri atlar."
+      - "`counter++` oku–değiştir–yaz olmak üzere üç adımdır; iki thread aynı değeri okuyup aynı sonucu yazınca artışlar kaybolur."
+      - "`int` taşma yapar."
+      - "Derleyici döngüyü optimize edip kaldırır."
+    answer: 2
+    difficulty: easy
+    why: |
+      Bu bir yarış durumudur. `counter++` atomik değildir. İki thread aynı anda eski değeri okursa ikisi de aynı yeni değeri yazar ve bir artış kaybolur. Çözüm `Interlocked.Increment(ref counter)` ya da bir `lock`'tır. Daha iyisi, her thread'in kendi yerel toplamını tutup sonda birleştirmesidir.
+
+  - q: "Asenkron bir metotta paylaşılan bir kaynağa erişimi sıraya sokmanız gerekiyor ve kritik bölge içinde `await` var. Hangisini kullanırsınız?"
+    options:
+      - "`lock` ifadesi"
+      - "`Monitor.Enter` / `Monitor.Exit`"
+      - "`Interlocked.CompareExchange`"
+      - "`SemaphoreSlim(1, 1)` ile `WaitAsync` ve `finally` içinde `Release`"
+    answer: 4
+    difficulty: medium
+    why: |
+      `lock` thread'e bağlıdır ve `await` sonrası kod başka bir thread'de devam edebileceği için içinde `await` kullanmak derleme hatasıdır. `SemaphoreSlim.WaitAsync` thread'i bloklamadan bekler ve async koda uygundur. `Release` her durumda çalışsın diye `finally` içinde olmalıdır.
+
+  - q: "`ConcurrentDictionary.GetOrAdd(key, factory)` ile ilgili hangisi doğrudur?"
+    options:
+      - "Fabrika fonksiyonu her anahtar için kesinlikle bir kez çalışır."
+      - "GetOrAdd thread güvenli değildir."
+      - "Sözlüğe ekleme atomiktir, ancak yarış durumunda fabrika birden fazla kez çalışabilir; tek çalışması gerekiyorsa değer `Lazy<T>` ile sarılır."
+      - "Fabrika hiç çalışmaz, değer her zaman `default` olarak eklenir."
+    answer: 3
+    difficulty: hard
+    why: |
+      `ConcurrentDictionary` fabrikayı kilit dışında çalıştırır ki uzun süren bir fabrika bütün sözlüğü kilitlemesin. Bu yüzden iki thread aynı anda aynı anahtarı isterse fabrika iki kez çalışabilir. Yalnızca bir sonuç saklanır. Fabrika pahalıysa ya da yan etkisi varsa `Lazy<T>` ile sarmak tek çalışmayı garanti eder.
+
+  - q: "Bir ASP.NET Core API'de CPU kullanımı düşük ama yanıt süreleri çok yüksek ve thread sayısı sürekli artıyor. `dotnet-counters` ThreadPool kuyruğunun büyüdüğünü gösteriyor. En olası sebep nedir?"
+    options:
+      - "Asenkron metotların `.Result` ya da `.Wait()` ile senkron beklenmesi (sync-over-async) sonucu thread havuzu açlığı"
+      - "GC'nin çok sık çalışması"
+      - "Ağ kartı arızası"
+      - "Fazla `async` kullanımı"
+    answer: 1
+    difficulty: hard
+    why: |
+      Senkron bekleme bir thread'i iş bitene kadar hiçbir şey yapmadan bloklar. Yük altında havuzdaki bütün thread'ler böyle bekler. Havuz yeni thread'leri yavaş ekler ve istekler kuyrukta birikir. CPU'nun düşük olması, thread'lerin çalışmadığını, beklediğini gösterir. Çözüm baştan sona async'tir.
+
+  - q: "`Span<T>` neden bir `async` metotta `await` ifadesini aşacak şekilde kullanılamaz?"
+    options:
+      - "`Span<T>` yalnızca dizilerle çalışır."
+      - "`Span<T>` bir `ref struct`'tır ve yalnızca yığında yaşayabilir; async durum makinesi yerel değişkenleri heap'e taşıdığı için derleyici buna izin vermez. Async kodda `Memory<T>` kullanılır."
+      - "`Span<T>` thread güvenli olmadığı için"
+      - "`Span<T>` .NET Core'da desteklenmez."
+    answer: 2
+    difficulty: medium
+    why: |
+      `Span<T>` yığın belleğine (`stackalloc`) bile işaret edebilir. Bir heap nesnesinin içinde saklanmasına izin verilseydi, o yığın çerçevesi yok olduktan sonra geçersiz belleğe bakan bir görünüm kalabilirdi. Async metotlar `await` noktasında yerel değişkenleri heap'teki bir durum makinesine taşır. Bu yüzden `ref struct`'lar orada yaşayamaz. `Memory<T>` heap'te saklanabilen karşılığıdır.
+
+  - q: "`ArrayPool<byte>.Shared.Rent(1000)` ile ilgili hangileri doğrudur? (Birden fazla seçin)"
+    options:
+      - "Dönen dizinin uzunluğu 1000'den büyük olabilir."
+      - "Dönen dizi her zaman sıfırlarla doludur."
+      - "Dizi iade edildikten (`Return`) sonra kullanılmaya devam edilmemelidir."
+      - "İade etmek isteğe bağlıdır; GC zaten havuza geri koyar."
+    answer: [1, 3]
+    difficulty: hard
+    why: |
+      Havuz, boyut kovalarına göre çalışır ve istenenden büyük bir dizi dönebilir. Bu yüzden kullanılan uzunluk ayrıca takip edilir. Dizi temizlenmemiştir ve önceki kullanıcının verisini içerebilir. Gizli veriler için `Return(buffer, clearArray: true)` kullanılır. İade edilmeyen dizi havuza dönmez ve havuzun faydası kaybolur. İade sonrası kullanım, başka bir kodun aynı diziyi almasıyla veri bozulmasına yol açar.
+
+  - q: "Her istekte 200 KB'lık yeni bir `byte[]` tampon oluşturan bir servis yüksek GC süreleri yaşıyor. Sebep ve çözüm nedir?"
+    options:
+      - "Gen 0 çok küçüktür; GC ayarlarından büyütülmelidir."
+      - "Dizi çok küçük olduğu için yığında tutulmalıdır."
+      - "`GC.Collect()` her istekten sonra çağrılmalıdır."
+      - "85 000 bayt üstü nesneler Large Object Heap'e gider ve yalnızca pahalı Gen 2 toplamalarıyla temizlenir; tamponlar `ArrayPool` ile yeniden kullanılmalıdır."
+    answer: 4
+    difficulty: medium
+    why: |
+      85 000 bayt ve üzeri nesneler LOH'ta ayrılır. LOH Gen 2 ile birlikte toplanır ve varsayılan olarak sıkıştırılmaz. Sık oluşturulan büyük diziler hem tam toplamaları tetikler hem de parçalanmaya yol açar. Havuzlama bu tahsisleri ortadan kaldırır. `GC.Collect()` çağırmak GC'nin kendi sezgilerini bozar ve durumu kötüleştirir.
+
+  - q: |
+      Aşağıdaki kodun çıktısı nedir?
+
+      ```csharp
+      public record Point(int X, int Y);
+      var a = new Point(1, 2);
+      var b = a with { Y = 5 };
+      var c = new Point(1, 2);
+      Console.WriteLine($"{a == c} {ReferenceEquals(a, c)} {b.X}");
+      ```
+    options:
+      - "False False 1"
+      - "True True 1"
+      - "True False 1"
+      - "True False 0"
+    answer: 3
+    difficulty: medium
+    why: |
+      Record'lar değer eşitliği sağlar: `a` ve `c` aynı değerlere sahip olduğu için `==` true döner. Ama ayrı nesnelerdir, `ReferenceEquals` false döner. `with` ifadesi `a`'nın kopyasını oluşturur ve yalnızca `Y`'yi değiştirir. `X` 1 olarak kalır.
+
+  - q: "Nullable reference types (`<Nullable>enable</Nullable>`) ile ilgili hangisi doğrudur?"
+    options:
+      - "Derleme zamanı analizidir; çalışma zamanında `null` atanmasını engellemez. Dışarıdan gelen veri yine doğrulanmalıdır."
+      - "Çalışma zamanında `string` tipine `null` atanırsa istisna fırlatır."
+      - "Yalnızca değer tipleri için geçerlidir."
+      - "`!` operatörü değeri çalışma zamanında null olmaktan korur."
+    answer: 1
+    difficulty: medium
+    why: |
+      Nullable reference types derleyicinin akış analizine dayanır ve uyarı üretir. Çalışma zamanı davranışı değişmez. JSON'dan, veritabanından ya da açık olmayan kütüphanelerden gelen değerler yine `null` olabilir. `!` (null-forgiving) operatörü yalnızca uyarıyı susturur, hiçbir koruma sağlamaz.
+
+  - q: "C# 12 primary constructor ile ilgili hangisi doğrudur?"
+    options:
+      - "Parametreler otomatik olarak `public` özelliklere dönüşür."
+      - "Parametreler `readonly` alanlardır ve yeniden atanamaz."
+      - "Parametreler sınıf boyunca erişilebilir yakalanmış değişkenlerdir ve `readonly` değildir; sınıf içinde yeniden atanabilirler."
+      - "Primary constructor yalnızca record'larda kullanılabilir."
+    answer: 3
+    difficulty: medium
+    why: |
+      Sınıflardaki primary constructor parametreleri, record'lardaki konumsal parametrelerden farklı olarak genel özellik üretmez. Sınıfın üyeleri tarafından yakalanırlar ve `readonly` değildirler. Yanlışlıkla yeniden atanmalarını önlemek isteyen ekipler değeri açıkça `private readonly` bir alana kopyalar ya da bir analizör kuralı kullanır.

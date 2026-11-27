@@ -36,6 +36,10 @@ public sealed class RunnerFixture
     public ExecutionService Service { get; }
 
     public Task<ExecutionResult> RunTestsAsync(string language, string code, ProblemSpec spec, params (string Args, string Expected)[] tests) =>
+        RunTestsInAsync("tr", language, code, spec, tests);
+
+    /// <summary>İletilerin dili verilerek (ör. "en") test modunda çalıştırır.</summary>
+    public Task<ExecutionResult> RunTestsInAsync(string locale, string language, string code, ProblemSpec spec, params (string Args, string Expected)[] tests) =>
         Service.ExecuteAsync(
             new ExecutionRequest
             {
@@ -44,6 +48,7 @@ public sealed class RunnerFixture
                 Code = code,
                 Spec = spec,
                 Tests = [.. tests.Select((test, index) => new TestCaseInput { Id = index, Args = Json(test.Args), Expected = Json(test.Expected) })],
+                Locale = locale,
             },
             TestContext.Current.CancellationToken);
 
@@ -68,9 +73,9 @@ public sealed class RunnerFixture
             },
             TestContext.Current.CancellationToken);
 
-    public Task<ExecutionResult> RunScriptAsync(string language, string code) =>
+    public Task<ExecutionResult> RunScriptAsync(string language, string code, string locale = "tr") =>
         Service.ExecuteAsync(
-            new ExecutionRequest { Language = language, Mode = ExecutionMode.Script, Code = code },
+            new ExecutionRequest { Language = language, Mode = ExecutionMode.Script, Code = code, Locale = locale },
             TestContext.Current.CancellationToken);
 
     public static JsonElement Json(string json)

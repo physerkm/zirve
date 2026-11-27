@@ -1,0 +1,145 @@
+title: DevOps ve Bulut
+description: Docker imajları ve katmanlar, compose, Kubernetes nesneleri ve probe'lar, kaynak limitleri, CI/CD ilkeleri ve dağıtım stratejileri, bulut servis modelleri, parolasız kimlik ve Linux teşhis komutları.
+level: intermediate
+timeLimitMinutes: 20
+questions:
+  - q: "Konteyner ile sanal makine arasındaki temel fark nedir?"
+    options:
+      - "Konteynerler kendi işletim sistemi çekirdeğini taşır, sanal makineler ana makinenin çekirdeğini paylaşır."
+      - "Konteynerler ana makinenin çekirdeğini paylaşır ve süreç düzeyinde yalıtılır; sanal makineler donanımı sanallaştırır ve kendi çekirdeklerini taşır."
+      - "İkisi arasında fark yoktur, yalnızca adları farklıdır."
+      - "Sanal makineler daha hafiftir ve daha hızlı açılır."
+    answer: 2
+    difficulty: easy
+    why: |
+      Konteynerler namespace'ler (görünürlük) ve cgroup'lar (kaynak sınırı) ile yalıtılmış süreçlerdir ve ana makinenin çekirdeğini paylaşır. Bu yüzden megabaytlar boyutunda ve saniyeler içinde açılırlar. Sanal makineler kendi çekirdeklerini taşıdıkları için daha güçlü yalıtım sağlar ama daha ağırdır.
+
+  - q: |
+      Aşağıdaki Dockerfile'da her kod değişikliğinde bütün NuGet paketleri yeniden indiriliyor. Sebep nedir?
+
+      ```dockerfile
+      FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+      WORKDIR /src
+      COPY . .
+      RUN dotnet restore
+      RUN dotnet publish -c Release -o /app
+      ```
+    options:
+      - "`WORKDIR` yanlış dizini gösteriyor."
+      - "SDK imajı önbelleği desteklemez."
+      - "`COPY . .` kaynak kodu da kopyaladığı için her kod değişikliği bu katmanı ve sonrasını (restore dahil) geçersiz kılar; önce yalnızca proje dosyaları kopyalanıp restore edilmeli, kaynak kod sonra kopyalanmalı."
+      - "`dotnet publish` her zaman paketleri yeniden indirir."
+    answer: 3
+    difficulty: medium
+    why: |
+      Docker katmanları sırayla önbelleğe alır. Bir katmanın girdisi değişirse o katman ve sonrasındaki her şey yeniden çalışır. Proje dosyalarını önce kopyalayıp `restore` etmek, bağımlılıklar değişmediği sürece restore katmanının önbellekten gelmesini sağlar. Kaynak kod değişiklikleri yalnızca son katmanları etkiler.
+
+  - q: "docker compose ile çalışan API konteyneri, bağlantı dizgisinde `Host=localhost` kullandığı için PostgreSQL konteynerine bağlanamıyor. Neden?"
+    options:
+      - "Konteyner içinde `localhost` konteynerin kendisidir; aynı compose ağındaki servislere servis adıyla (`Host=db`) ulaşılır."
+      - "PostgreSQL konteynerleri dışarıdan bağlantı kabul etmez."
+      - "Port eşlemesi (`ports:`) yapılmadığı için hiçbir konteyner veritabanına erişemez."
+      - "compose yalnızca tek bir servisi çalıştırabilir."
+    answer: 1
+    difficulty: easy
+    why: |
+      Her konteynerin kendi ağ namespace'i vardır. İçindeki `localhost` ana makineyi değil konteynerin kendisini gösterir. Compose, servisleri ortak bir ağa bağlar ve servis adlarını DNS ile çözer. `ports:` yalnızca ana makineden erişim içindir. Konteynerler arası iletişim için gerekmez.
+
+  - q: "Dockerfile'da `ENV DB_PASSWORD=...` ile parola tanımlamanın sakıncası nedir?"
+    options:
+      - "Sakıncası yoktur; ortam değişkenleri şifrelenir."
+      - "Parola imaj katmanlarında ve meta verisinde kalır; imajı çeken herkes okuyabilir. Gizli bilgiler çalışma zamanında secret ya da kasa servisiyle verilmelidir."
+      - "Yalnızca imaj boyutunu büyütür."
+      - "Docker bu satırı derleme sırasında reddeder."
+    answer: 2
+    difficulty: medium
+    why: |
+      İmaja gömülen her şey (ENV, kopyalanan dosyalar) imajı çeken herkesin erişimindedir ve sonraki bir katmanda silinse bile geçmiş katmanda kalır. Gizli bilgiler çalışma zamanında ortam değişkeni, Kubernetes secret, Key Vault ya da benzeri bir kasa ile sağlanmalıdır.
+
+  - q: "Kubernetes'te bir pod `OOMKilled` durumuyla yeniden başlıyor ve konteyner 137 koduyla çıkıyor. En olası sebep nedir?"
+    options:
+      - "CPU limiti aşıldı."
+      - "Readiness probe başarısız oldu."
+      - "İmaj registry'den çekilemedi."
+      - "Konteyner bellek limitini aştı ve SIGKILL (128 + 9 = 137) ile öldürüldü."
+    answer: 4
+    difficulty: medium
+    why: |
+      Bellek limitini aşan konteyner çekirdek tarafından öldürülür ve çıkış kodu 137 olur. CPU limitini aşan konteyner öldürülmez, yalnızca yavaşlatılır (throttling). Readiness başarısızlığı yeniden başlatmaya değil, trafiğin kesilmesine yol açar. Registry hatası `ImagePullBackOff` olarak görünür.
+
+  - q: "Pod'ların IP adresleri sürekli değişiyor. Diğer servislerin bir uygulamaya sabit bir adla ulaşmasını hangi Kubernetes nesnesi sağlar?"
+    options:
+      - "ConfigMap"
+      - "Service"
+      - "Deployment"
+      - "Namespace"
+    answer: 2
+    difficulty: easy
+    why: |
+      Service, etiket seçicisiyle eşleşen pod'ların önünde sabit bir DNS adı ve sanal IP sunar ve trafiği aralarında dağıtır. Deployment pod'ların sayısını ve güncellemesini yönetir. ConfigMap yapılandırma taşır. Namespace kaynakları mantıksal olarak gruplar.
+
+  - q: "Bir dağıtımda `maxUnavailable: 0` ve `maxSurge: 1` ayarları ne sağlar?"
+    options:
+      - "Güncelleme sırasında kapasite hiç düşmez; önce bir yeni pod açılır, hazır olunca bir eski pod kapatılır."
+      - "Bütün eski pod'lar aynı anda kapatılır."
+      - "Güncelleme yalnızca bir pod üzerinde yapılır ve diğerleri eski sürümde kalır."
+      - "Yeni sürüm hiç dağıtılmaz."
+    answer: 1
+    difficulty: medium
+    why: |
+      Rolling update'te `maxUnavailable` güncelleme sırasında istenen sayının altına en fazla kaç pod düşülebileceğini, `maxSurge` istenen sayının üstüne en fazla kaç ek pod açılabileceğini belirler. `0` ve `1` ile her adımda önce yeni pod açılır ve readiness'tan geçince eskisi kapatılır. Kapasite korunur, bedeli bir pod'luk ek kaynaktır.
+
+  - q: "'Bir kez derle, her ortama aynı artefaktı dağıt' ilkesinin amacı nedir?"
+    options:
+      - "Derleme süresini kısaltmak"
+      - "Staging'de test edilenle üretime gidenin birebir aynı olmasını sağlamak; ortamlar arasındaki fark yalnızca yapılandırmada kalsın"
+      - "Her ortam için farklı derleme ayarları kullanabilmek"
+      - "Docker kullanımını zorunlu kılmak"
+    answer: 2
+    difficulty: medium
+    why: |
+      Her ortam için yeniden derlemek, farklı bağımlılık sürümleri ya da derleme ayarları nedeniyle test edilmemiş bir artefaktın üretime gitmesine yol açabilir. Tek bir artefakt (ör. commit hash'iyle etiketlenmiş imaj) bütün ortamlardan geçer. Ortam farkları yalnızca yapılandırmayla sağlanır.
+
+  - q: "Yeni bir sürümü önce trafiğin %5'ine açıp metrikleri izleyerek kademeli olarak artırmaya ne denir?"
+    options:
+      - "Blue-green dağıtım"
+      - "Rolling update"
+      - "Canary dağıtım"
+      - "Recreate"
+    answer: 3
+    difficulty: easy
+    why: |
+      Canary dağıtımda yeni sürüm küçük bir trafik dilimiyle başlar ve metrikler sağlıklıysa kademeli olarak artırılır. Hata yalnızca küçük bir kitleyi etkiler. Blue-green trafiği bir anda yeni ortama çevirir. Rolling update örnekleri teker teker yeniler ama trafik oranını metriklere göre kontrol etmez.
+
+  - q: "Azure'da çalışan bir .NET uygulamasının Key Vault ve Blob Storage'a parola saklamadan erişmesi için en uygun yöntem hangisidir?"
+    options:
+      - "Bağlantı dizgisini `appsettings.json`'a yazmak"
+      - "Anahtarı ortam değişkeninde düz metin olarak tutmak"
+      - "Anahtarı koda gömmek ve depoyu özel yapmak"
+      - "Managed Identity ve `DefaultAzureCredential` kullanmak, kimliğe yalnızca gereken rolleri vermek"
+    answer: 4
+    difficulty: medium
+    why: |
+      Managed Identity, uygulamanın kimliğini platformdan almasını sağlar ve saklanacak bir parola kalmaz. `DefaultAzureCredential` yerelde geliştiricinin oturumunu, bulutta Managed Identity'yi kullanır. AWS'deki karşılığı IAM Role'dür. En az yetki ilkesiyle kimliğe yalnızca ihtiyaç duyduğu roller verilir.
+
+  - q: "Serverless (Azure Functions, AWS Lambda) hangi senaryo için **en az** uygundur?"
+    options:
+      - "Gece çalışan düzensiz bir toplu iş"
+      - "Kuyruğa mesaj geldiğinde tetiklenen kısa bir işlem"
+      - "Gün boyu sürekli yüksek trafik alan ve soğuk başlangıç gecikmesine hassas bir API"
+      - "Bir dosya yüklendiğinde küçük resim üretmek"
+    answer: 3
+    difficulty: medium
+    why: |
+      Serverless düzensiz, patlamalı ve olay tetiklemeli işlerde parlar: kullanmadığınız zaman ödeme yapmazsınız. Sürekli yüksek trafikte kalıcı örnekler genellikle daha ucuzdur ve soğuk başlangıç gecikmesi düşük gecikme isteyen API'ler için sorun olabilir.
+
+  - q: "Bir Linux sunucusunda 'disk dolu' hatası alınıyor. Hangi komut sırası sorunun kaynağını bulmak için en uygundur?"
+    options:
+      - "`df -h` ile hangi dosya sisteminin dolu olduğunu, `du -sh` ile hangi klasörün yer kapladığını bulmak"
+      - "`top` ile CPU kullanımına bakmak"
+      - "`ping` ile ağ erişimini kontrol etmek"
+      - "`kill -9` ile bütün süreçleri durdurmak"
+    answer: 1
+    difficulty: easy
+    why: |
+      `df -h` dosya sistemi düzeyinde doluluğu, `du -sh *` klasörlerin boyutlarını gösterir. Bu ikisiyle aşağı doğru inerek yer kaplayan yer bulunur. Çoğu zaman sebep döndürülmeyen (rotate edilmeyen) log dosyalarıdır. `top` ve `ping` başka sorunların aracıdır, `kill -9` ise sorunu çözmez ve veri kaybına yol açabilir.

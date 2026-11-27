@@ -1,0 +1,125 @@
+title: Mühendislik Pratikleri
+description: Git'te merge, rebase, revert ve reflog, dal stratejileri, Scrum ve story point, Kanban, code review ve ADR, SLO ve hata bütçesi, alarm tasarımı, olay müdahalesi ve postmortem.
+level: intermediate
+timeLimitMinutes: 16
+questions:
+  - q: "Ana dala push edilmiş ve başkalarının da çektiği hatalı bir commit'i geri almanın en güvenli yolu hangisidir?"
+    options:
+      - "`git reset --hard HEAD~1` ve `git push --force`"
+      - "`git commit --amend`"
+      - "`git revert <commit>` ile commit'in tersini yapan yeni bir commit oluşturmak"
+      - "Commit'i yerelde silip başkalarına haber vermek"
+    answer: 3
+    difficulty: easy
+    why: |
+      Paylaşılan bir dalda geçmişi yeniden yazmak (reset, amend, force push) başkalarının yerel geçmişiyle uyuşmazlık yaratır ve işlerini kaybettirebilir. `revert`, geri almayı yeni bir commit olarak kaydeder. Geçmiş korunur ve geri alma da denetlenebilir olur.
+
+  - q: "Rebase ile ilgili hangisi doğrudur?"
+    options:
+      - "Commit'leri yeni tabanın üzerine yeniden uygular ve yeni hash'lerle yeni commit'ler oluşturur; başkalarıyla paylaşılan commit'ler rebase edilmemelidir."
+      - "Rebase commit hash'lerini değiştirmez."
+      - "Rebase her zaman bir birleştirme commit'i oluşturur."
+      - "Rebase yalnızca uzaktaki dallarda çalışır."
+    answer: 1
+    difficulty: medium
+    why: |
+      Rebase commit'leri yeniden oluşturur ve doğrusal bir geçmiş verir. Hash'ler değiştiği için paylaşılan commit'leri rebase etmek, diğer geliştiricilerin geçmişini bozar. Kendi yerel dalını güncel ana dalın üzerine almak için güvenli ve yaygın bir uygulamadır. Birleştirme commit'i merge'ün özelliğidir.
+
+  - q: "`git reset --hard` ile üç commit'i yanlışlıkla sildiniz. Bunları nasıl geri getirirsiniz?"
+    options:
+      - "Geri getirilemez."
+      - "`git stash pop`"
+      - "`git revert HEAD`"
+      - "`git reflog` ile commit'lerin hash'ini bulup o noktaya dönmek ya da oradan bir dal oluşturmak"
+    answer: 4
+    difficulty: medium
+    why: |
+      Git, HEAD'in gittiği her konumu yerel reflog'da kaydeder. Commit edilmiş her şey reflog süresi dolana kadar geri getirilebilir: `git reflog`, sonra `git branch kurtarma <hash>` ya da `git reset --hard <hash>`. Commit edilmemiş değişiklikler ise `reset --hard` ile gerçekten kaybolur.
+
+  - q: "Bir hatanın son 200 commit'ten hangisiyle geldiğini en hızlı nasıl bulursunuz?"
+    options:
+      - "Commit'leri tek tek elle denemek"
+      - "`git bisect` ile ikili arama yapmak; mümkünse `git bisect run` ile bir testi otomatik çalıştırmak"
+      - "`git blame` ile her dosyaya bakmak"
+      - "`git log` çıktısını okumak"
+    answer: 2
+    difficulty: easy
+    why: |
+      `bisect` iyi ve kötü olarak işaretlenen iki nokta arasında ikili arama yapar. 200 commit en fazla 8 adımda taranır. `bisect run` bir betiğin çıkış koduna göre bunu tamamen otomatikleştirir. Bu yüzden her commit'in derlenebilir olması önemlidir.
+
+  - q: "Story point ile ilgili hangisi doğrudur?"
+    options:
+      - "Story point, işin kaç saat süreceğinin tahminidir."
+      - "Velocity, ekipler arasındaki performansı karşılaştırmak için kullanılmalıdır."
+      - "Story point işin göreli büyüklüğünü (karmaşıklık, belirsizlik, iş miktarı) ifade eder; asıl değeri tahmin sırasındaki konuşmada ortaya çıkan varsayımlardır."
+      - "Bir işin puanı sprint sırasında sürekli güncellenmelidir."
+    answer: 3
+    difficulty: medium
+    why: |
+      Story point'ler kişiye bağlı saat tahminleri yerine göreli büyüklük kullanır. Planning poker'da farklı tahminlerin gerekçelerini konuşmak gizli varsayımları ortaya çıkarır. Velocity yalnızca ekibin kendi planlaması için anlamlıdır. Ekipler arası karşılaştırma puan enflasyonuna yol açar.
+
+  - q: "Kanban'da 'devam eden iş limiti' (WIP limit) neyi sağlar?"
+    options:
+      - "Ekibin daha fazla işe aynı anda başlamasını"
+      - "Darboğazları görünür kılar ve yeni işe başlamak yerine takılan işlerin bitirilmesini teşvik eder"
+      - "Sprint süresini kısaltır"
+      - "Story point tahminini gereksiz kılar"
+    answer: 2
+    difficulty: easy
+    why: |
+      Bir sütundaki iş sayısı sınırlandığında, sınır dolunca yeni iş başlatılamaz. Ekip takılan işleri bitirmeye ya da darboğazdaki aşamaya yardım etmeye yönelir. Sonuç olarak cycle time kısalır ve "her şeye başlanmış, hiçbir şey bitmemiş" durumu önlenir.
+
+  - q: "Code review'da hangileri insan incelemesi yerine araçlara bırakılmalıdır? (Birden fazla seçin)"
+    options:
+      - "Kod biçimi ve girinti"
+      - "İş kuralının doğru anlaşılıp anlaşılmadığı"
+      - "Bilinen güvenlik açığı olan bağımlılıkların tespiti"
+      - "Tasarımın mevcut mimariye uyup uymadığı"
+    answer: [1, 3]
+    difficulty: medium
+    why: |
+      Biçim, statik analizle bulunabilen basit hatalar ve bilinen açık içeren bağımlılıklar formatlayıcılar, analizörler ve CI taramaları tarafından otomatik denetlenmelidir. İnsan review'ı makinenin göremediği şeylere odaklanır: doğruluk, iş kuralının yorumlanması, tasarım ve bakım kolaylığı.
+
+  - q: "Bir mimari karar kaydında (ADR) aşağıdakilerden hangisi **bulunmamalıdır**?"
+    options:
+      - "Kararın alındığı bağlam"
+      - "Değerlendirilen alternatifler"
+      - "Kararın olumsuz sonuçları"
+      - "Karar değiştiğinde eski ADR'nin içeriğinin silinip yeni karara göre yeniden yazılması"
+    answer: 4
+    difficulty: medium
+    why: |
+      ADR'ler değiştirilmez. Karar değişirse yeni bir ADR yazılır ve eskisi "yerine ADR-031 geçti" olarak işaretlenir. Kararın tarihçesi ve o andaki gerekçesi değerlidir. Bağlam, alternatifler ve olumsuz sonuçlar ise iyi bir ADR'nin temel parçalarıdır.
+
+  - q: "28 günlük pencerede %99,9 erişilebilirlik SLO'su yaklaşık ne kadar kesintiye izin verir?"
+    options:
+      - "4 dakika"
+      - "40 dakika"
+      - "4 saat"
+      - "Hiç kesintiye izin vermez"
+    answer: 2
+    difficulty: medium
+    why: |
+      Hata bütçesi %0,1'dir: 28 gün × 24 saat × 60 dakika × 0,001 ≈ 40 dakika. Bütçe varken ekip hızlı dağıtım yapabilir. Bütçe tükenince öncelik güvenilirliğe kayar. %99,99 hedefi aynı pencerede yaklaşık 4 dakikaya iner. Her ek "dokuz" maliyeti katlar.
+
+  - q: "Gece yarısı 'ödeme hata oranı yüksek' alarmı geldi. Son dağıtım 20 dakika önce yapılmış. İlk adım ne olmalıdır?"
+    options:
+      - "Son dağıtımı geri almak ya da ilgili feature flag'i kapatmak gibi hızlı bir hafifletme uygulamak; kök nedeni sonra araştırmak"
+      - "Kök nedeni bulana kadar hiçbir değişiklik yapmamak"
+      - "Sabah ekibe haber vermek"
+      - "Veritabanını yeniden başlatmak"
+    answer: 1
+    difficulty: medium
+    why: |
+      Olay anındaki amaç kullanıcı etkisini en hızlı şekilde durdurmaktır. Olayların büyük kısmı bir değişiklikten sonra başlar. "Ne değişti?" sorusu ve geri alma en hızlı hafifletmedir. Kök neden analizi etki durdurulduktan sonra ve postmortem'de yapılır. Gerekçesiz yeniden başlatmalar durumu karıştırabilir.
+
+  - q: "Suçlamasız (blameless) postmortem'in amacı nedir?"
+    options:
+      - "Hatayı yapan kişiyi bulmak ve uyarmak"
+      - "Olayı kayıtlardan silmek"
+      - "Yalnızca müşteriye bilgi vermek"
+      - "İnsanların hatalarını gizlemeden paylaşmasını sağlamak ve 'sistem bu hatayı neden mümkün kıldı?' sorusuyla sistemik iyileştirmeler bulmak"
+    answer: 4
+    difficulty: easy
+    why: |
+      İnsanlar o anki bilgileriyle makul görünen kararlar verir. Suçlama olan yerde hatalar gizlenir ve organizasyon öğrenemez. Postmortem katkıda bulunan etkenleri (eksik onay adımı, yetersiz alarm, staging farkı) bulur ve sahibi ve tarihi belli eylemlerle biter.

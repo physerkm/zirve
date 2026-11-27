@@ -1,0 +1,124 @@
+title: SQL and Database Fundamentals
+description: Joins, NULL logic, window functions, indexes, transactions, isolation levels and data modeling.
+questions:
+  - q: |
+      The goal is to list **all** customers and their delivered orders, if any. What does this query return?
+
+      ```sql
+      SELECT c.name, o.id
+      FROM customers c
+      LEFT JOIN orders o ON o.customer_id = c.id
+      WHERE o.status = 'delivered';
+      ```
+    options:
+      - "All customers; for those without a delivered order, `o.id` is NULL."
+      - "It returns no rows."
+      - "Only customers with at least one delivered order; the query effectively behaves like an INNER JOIN."
+      - "It gives a syntax error."
+    why: |
+      For customers without a match, `o.status` is NULL, and `NULL = 'delivered'` evaluates to `UNKNOWN`, not true; `WHERE` filters those rows out. A condition that filters the right-hand table belongs in the `ON` clause: `LEFT JOIN orders o ON o.customer_id = c.id AND o.status = 'delivered'`.
+
+  - q: |
+      If the `legacy_orders.customer_id` column contains at least one NULL value, what does this query return?
+
+      ```sql
+      SELECT * FROM customers
+      WHERE id NOT IN (SELECT customer_id FROM legacy_orders);
+      ```
+    options:
+      - "The customers that never appear in `legacy_orders`"
+      - "All customers"
+      - "It gives an error."
+      - "It returns no rows."
+    why: |
+      `id NOT IN (1, 2, NULL)` means `id <> 1 AND id <> 2 AND id <> NULL`. The last comparison is always `UNKNOWN`, so the whole condition can't be `TRUE` for any row. `NOT EXISTS` doesn't fall into this trap; use it by default when looking for rows without a match.
+
+  - q: "The `customers` table has 5 rows, and `city` is NULL in 2 of them. What does `SELECT COUNT(*), COUNT(city) FROM customers` return?"
+    options:
+      - "5 and 5"
+      - "5 and 3"
+      - "3 and 3"
+      - "3 and 5"
+    why: |
+      `COUNT(*)` counts rows; `COUNT(column)` counts only the rows where that column isn't NULL. The other aggregate functions (`SUM`, `AVG`, `MAX`) also skip NULL values; `AVG` doesn't include NULLs in the denominator.
+
+  - q: "A table has a B-tree index on `(last_name, first_name)`. Which query **can't make efficient use** of this index?"
+    options:
+      - "`WHERE last_name = 'Smith'`"
+      - "`WHERE last_name = 'Smith' AND first_name = 'Ada'`"
+      - "`WHERE first_name = 'Ada'`"
+      - "`WHERE last_name = 'Smith' ORDER BY first_name`"
+    why: |
+      A composite index is sorted first by the first column and, for ties, by the second; like a phone book. Searching by first name alone requires scanning the whole phone book (the leftmost prefix rule). PostgreSQL 18's "skip scan" feature can still use this index in some cases, but it is efficient only when the first column has few distinct values.
+
+  - q: "Even though there is an index on `users (email)`, the query `WHERE lower(email) = 'ada@example.com'` does a full table scan. What is the cause and the fix?"
+    options:
+      - "PostgreSQL can't use indexes on text columns; the column should be made `bytea`."
+      - "The index is built on the `email` values, and `lower(email)` is a different expression. You should create an expression index on `lower(email)`."
+      - "The index isn't used because the query has no `LIMIT`."
+      - "B-tree indexes work only on numeric columns."
+    why: |
+      Once the column is wrapped in a function, the sorted values in the index no longer match the expression being searched. The fix is `CREATE INDEX ON users (lower(email))`; if this index is made unique, it also guarantees case-insensitive email uniqueness. The same problem occurs with date functions such as `WHERE date(created_at) = ...`; there it is better to write a range condition.
+
+  - q: "The salaries are 100, 100 and 90. Which ranks does `DENSE_RANK() OVER (ORDER BY salary DESC)` produce?"
+    options:
+      - "1, 2, 3"
+      - "1, 1, 3"
+      - "1, 1, 2"
+      - "2, 2, 1"
+    why: |
+      `DENSE_RANK` gives ties the same rank and leaves no gap afterward. `RANK` produces 1, 1, 3; `ROW_NUMBER` produces 1, 2, 3. For the "second highest salary" question, use `DENSE_RANK` to handle equal salaries correctly.
+
+  - q: "Transaction A reads an account's balance (100). Transaction B sets the same balance to 50 and commits. A reads the same row again and sees 50. What is this anomaly called?"
+    options:
+      - "Dirty read"
+      - "Non-repeatable read"
+      - "Phantom read"
+      - "Deadlock"
+    why: |
+      When the same row returns different values in two reads within the same transaction, that is a non-repeatable read. If the value had been read before B committed, it would be a dirty read. A phantom read is when a query with the same condition returns a different **set** of rows. The Repeatable Read level prevents this anomaly.
+
+  - q: "Which of the following does PostgreSQL's default isolation level (Read Committed) **not** prevent?"
+    options:
+      - "Another transaction reading an uncommitted change (dirty read)"
+      - "An update getting lost when two transactions read the same value, compute in memory and overwrite it"
+      - "A committed transaction being lost when the server crashes"
+      - "Saving a row that violates a foreign key constraint"
+    why: |
+      In Read Committed, each statement sees the data committed as of the moment it started. If two requests both read the stock as 10 and both write `stock = 9`, one sale is lost. Dirty reads never happen in PostgreSQL at any level; durability is provided by the WAL, and foreign keys by the constraint.
+
+  - q: "Which methods solve the **lost update** problem when decrementing stock? (More than one answer is correct.)"
+    options:
+      - "Have the database do the computation in a single statement: `UPDATE products SET stock = stock - 1 WHERE id = 7 AND stock > 0`"
+      - "Lock the row while reading it with `SELECT ... FOR UPDATE`"
+      - "Keep a version column and update with the condition `WHERE id = 7 AND version = <version read>`; retry if 0 rows are affected"
+      - "Lower the isolation level to Read Uncommitted"
+    why: |
+      An atomic `UPDATE` does the read and the write in one step and is the first choice when possible. `FOR UPDATE` is pessimistic locking; it fits when conflicts are frequent. A version column is optimistic concurrency; it holds no lock and detects the conflict at write time (the concurrency token in EF Core does this). Lowering isolation only makes the problem worse.
+
+  - q: "The `orders` table also stores the customer's city (`customer_city`) next to each order. Which normal form does this design violate?"
+    options:
+      - "3NF: the city depends not on the order's key but on non-key customer information (a transitive dependency)."
+      - "1NF: a cell holds more than one value."
+      - "2NF: the city depends on only part of a composite key."
+      - "None; this design is fully normalized."
+    why: |
+      In the chain `order_id → customer_id → city`, the city depends on the order through the customer. When a customer moves, every order row has to be updated (an update anomaly). The city belongs in the `customers` table. The exception: the order's **delivery address** is a fact as of the time of the order and should be stored on the order; it isn't a duplicate but a separate piece of information.
+
+  - q: "An API paginates orders with `ORDER BY created_at DESC LIMIT 20 OFFSET n`, and later pages get slower and slower. What is the best solution?"
+    options:
+      - "Increase the `LIMIT` value"
+      - "Remove the `ORDER BY`"
+      - "Cache the `OFFSET` values"
+      - "Switch to keyset pagination that continues from the `(created_at, id)` value of the previous page's last row"
+    why: |
+      `OFFSET n` means the database finds n rows and throws them away; the cost grows with the page number. Keyset pagination, with the condition `WHERE (created_at, id) < (@last_date, @last_id)`, goes straight to the right spot in a `(created_at, id)` index; every page is equally fast, and records inserted in between don't shift the rows. The cost: you can't jump to an arbitrary page.
+
+  - q: "Which PostgreSQL type is suitable for storing amounts of money?"
+    options:
+      - "`numeric(12, 2)`"
+      - "`double precision`"
+      - "`real`"
+      - "`text`"
+    why: |
+      Floating-point types (`real`, `double precision`) are stored in binary and can't represent decimal values such as 0.1 exactly; sums end up off by a few cents. `numeric` stores decimal numbers exactly. Another common approach is to store the amount as an integer in the smallest currency unit (`bigint` cents). With `text`, you can't do arithmetic or write constraints.

@@ -1,0 +1,120 @@
+title: TypeScript İleri Tipler
+description: keyof, typeof ve indeksli erişim, koşullu tipler ve infer, dağılım, eşlenmiş tipler, şablon literal tipler, satisfies, as const ve never ile kapsamlılık kontrolü.
+level: advanced
+timeLimitMinutes: 14
+questions:
+  - q: |
+      Aşağıdaki `Role` tipi nedir?
+
+      ```ts
+      const ROLES = ['admin', 'editor', 'viewer'] as const;
+      type Role = (typeof ROLES)[number];
+      ```
+    options:
+      - "`string`"
+      - "`string[]`"
+      - "`\"admin\" | \"editor\" | \"viewer\"`"
+      - "`readonly string[]`"
+    answer: 3
+    difficulty: medium
+    why: |
+      `as const` diziyi salt okunur bir demete ve elemanlarını literal tiplere sabitler. `typeof ROLES` bu demetin tipini, `[number]` indeksli erişimi de herhangi bir elemanın tipini, yani literallerin birleşimini verir. `as const` olmasaydı sonuç `string` olurdu.
+
+  - q: |
+      `ToArray<string | number>` sonucu nedir?
+
+      ```ts
+      type ToArray<T> = T extends unknown ? T[] : never;
+      ```
+    options:
+      - "`string[] | number[]`"
+      - "`(string | number)[]`"
+      - "`never`"
+      - "`unknown[]`"
+    answer: 1
+    difficulty: hard
+    why: |
+      Koşul çıplak bir tip parametresi (`T`) üzerinde olduğu için birleşimin her üyesine ayrı ayrı uygulanır (dağılımlı koşullu tip): `ToArray<string> | ToArray<number>`. Dağılımı engellemek için koşul köşeli paranteze alınır: `[T] extends [unknown] ? T[] : never` sonucu `(string | number)[]` olur.
+
+  - q: "Aşağıdakilerden hangisi `Partial<T>`'nin doğru bir uygulamasıdır?"
+    options:
+      - "`type MyPartial<T> = { [K in T]?: K }`"
+      - "`type MyPartial<T> = T | undefined`"
+      - "`type MyPartial<T> = { [K in keyof T]-?: T[K] }`"
+      - "`type MyPartial<T> = { [K in keyof T]?: T[K] }`"
+    answer: 4
+    difficulty: medium
+    why: |
+      Eşlenmiş tip, `keyof T` ile her anahtar üzerinde döner ve `?` ile isteğe bağlı yapar. Değer tipi `T[K]` ile korunur. `-?` tam tersini yapar, yani `Required`'dır. `T | undefined` nesnenin tamamını isteğe bağlı yapar, alanlarını değil.
+
+  - q: "`infer` anahtar kelimesi ne işe yarar?"
+    options:
+      - "Bir değişkenin tipini çalışma zamanında tespit eder."
+      - "Koşullu tip içinde eşleşen bir tipin bir parçasını yakalayıp adlandırır (ör. Promise'in değer tipi, dizinin eleman tipi)."
+      - "Tip kontrolünü kapatır."
+      - "Generic parametreye varsayılan değer verir."
+    answer: 2
+    difficulty: medium
+    why: |
+      `infer` yalnızca koşullu tiplerin `extends` kısmında kullanılır: `T extends Promise<infer V> ? V : T` ifadesi, `T` bir Promise ise içindeki tipi `V` olarak yakalar. `ReturnType`, `Parameters` ve `Awaited` gibi yerleşik yardımcılar bu şekilde yazılmıştır. Çalışma zamanıyla ilgisi yoktur.
+
+  - q: |
+      `satisfies` ile tip açıklaması (`: Type`) arasındaki fark nedir?
+
+      ```ts
+      const routes = { home: '/', orders: '/orders' } satisfies Record<string, string>;
+      ```
+    options:
+      - "Fark yoktur."
+      - "`satisfies` tip kontrolünü kapatır."
+      - "`satisfies` değerin tipe uyduğunu denetler ama değerin çıkarılan dar tipini korur; `routes.orders` geçerli, `routes.foo` hatalıdır."
+      - "`satisfies` yalnızca çalışma zamanında doğrulama yapar."
+    answer: 3
+    difficulty: medium
+    why: |
+      `const routes: Record<string, string> = ...` yazılsaydı değişkenin tipi genişler ve her dizgi anahtar geçerli sayılırdı. Anahtar bilgisi kaybolurdu. `satisfies` uyumu denetler ama değişkenin tipi olarak değerin kendi çıkarılan tipini bırakır. Hem hata yakalanır hem de otomatik tamamlama korunur.
+
+  - q: |
+      Ayrık bir birleşime yeni bir üye eklendiğinde unutulan `switch` ifadelerini derleme zamanında bulmak için `default` dalında ne yapılır?
+
+      ```ts
+      type Shape = { kind: 'circle'; r: number } | { kind: 'square'; a: number };
+      ```
+    options:
+      - "`default: return 0;`"
+      - "`default: { const unreachable: never = shape; throw new Error(); }`"
+      - "`default: console.log(shape);`"
+      - "`default` dalı yazılmaz."
+    answer: 2
+    difficulty: medium
+    why: |
+      Bütün durumlar ele alındıysa `default` dalında `shape`'in tipi `never`'a daralır ve atama geçerlidir. Birleşime `{ kind: 'triangle' }` eklenip `switch` güncellenmezse `shape` o dalda `{ kind: 'triangle' }` tipinde olur, `never`'a atanamaz ve derleme hatası verir.
+
+  - q: |
+      `Endpoint` tipi kaç farklı dizgi literalinin birleşimidir?
+
+      ```ts
+      type Method = 'GET' | 'POST' | 'DELETE';
+      type Path = '/orders' | '/users';
+      type Endpoint = `${Method} ${Path}`;
+      ```
+    options:
+      - "2"
+      - "3"
+      - "5"
+      - "6"
+    answer: 4
+    difficulty: easy
+    why: |
+      Şablon literal tiplerde birleşimler çapraz çarpılır: 3 metot × 2 yol = 6 kombinasyon. `"GET /orders" | "GET /users" | "POST /orders" | ...`.
+
+  - q: "Markalı (branded) tiplerin amacı nedir?"
+    options:
+      - "Çalışma zamanında tip bilgisini saklamak"
+      - "Yapısal olarak aynı olan iki tipi (ör. OrderId ve CustomerId, ikisi de string) derleme zamanında birbirinin yerine kullanılamaz hale getirmek"
+      - "Tipleri daha hızlı derlemek"
+      - "Sınıflar arasında kalıtım sağlamak"
+    answer: 2
+    difficulty: medium
+    why: |
+      TypeScript yapısal tipleme kullanır: iki `string` her zaman birbirinin yerine geçer. `string & { __brand: 'OrderId' }` gibi bir kesişim, değeri yalnızca bu markayı taşıyan değerlerle uyumlu yapar. Böylece bir müşteri kimliğinin sipariş kimliği bekleyen fonksiyona verilmesi derleme zamanında engellenir. Çalışma zamanında hiçbir maliyeti yoktur.

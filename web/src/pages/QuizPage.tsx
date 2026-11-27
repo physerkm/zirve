@@ -3,9 +3,106 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
 import { InlineMarkdown, Markdown } from '@/components/Markdown';
 import { Button, ButtonLink, Card, DifficultyBadge, ErrorNotice, LevelBadge, PageError, PageLoading, ProgressBar } from '@/components/ui';
+import { defineMessages, useMessages } from '@/i18n/messages';
 import { cn, formatDuration, percent } from '@/lib/format';
 import { useQuiz, useSubmitQuiz, useUser } from '@/lib/queries';
 import type { QuestionResult, QuizDetail, QuizQuestion } from '@/lib/types';
+
+const messages = defineMessages({
+  tr: {
+    pageTitle: (quiz: string) => `${quiz} — Zirve`,
+    resultPageTitle: (quiz: string) => `Sonuç: ${quiz} — Zirve`,
+    breadcrumb: 'Konum',
+    quizzes: 'Testler',
+    intro: {
+      questionCount: 'Soru sayısı',
+      questions: (n: number) => `${n} soru`,
+      duration: 'Süre',
+      minutes: (n: number) => `${n} dakika`,
+      noTimeLimit: 'Süre sınırı yok',
+      multipleNote: 'Bazı soruların birden fazla doğru yanıtı vardır; bunlar soruda belirtilir.',
+      reviewNote: 'Testi bitirdiğinizde her sorunun doğru yanıtı ve açıklaması gösterilir.',
+      autoSubmitNote: 'Süre dolduğunda test kendiliğinden gönderilir.',
+      signInNote: 'Sonucunuzun kaydedilmesi için giriş yapmalısınız; giriş yapmadan da çözebilirsiniz.',
+      start: 'Teste başla',
+      signIn: 'Giriş yap',
+    },
+    result: {
+      score: (n: number) => `%${n}`,
+      // Doğru sayısının öncesi ve sonrası (sayı kalın yazılır).
+      correctParts: (total: number): [string, string] => [`${total} sorudan `, ' doğru'],
+      scoreLabel: 'Test puanı',
+      passed: 'Güzel iş. Yanlış yaptığınız soruların açıklamalarını yine de okuyun.',
+      failed: 'Aşağıdaki açıklamaları okuyun, ilgili dersleri gözden geçirin ve yeniden deneyin.',
+      notSaved: ' Giriş yapmadığınız için bu sonuç kaydedilmedi.',
+      retry: 'Tekrar çöz',
+      backToTrack: (track: string) => `${track} yoluna dön`,
+      review: 'Yanıtlar ve açıklamalar',
+    },
+    running: {
+      answered: (total: number) => ` / ${total} yanıtlandı`,
+      remaining: 'Kalan süre',
+      answeredLabel: 'Yanıtlanan soru oranı',
+      finish: 'Testi bitir',
+    },
+    question: {
+      number: (n: number) => `Soru ${n}`,
+      multiple: 'Birden fazla doğru yanıt',
+      correct: 'Doğru',
+      blank: 'Boş',
+      wrong: 'Yanlış',
+      correctAnswer: 'Doğru yanıt',
+      yourWrongAnswer: 'Sizin yanıtınız, yanlış',
+      explanation: 'Açıklama',
+    },
+  },
+  en: {
+    pageTitle: (quiz: string) => `${quiz} — Zirve`,
+    resultPageTitle: (quiz: string) => `Result: ${quiz} — Zirve`,
+    breadcrumb: 'Breadcrumb',
+    quizzes: 'Quizzes',
+    intro: {
+      questionCount: 'Number of questions',
+      questions: (n: number) => (n === 1 ? '1 question' : `${n} questions`),
+      duration: 'Time limit',
+      minutes: (n: number) => (n === 1 ? '1 minute' : `${n} minutes`),
+      noTimeLimit: 'No time limit',
+      multipleNote: 'Some questions have more than one correct answer; those questions say so.',
+      reviewNote: 'When you finish, you see the correct answer and an explanation for every question.',
+      autoSubmitNote: 'The quiz is submitted automatically when time runs out.',
+      signInNote: 'Sign in to save your result. You can also take the quiz without signing in.',
+      start: 'Start quiz',
+      signIn: 'Sign in',
+    },
+    result: {
+      score: (n: number) => `${n}%`,
+      correctParts: (total: number): [string, string] => ['', ` of ${total} correct`],
+      scoreLabel: 'Quiz score',
+      passed: 'Nice work. Still, read the explanations for the questions you missed.',
+      failed: 'Read the explanations below, review the related lessons and try again.',
+      notSaved: ' This result was not saved because you are not signed in.',
+      retry: 'Try again',
+      backToTrack: (track: string) => `Back to ${track}`,
+      review: 'Answers and explanations',
+    },
+    running: {
+      answered: (total: number) => ` / ${total} answered`,
+      remaining: 'Time remaining',
+      answeredLabel: 'Share of questions answered',
+      finish: 'Finish quiz',
+    },
+    question: {
+      number: (n: number) => `Question ${n}`,
+      multiple: 'More than one correct answer',
+      correct: 'Correct',
+      blank: 'Unanswered',
+      wrong: 'Wrong',
+      correctAnswer: 'Correct answer',
+      yourWrongAnswer: 'Your answer (wrong)',
+      explanation: 'Explanation',
+    },
+  },
+});
 
 type Answers = Record<number, number[]>;
 
@@ -21,6 +118,7 @@ export default function QuizPage() {
 }
 
 function QuizRunner({ quiz }: { quiz: QuizDetail }) {
+  const t = useMessages(messages);
   const location = useLocation();
   const { user } = useUser();
   const submit = useSubmitQuiz(quiz.slug);
@@ -91,9 +189,9 @@ function QuizRunner({ quiz }: { quiz: QuizDetail }) {
   };
 
   const breadcrumb = (
-    <nav aria-label="Konum" className="flex flex-wrap items-center gap-1 text-sm text-muted">
+    <nav aria-label={t.breadcrumb} className="flex flex-wrap items-center gap-1 text-sm text-muted">
       <Link to="/quizzes" className="hover:text-fg">
-        Testler
+        {t.quizzes}
       </Link>
       <ChevronRight className="size-3.5" aria-hidden />
       <Link to={`/tracks/${quiz.track.slug}`} className="hover:text-fg">
@@ -106,7 +204,7 @@ function QuizRunner({ quiz }: { quiz: QuizDetail }) {
   if (startedAt === null) {
     return (
       <div className="container-page max-w-3xl py-10">
-        <title>{`${quiz.title} — Zirve`}</title>
+        <title>{t.pageTitle(quiz.title)}</title>
         {breadcrumb}
         <Card className="mt-6 p-6 sm:p-8">
           <LevelBadge level={quiz.level} />
@@ -116,30 +214,30 @@ function QuizRunner({ quiz }: { quiz: QuizDetail }) {
           <dl className="mt-6 grid grid-cols-2 gap-4 border-y border-border py-5 text-sm">
             <div className="flex items-center gap-2">
               <ListChecks className="size-4 text-muted" aria-hidden />
-              <dt className="sr-only">Soru sayısı</dt>
-              <dd>{quiz.questions.length} soru</dd>
+              <dt className="sr-only">{t.intro.questionCount}</dt>
+              <dd>{t.intro.questions(quiz.questions.length)}</dd>
             </div>
             <div className="flex items-center gap-2">
               <Timer className="size-4 text-muted" aria-hidden />
-              <dt className="sr-only">Süre</dt>
-              <dd>{quiz.timeLimitMinutes ? `${quiz.timeLimitMinutes} dakika` : 'Süre sınırı yok'}</dd>
+              <dt className="sr-only">{t.intro.duration}</dt>
+              <dd>{quiz.timeLimitMinutes ? t.intro.minutes(quiz.timeLimitMinutes) : t.intro.noTimeLimit}</dd>
             </div>
           </dl>
 
           <ul className="mt-5 list-disc space-y-1.5 pl-5 text-sm text-muted">
-            <li>Bazı soruların birden fazla doğru yanıtı vardır; bunlar soruda belirtilir.</li>
-            <li>Testi bitirdiğinizde her sorunun doğru yanıtı ve açıklaması gösterilir.</li>
-            {quiz.timeLimitMinutes && <li>Süre dolduğunda test kendiliğinden gönderilir.</li>}
-            {!user && <li>Sonucunuzun kaydedilmesi için giriş yapmalısınız; giriş yapmadan da çözebilirsiniz.</li>}
+            <li>{t.intro.multipleNote}</li>
+            <li>{t.intro.reviewNote}</li>
+            {quiz.timeLimitMinutes && <li>{t.intro.autoSubmitNote}</li>}
+            {!user && <li>{t.intro.signInNote}</li>}
           </ul>
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" onClick={start}>
-              Teste başla
+              {t.intro.start}
             </Button>
             {!user && (
               <ButtonLink to="/login" state={{ from: location.pathname }} variant="secondary" size="lg">
-                Giriş yap
+                {t.intro.signIn}
               </ButtonLink>
             )}
           </div>
@@ -153,46 +251,49 @@ function QuizRunner({ quiz }: { quiz: QuizDetail }) {
     const result = submit.data;
     const byId = new Map(result.questions.map((question) => [question.id, question]));
     const passed = result.scorePercent >= 70;
+    const correctParts = t.result.correctParts(result.totalCount);
 
     return (
       <div className="container-page max-w-3xl py-10">
-        <title>{`Sonuç: ${quiz.title} — Zirve`}</title>
+        <title>{t.resultPageTitle(quiz.title)}</title>
         {breadcrumb}
 
         <Card className="mt-6 p-6 sm:p-8">
           <p className="text-sm text-muted">{quiz.title}</p>
           <div className="mt-2 flex flex-wrap items-end gap-x-6 gap-y-2">
             <p className={cn('text-6xl font-bold tracking-tight tabular-nums', passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400')}>
-              %{result.scorePercent}
+              {t.result.score(result.scorePercent)}
             </p>
             <p className="pb-2 text-muted">
-              {result.totalCount} sorudan <strong className="text-fg">{result.correctCount}</strong> doğru · {formatDuration(elapsedSeconds)}
+              {correctParts[0]}
+              <strong className="text-fg">{result.correctCount}</strong>
+              {correctParts[1]}
+              {' · '}
+              {formatDuration(elapsedSeconds)}
             </p>
           </div>
           <ProgressBar
             value={result.scorePercent}
             className="mt-4 h-2"
             barClassName={passed ? 'bg-emerald-500' : 'bg-amber-500'}
-            label="Test puanı"
+            label={t.result.scoreLabel}
           />
           <p className="mt-4 text-sm text-muted">
-            {passed
-              ? 'Güzel iş. Yanlış yaptığınız soruların açıklamalarını yine de okuyun.'
-              : 'Aşağıdaki açıklamaları okuyun, ilgili dersleri gözden geçirin ve yeniden deneyin.'}
-            {!result.saved && ' Giriş yapmadığınız için bu sonuç kaydedilmedi.'}
+            {passed ? t.result.passed : t.result.failed}
+            {!result.saved && t.result.notSaved}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button onClick={start}>
               <RotateCcw className="size-4" aria-hidden />
-              Tekrar çöz
+              {t.result.retry}
             </Button>
             <ButtonLink to={`/tracks/${quiz.track.slug}`} variant="secondary">
-              {quiz.track.title} yoluna dön
+              {t.result.backToTrack(quiz.track.title)}
             </ButtonLink>
           </div>
         </Card>
 
-        <h2 className="mt-10 text-lg font-semibold">Yanıtlar ve açıklamalar</h2>
+        <h2 className="mt-10 text-lg font-semibold">{t.result.review}</h2>
         <ol className="mt-4 space-y-5">
           {quiz.questions.map((question, index) => (
             <li key={question.id}>
@@ -209,7 +310,7 @@ function QuizRunner({ quiz }: { quiz: QuizDetail }) {
 
   return (
     <div className="container-page max-w-3xl pt-6 pb-28">
-      <title>{`${quiz.title} — Zirve`}</title>
+      <title>{t.pageTitle(quiz.title)}</title>
       {breadcrumb}
       <h1 className="mt-4 text-2xl font-bold tracking-tight">{quiz.title}</h1>
 
@@ -228,12 +329,13 @@ function QuizRunner({ quiz }: { quiz: QuizDetail }) {
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted">
-                <span className="font-medium text-fg tabular-nums">{answeredCount}</span> / {quiz.questions.length} yanıtlandı
+                <span className="font-medium text-fg tabular-nums">{answeredCount}</span>
+                {t.running.answered(quiz.questions.length)}
               </span>
               {remainingSeconds !== null && (
                 <span
                   role="timer"
-                  aria-label="Kalan süre"
+                  aria-label={t.running.remaining}
                   className={cn('inline-flex items-center gap-1.5 font-mono tabular-nums', lowOnTime ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-muted')}
                 >
                   <Timer className="size-4" aria-hidden />
@@ -241,10 +343,10 @@ function QuizRunner({ quiz }: { quiz: QuizDetail }) {
                 </span>
               )}
             </div>
-            <ProgressBar value={percent(answeredCount, quiz.questions.length)} className="mt-2" label="Yanıtlanan soru oranı" />
+            <ProgressBar value={percent(answeredCount, quiz.questions.length)} className="mt-2" label={t.running.answeredLabel} />
           </div>
           <Button onClick={finish} loading={submit.isPending} className="shrink-0">
-            Testi bitir
+            {t.running.finish}
           </Button>
         </div>
       </div>
@@ -261,6 +363,7 @@ interface QuestionCardProps {
 }
 
 function QuestionCard({ question, index, selected, onToggle, result }: QuestionCardProps) {
+  const t = useMessages(messages).question;
   const reviewing = result !== undefined;
 
   return (
@@ -268,13 +371,13 @@ function QuestionCard({ question, index, selected, onToggle, result }: QuestionC
       <fieldset disabled={reviewing}>
         <legend className="float-left mb-4 w-full">
           <span className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="font-mono font-semibold text-primary-text">Soru {index + 1}</span>
+            <span className="font-mono font-semibold text-primary-text">{t.number(index + 1)}</span>
             <DifficultyBadge difficulty={question.difficulty} />
-            {question.isMultiple && <span className="text-xs text-muted">Birden fazla doğru yanıt</span>}
+            {question.isMultiple && <span className="text-xs text-muted">{t.multiple}</span>}
             {reviewing && (
               <span className={cn('ml-auto inline-flex items-center gap-1 text-sm font-medium', result.correct ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400')}>
                 {result.correct ? <CircleCheck className="size-4" aria-hidden /> : <CircleX className="size-4" aria-hidden />}
-                {result.correct ? 'Doğru' : selected.length === 0 ? 'Boş' : 'Yanlış'}
+                {result.correct ? t.correct : selected.length === 0 ? t.blank : t.wrong}
               </span>
             )}
           </span>
@@ -311,8 +414,8 @@ function QuestionCard({ question, index, selected, onToggle, result }: QuestionC
                 <span className="min-w-0 flex-1">
                   <InlineMarkdown>{option.text}</InlineMarkdown>
                 </span>
-                {reviewing && isCorrect && <CircleCheck className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-label="Doğru yanıt" />}
-                {reviewing && !isCorrect && isSelected && <CircleX className="size-4 shrink-0 text-rose-600 dark:text-rose-400" aria-label="Sizin yanıtınız, yanlış" />}
+                {reviewing && isCorrect && <CircleCheck className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-label={t.correctAnswer} />}
+                {reviewing && !isCorrect && isSelected && <CircleX className="size-4 shrink-0 text-rose-600 dark:text-rose-400" aria-label={t.yourWrongAnswer} />}
               </label>
             );
           })}
@@ -321,7 +424,7 @@ function QuestionCard({ question, index, selected, onToggle, result }: QuestionC
 
       {reviewing && result.explanation && (
         <div className="mt-4 rounded-lg bg-surface-2 px-4 py-3">
-          <p className="text-xs font-semibold tracking-wide text-subtle uppercase">Açıklama</p>
+          <p className="text-xs font-semibold tracking-wide text-subtle uppercase">{t.explanation}</p>
           <Markdown size="sm" className="mt-1">
             {result.explanation}
           </Markdown>

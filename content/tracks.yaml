@@ -67,20 +67,26 @@
       description: Generics, delegeler, LINQ ve async/await.
     - slug: ileri
       title: İleri Konular
-      description: Eşzamanlılık ve modern C#.
+      description: Eşzamanlılık, performans ve bellek, modern C#.
 
 - slug: dotnet
   title: .NET ve ASP.NET Core
-  description: İstek hattı, dependency injection, Web API tasarımı, EF Core ve üretime hazır servis yazmanın esasları.
+  description: İş ilanlarının omurgası. İstek hattı, Web API tasarımı, güvenlik, EF Core, önbellek, test, gözlemlenebilirlik, mimari, mesajlaşma ve LLM entegrasyonu.
   icon: server
   accent: indigo
   modules:
     - slug: aspnet-core
       title: ASP.NET Core
-      description: Middleware, DI ve API tasarımı.
+      description: Middleware, DI, Web API tasarımı, kimlik doğrulama ve güvenlik, arka plan işleri, gRPC ve SignalR.
     - slug: veri-ve-uretim
       title: Veri Erişimi ve Üretim
-      description: EF Core, performans ve dayanıklılık.
+      description: EF Core derinlemesine, önbellekleme ve Redis, test, gözlemlenebilirlik ve dayanıklılık.
+    - slug: mimari
+      title: Mimari ve Mesajlaşma
+      description: Clean Architecture, CQRS, DDD, modüler monolit ve mikroservisler, RabbitMQ, Kafka ve Azure Service Bus.
+    - slug: yapay-zeka
+      title: Yapay Zekâ ile Geliştirme
+      description: .NET uygulamalarına LLM entegre etmek ve kodlama ajanlarıyla güvenli çalışmak.
 
 - slug: kutuphane-api
   title: "Pratik Projesi: Kütüphane Yönetim API'si"
@@ -135,7 +141,7 @@
       description: Render modeli, hook'lar ve durum.
     - slug: ileri
       title: İleri Konular
-      description: Performans ve veri çekme.
+      description: Durum yönetimi, veri çekme, test ve performans.
 
 - slug: veritabanlari
   title: Veritabanları
@@ -145,10 +151,23 @@
   modules:
     - slug: sql
       title: SQL ve Performans
-      description: Sorgular, join'ler ve indeksler.
+      description: Sorgular, join'ler, indeksler, SQL Server ve T-SQL.
     - slug: kavramlar
       title: Kavramlar
-      description: Transaction'lar, izolasyon ve modelleme.
+      description: Transaction'lar, izolasyon, modelleme, NoSQL ve arama.
+
+- slug: devops-bulut
+  title: DevOps ve Bulut
+  description: Kodun üretime nasıl ulaştığı. Docker, Kubernetes, CI/CD hatları, Azure ve AWS servisleri, backend geliştiricisi için Linux.
+  icon: cloud
+  accent: lime
+  modules:
+    - slug: konteynerler
+      title: Konteynerler
+      description: Docker ile paketleme ve Kubernetes ile çalıştırma.
+    - slug: teslimat
+      title: Teslimat ve Altyapı
+      description: CI/CD, bulut servisleri ve Linux.
 
 - slug: cs-temelleri
   title: Bilgisayar Bilimi Temelleri
@@ -162,6 +181,19 @@
     - slug: tasarim
       title: Nesne Yönelimli Tasarım
       description: SOLID ve tasarım desenleri.
+
+- slug: muhendislik-pratikleri
+  title: Mühendislik Pratikleri
+  description: Ekipte çalışmanın ve canlı sistem işletmenin araçları. Git, Agile ve Scrum, code review, ADR, teknik liderlik, olay yönetimi.
+  icon: git
+  accent: fuchsia
+  modules:
+    - slug: ekip
+      title: Ekip Çalışması
+      description: Git, Agile ve Scrum, code review ve teknik liderlik.
+    - slug: canli-sistem
+      title: Canlı Sistem
+      description: On-call, olay yönetimi ve postmortem.
 
 - slug: sirketler
   title: Şirket Rehberleri

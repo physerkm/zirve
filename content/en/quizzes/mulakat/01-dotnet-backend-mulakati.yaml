@@ -1,0 +1,110 @@
+title: .NET Backend Interview Rehearsal
+description: A mixed rehearsal of the questions that come up most often in the technical round of .NET backend and full-stack interviews, in Turkey and abroad. C#, ASP.NET Core, EF Core, databases, architecture, messaging and engineering practices.
+questions:
+  - q: "What is the key difference between `IEnumerable<T>` and `IQueryable<T>`?"
+    options:
+      - "`IQueryable<T>` carries an expression tree that the provider (e.g. EF Core) translates to SQL; `IEnumerable<T>` runs in memory with LINQ to Objects."
+      - "`IEnumerable<T>` works only with arrays, `IQueryable<T>` only with lists."
+      - "They are the same; `IQueryable<T>` is the old name."
+      - "`IQueryable<T>` is always slower."
+    why: |
+      Operators such as `Where` and `Select` on an `IQueryable<T>` are added to the expression tree and translated into a single SQL query when a terminating call runs. As soon as you switch to `IEnumerable<T>`, every operator after that point runs in memory. Drawing this line in the wrong place makes you pull the entire table for no reason.
+
+  - q: "What is the practical consequence of `string` being immutable?"
+    options:
+      - "You cannot assign a new value to a `string` variable."
+      - "Concatenating with `+=` in a loop creates a new string at every step; for many concatenations you use `StringBuilder`."
+      - "`string` is a value type."
+      - "`string` comparisons are always reference comparisons."
+    why: |
+      The contents of a string object cannot be changed. `+=` does not modify the existing string; it creates a new one and the variable points to it. In large loops that means O(n²) copying and many allocations. `string` is a reference type, but the `==` operator compares contents.
+
+  - q: "What is it called when a singleton service receives a scoped service in its constructor, and what happens?"
+    options:
+      - "Service locator; performance drops."
+      - "Circular dependency; the application fails to start."
+      - "Captive dependency; the scoped service lives for the lifetime of the application and is shared across requests (e.g. concurrency errors and stale data with a DbContext)."
+      - "There is no problem; the DI container adjusts lifetimes automatically."
+    why: |
+      A singleton is created once and holds on to its dependencies for the lifetime of the application. A scoped `DbContext` ends up shared by every request this way. Because it is not thread-safe, it breaks under concurrent requests. The rule: a service may depend only on services with the same or a longer lifetime. If needed, open a scope with `IServiceScopeFactory`.
+
+  - q: "What is the recommended approach for using `HttpClient` in ASP.NET Core?"
+    options:
+      - "`using var client = new HttpClient();` on every request"
+      - "A single static `HttpClient` for the whole application; DNS changes don't matter"
+      - "Always `WebRequest` instead of `HttpClient`"
+      - "`IHttpClientFactory` (`AddHttpClient`), typed clients and, if needed, resilience handlers"
+    why: |
+      Creating a new `HttpClient` every time leads to socket exhaustion under load. A single static instance, on the other hand, can miss DNS changes. `IHttpClientFactory` pools message handlers and recycles them periodically. It also makes it easy to add resilience layers such as retry and circuit breaker.
+
+  - q: "A PUT endpoint sets the fields the client didn't send to `null`, and users are losing data. The client sends only the fields it wants to change. What is the right design?"
+    options:
+      - "Use PATCH for partial updates, or require the client to always send the full resource with PUT"
+      - "Change PUT to POST"
+      - "Make every field required and leave the client unchanged"
+      - "Always ignore incoming `null` values"
+    why: |
+      PUT replaces the resource entirely: a field that isn't sent means "empty". Partial update is what PATCH means. Ignoring every incoming `null`, on the other hand, makes it impossible to clear a field on purpose. The contract must be explicit: PUT for full replacement, PATCH for partial updates.
+
+  - q: "Two concurrent requests sell the last unit of the same product and stock drops to -1. Which solution **on its own** correctly prevents this race?"
+    options:
+      - "Check the stock with a `SELECT` first, then run an `UPDATE`"
+      - "An atomic conditional update: `UPDATE Products SET Stock = Stock - 1 WHERE Id = @id AND Stock >= 1`, then check the affected row count"
+      - "Do the check in application code with an `if`"
+      - "Keep the stock in a cache"
+    why: |
+      "Check first, then update" is two separate steps, and another request can slip in between (a check-then-act race). Putting the condition inside the update makes the operation atomic in the database. If 0 rows are affected, the item is out of stock. Alternatively, you can use an optimistic concurrency token or a row lock (`SELECT ... FOR UPDATE` / `UPDLOCK`).
+
+  - q: "In which scenario can an index **hurt**?"
+    options:
+      - "A frequently queried column with high selectivity"
+      - "A date column used in sorting and range queries"
+      - "Many indexes on columns that are almost never queried, in a table with very heavy writes"
+      - "An index on a foreign key column"
+    why: |
+      Every index has to be updated on every `INSERT`, `UPDATE` and `DELETE`, and it takes up space. Indexes on columns that are never queried are pure cost. Frequently filtered columns with high selectivity and foreign keys used in joins are good candidates for an index.
+
+  - q: "What is one consequence of the 'database per service' rule in a microservices architecture?"
+    options:
+      - "Services can JOIN directly against each other's tables."
+      - "Distributed transactions with two-phase commit are the standard solution."
+      - "All services must share the same schema."
+      - "Another service's data is requested through its API or kept as a local copy via events; consistency across services is achieved eventually with sagas and the outbox pattern."
+    why: |
+      Each service owns its data and does not depend on another service's schema. That is why you can't JOIN and why 2PC is impractical. Data is requested through an API or kept in a local copy via events. Workflows that span multiple services are handled with sagas, and consistent message publishing with the outbox.
+
+  - q: "Why does a message queue consumer need to be idempotent?"
+    options:
+      - "It doesn't, because messages are always delivered exactly once."
+      - "The delivery guarantee in practice is 'at least once'; if the consumer crashes after processing but before acknowledging, the message comes again, and the second processing must not repeat the side effect."
+      - "Idempotency is only about performance."
+      - "Brokers provide idempotency automatically."
+    why: |
+      Most systems deliver at least once. A crash before the acknowledgment causes the broker to redeliver the message. Operations such as issuing an invoice or withdrawing money must not happen twice. A processed-message ID table or a unique index on the business key ensures this.
+
+  - q: "Which best describes the difference between a unit test and an integration test?"
+    options:
+      - "A unit test verifies the behavior of a single unit quickly and in isolation, without external dependencies; an integration test verifies that components (API, database, serialization) actually work together."
+      - "A unit test only tests private methods."
+      - "An integration test only tests the interface."
+      - "They are the same thing; only the test duration differs."
+    why: |
+      Unit tests give fast feedback and verify business rules in isolation. Integration tests show that the units work correctly together. With WebApplicationFactory and Testcontainers you can use the real HTTP pipeline and a real database. Neither replaces the other; they complement each other.
+
+  - q: "You wrote an API as a take-home assignment. Which matters **least** in the evaluation?"
+    options:
+      - "The project runs with a single command, and the README explains your assumptions and trade-offs"
+      - "There are tests for the business rules"
+      - "The project uses as many design patterns and layers as possible"
+      - "No secrets in the repository, and a meaningful commit history"
+    why: |
+      The reviewer is looking for a solution that runs, reads well, is tested and is justified. Adding unnecessary layers and patterns to a small assignment is seen as over-engineering and costs you points. The structure should be proportional to the size of the problem, and its rationale should be explained in the README.
+
+  - q: "In an interview, what is the best answer to 'How would you diagnose an endpoint that has become slow in production?'"
+    options:
+      - "I rewrite the code from scratch."
+      - "I add more CPU to the server."
+      - "I add a cache."
+      - "I use metrics to find the scope (which endpoint, which percentile, since when) and distributed traces to find where the time is spent; I look at recent changes. If the problem is in the code I profile it; if it's in the database I examine the query plan."
+    why: |
+      The interviewer is looking for a method: measure first, then narrow it down. Most slowness comes from database queries or external calls, and traces show that right away. Changes made without measuring (more CPU, a random cache) can hide the problem or not solve it at all.

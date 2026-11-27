@@ -1,0 +1,129 @@
+title: Veri Erişimi, Test ve Üretim
+description: EF Core'da change tracking, N+1, IQueryable, eşzamanlılık ve migration'lar; önbellekleme ve Redis; test çiftleri ve entegrasyon testleri; loglama, OpenTelemetry, health check ve dayanıklılık.
+level: intermediate
+timeLimitMinutes: 18
+questions:
+  - q: |
+      Aşağıdaki kod kaç SQL sorgusu çalıştırır? (Lazy loading açık, 100 sipariş var.)
+
+      ```csharp
+      var orders = await db.Orders.ToListAsync();
+      foreach (var order in orders)
+          Console.WriteLine(order.Lines.Count);
+      ```
+    options:
+      - "1"
+      - "2"
+      - "101"
+      - "200"
+    answer: 3
+    difficulty: easy
+    why: |
+      Bu klasik N+1 sorunudur: siparişler için 1 sorgu, sonra her siparişin `Lines` koleksiyonu ilk erişildiğinde 1 sorgu daha. Toplam 101. Çözüm `Include(o => o.Lines)` ile eager loading ya da yalnızca gereken bilgiyi seçen bir projeksiyondur (`Select(o => new { o.Id, LineCount = o.Lines.Count })`), bu da tek sorguya iner.
+
+  - q: |
+      Repository metodu `IEnumerable<Order>` döndürüyor ve çağıran şöyle kullanıyor:
+
+      ```csharp
+      IEnumerable<Order> GetAll() => db.Orders;
+      var paid = repo.GetAll().Where(o => o.Status == OrderStatus.Paid).ToList();
+      ```
+
+      Ne olur?
+    options:
+      - "Filtre SQL'de çalışır: WHERE Status = 'Paid'."
+      - "Bütün Orders tablosu belleğe çekilir, filtre C#'ta uygulanır."
+      - "Derleme hatası olur."
+      - "EF Core sorguyu önbelleğe alır, performans farkı olmaz."
+    answer: 2
+    difficulty: medium
+    why: |
+      Dönüş tipi `IEnumerable<T>` olduğunda sonraki `Where`, `Enumerable.Where` (LINQ to Objects) olarak bağlanır. EF Core önce filtresiz sorguyu çalıştırır ve bütün tabloyu getirir, sonra filtre bellekte uygulanır. `IQueryable<T>` döndürülseydi filtre ifade ağacına eklenip SQL'e çevrilirdi.
+
+  - q: "İki kullanıcı aynı ürünü aynı anda okuyup stoğu güncelliyor ve biri diğerinin değişikliğini sessizce eziyor. EF Core'da en uygun çözüm hangisidir?"
+    options:
+      - "`AsNoTracking()` kullanmak"
+      - "`SaveChangesAsync` çağrısını iki kez yapmak"
+      - "DbContext'i singleton yapmak"
+      - "Ürüne bir eşzamanlılık belirteci (SQL Server'da rowversion, PostgreSQL'de xmin) eklemek ve `DbUpdateConcurrencyException`'ı ele almak"
+    answer: 4
+    difficulty: medium
+    why: |
+      Kayıp güncelleme sorununa iyimser eşzamanlılık çözümdür. EF Core `UPDATE ... WHERE Id = @id AND RowVersion = @eski` üretir. Başka biri kaydı değiştirmişse etkilenen satır 0 olur ve `DbUpdateConcurrencyException` fırlatılır. Uygulama bunu 409 olarak dönebilir ya da yeniden okuyup tekrar deneyebilir. DbContext'i singleton yapmak thread güvenliğini bozar.
+
+  - q: "`ExecuteUpdateAsync` ile ilgili hangisi doğrudur?"
+    options:
+      - "Tek bir SQL UPDATE komutu çalıştırır ve change tracker'ı atlar; bellekte izlenen varlıklar güncellenmez."
+      - "Varlıkları önce belleğe yükler, sonra tek tek günceller."
+      - "Yalnızca `SaveChangesAsync` çağrıldıktan sonra veritabanına yazılır."
+      - "SaveChanges interceptor'larını tetikler."
+    answer: 1
+    difficulty: medium
+    why: |
+      EF Core 7 ile gelen `ExecuteUpdateAsync` ve `ExecuteDeleteAsync` doğrudan veritabanında tek bir komut çalıştırır. Hızlıdırlar ama change tracker'ı atlarlar. Aynı context'te önceden yüklenmiş varlıklar eski değerlerini taşımaya devam eder ve `SaveChanges` interceptor'ları çalışmaz.
+
+  - q: "Popüler bir ürün sayfasının önbellek girdisinin süresi doldu ve o anda gelen 500 istek veritabanına yığıldı. Bu olayın adı ve en doğrudan çözümü nedir?"
+    options:
+      - "Cache penetration; Bloom filter"
+      - "Split brain; quorum"
+      - "Cache stampede; aynı anahtar için istekleri tek bir yüklemede birleştirmek (ör. HybridCache) ya da erken yenileme"
+      - "Hot partition; anahtarı yeniden adlandırmak"
+    answer: 3
+    difficulty: medium
+    why: |
+      Cache stampede (thundering herd), sık okunan bir anahtar düştüğünde bütün eşzamanlı isteklerin aynı anda kaynağa gitmesidir. İstek birleştirme (request coalescing) bir yüklemenin çalışmasını, diğerlerinin onun sonucunu beklemesini sağlar. `HybridCache` bunu yerleşik olarak yapar. Erken yenileme ve TTL'e jitter eklemek de yardımcı olur.
+
+  - q: "Bir ürün güncellendiğinde veritabanı ve önbellek hangi sırayla ele alınmalıdır?"
+    options:
+      - "Önce önbelleği sil, sonra veritabanını güncelle."
+      - "Önce veritabanını güncelle, sonra önbellekteki girdiyi sil."
+      - "Yalnızca önbelleği güncelle; veritabanı arka planda eşitlenir."
+      - "Sıra önemli değildir."
+    answer: 2
+    difficulty: medium
+    why: |
+      Önce önbellek silinirse, silme ile veritabanı güncellemesi arasında gelen bir okuma eski değeri veritabanından okuyup tekrar önbelleğe yazar ve bayat veri TTL boyunca kalır. Önce veritabanını güncelleyip sonra silmek bu pencereyi büyük ölçüde kapatır. Kalan küçük yarış durumları için TTL bir güvenlik ağıdır.
+
+  - q: "`DbContext`'i test etmek için en çok önerilen yaklaşım hangisidir?"
+    options:
+      - "DbContext'i ve DbSet'leri bir mock kütüphanesiyle taklit etmek"
+      - "EF Core InMemory sağlayıcısını gerçek veritabanı yerine kullanmak"
+      - "Kendi soyutlamamı (ör. IOrderRepository) birim testinde taklit etmek; veri erişimini ise Testcontainers ile gerçek veritabanına karşı entegrasyon testiyle doğrulamak"
+      - "Veri erişim kodunu test etmemek"
+    answer: 3
+    difficulty: medium
+    why: |
+      Sahibi olmadığınız tipleri (DbContext, HttpClient) mock'lamak, gerçek davranışı taklit etmeye çalışan kırılgan testler üretir. InMemory sağlayıcısı transaction, kısıt ve SQL çevirisi davranışını yansıtmaz ve Microsoft da test için önermez. Doğru yaklaşım: iş mantığını kendi soyutlamalarınızla birim testlemek, veri erişimini gerçek motora karşı entegrasyon testiyle doğrulamak.
+
+  - q: "Aşağıdaki loglama çağrılarından hangisi yapılandırılmış loglama için doğrudur?"
+    options:
+      - "`logger.LogInformation($\"Sipariş {orderId} ödendi\");`"
+      - "`logger.LogInformation(\"Sipariş \" + orderId + \" ödendi\");`"
+      - "`logger.LogInformation(\"Sipariş {OrderId} ödendi\", orderId);`"
+      - "`Console.WriteLine($\"Sipariş {orderId} ödendi\");`"
+    answer: 3
+    difficulty: easy
+    why: |
+      Mesaj şablonu kullanıldığında `OrderId` ayrı bir alan olarak saklanır. Log sisteminde bu alana göre arama ve gruplama yapılabilir ve şablon sabit kaldığı için aynı tür olaylar birlikte sayılabilir. Dizgi enterpolasyonu ya da birleştirme bu yapıyı kaybettirir ve log seviyesi kapalı olsa bile dizgiyi oluşturur.
+
+  - q: "Kubernetes'te çalışan bir serviste liveness probe veritabanı bağlantısını kontrol ediyor. Veritabanı 1 dakika erişilemez olduğunda ne olur?"
+    options:
+      - "Yalnızca trafik kesilir, pod'lar çalışmaya devam eder."
+      - "Hiçbir şey olmaz, liveness probe'u sonuçları dikkate alınmaz."
+      - "Veritabanı otomatik olarak yeniden başlatılır."
+      - "Bütün pod'lar yeniden başlatılır; veritabanı geri geldiğinde servis toparlanmak yerine yeniden başlatma döngüsünde olabilir."
+    answer: 4
+    difficulty: hard
+    why: |
+      Liveness probe başarısız olunca orkestratör konteyneri yeniden başlatır. Bağımlılık kontrolü liveness'a konursa, dış bir bağımlılığın kesintisi bütün örneklerin aynı anda yeniden başlatılmasına yol açar ve durumu kötüleştirir. Bağımlılık kontrolü readiness probe'a aittir: o başarısız olunca yalnızca trafik kesilir.
+
+  - q: "Çağrı zincirinde üç servis var (A → B → C) ve her biri başarısız çağrıyı 3 kez yeniden deniyor. C tamamen çöktüğünde C en fazla kaç kat yük alır ve doğru yaklaşım nedir?"
+    options:
+      - "3 kat; sorun yok."
+      - "9 kat; deneme sayısını 10'a çıkarmak"
+      - "27 kat (3 × 3 × 3); yeniden denemeyi tek bir katmanda yapmak, jitter'lı üstel bekleme ve circuit breaker kullanmak"
+      - "Yük değişmez; yeniden denemeler önbellekten cevaplanır."
+    answer: 3
+    difficulty: hard
+    why: |
+      Her katmandaki yeniden denemeler çarpılır: A'nın her denemesi B'nin üç denemesine, B'nin her denemesi C'nin üç denemesine yol açar. Buna yeniden deneme fırtınası denir ve çökmekte olan servisi tamamen boğar. Yeniden denemeyi tek bir katmanda tutmak, üstel bekleme ve jitter eklemek ve circuit breaker ile hızlı başarısız olmak doğru yaklaşımdır.

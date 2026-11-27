@@ -1,22 +1,74 @@
-import { LayoutDashboard, LogOut, Menu, Moon, Sun, X } from 'lucide-react';
+import { Languages, LayoutDashboard, LogOut, Menu, Moon, Sun, X } from 'lucide-react';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, ScrollRestoration, useLocation, useNavigate } from 'react-router';
+import { type Locale, setLocale, useLocale } from '@/i18n/locale';
+import { defineMessages, useMessages } from '@/i18n/messages';
 import { cn } from '@/lib/format';
 import { useLogout, useUser } from '@/lib/queries';
 import { useTheme } from '@/lib/theme';
 import { SearchBox } from './SearchBox';
 import { ButtonLink, PageLoading } from './ui';
 
-const navigation = [
-  { to: '/tracks', label: 'Öğrenme Yolları' },
-  { to: '/problems', label: 'Problemler' },
-  { to: '/quizzes', label: 'Testler' },
-  { to: '/playground', label: 'Deneme Alanı' },
-];
+const messages = defineMessages({
+  tr: {
+    navigation: { tracks: 'Öğrenme Yolları', problems: 'Problemler', quizzes: 'Testler', playground: 'Deneme Alanı' },
+    homeLabel: 'Zirve ana sayfa',
+    lightTheme: 'Açık temaya geç',
+    darkTheme: 'Koyu temaya geç',
+    language: 'Dil',
+    switchLanguage: 'Switch to English',
+    signIn: 'Giriş yap',
+    register: 'Kayıt ol',
+    accountMenu: (name: string) => `Hesap menüsü: ${name}`,
+    dashboard: 'Panelim',
+    signOut: 'Çıkış yap',
+    mainMenu: 'Ana menü',
+    mobileMenu: 'Mobil menü',
+    footerMenu: 'Alt menü',
+    openMenu: 'Menüyü aç',
+    closeMenu: 'Menüyü kapat',
+    tagline: 'Büyük teknoloji şirketlerinde yazılım mühendisi olmak isteyenler için konu anlatımları, testler ve kodlama pratiği.',
+    skipToContent: 'İçeriğe geç',
+  },
+  en: {
+    navigation: { tracks: 'Learning Tracks', problems: 'Problems', quizzes: 'Quizzes', playground: 'Playground' },
+    homeLabel: 'Zirve home',
+    lightTheme: 'Switch to light theme',
+    darkTheme: 'Switch to dark theme',
+    language: 'Language',
+    switchLanguage: 'Türkçeye geç',
+    signIn: 'Sign in',
+    register: 'Sign up',
+    accountMenu: (name: string) => `Account menu: ${name}`,
+    dashboard: 'My dashboard',
+    signOut: 'Sign out',
+    mainMenu: 'Main menu',
+    mobileMenu: 'Mobile menu',
+    footerMenu: 'Footer menu',
+    openMenu: 'Open menu',
+    closeMenu: 'Close menu',
+    tagline: 'Lessons, quizzes and coding practice for anyone who wants to become a software engineer at a big tech company.',
+    skipToContent: 'Skip to content',
+  },
+});
+
+const navigationPaths = [
+  { to: '/tracks', key: 'tracks' },
+  { to: '/problems', key: 'problems' },
+  { to: '/quizzes', key: 'quizzes' },
+  { to: '/playground', key: 'playground' },
+] as const;
+
+function useNavigation() {
+  const t = useMessages(messages);
+  return navigationPaths.map((item) => ({ to: item.to, label: t.navigation[item.key] }));
+}
 
 export function Logo({ className }: { className?: string }) {
+  const t = useMessages(messages);
+
   return (
-    <Link to="/" className={cn('flex items-center gap-2 font-bold tracking-tight', className)} aria-label="Zirve ana sayfa">
+    <Link to="/" className={cn('flex items-center gap-2 font-bold tracking-tight', className)} aria-label={t.homeLabel}>
       <svg viewBox="0 0 32 32" className="size-8" aria-hidden>
         <rect width="32" height="32" rx="8" className="fill-primary" />
         <circle cx="22.5" cy="9.5" r="2.6" fill="#fbbf24" />
@@ -27,7 +79,29 @@ export function Logo({ className }: { className?: string }) {
   );
 }
 
+/** Türkçe ↔ İngilizce. Düğme her zaman öbür dilin kısaltmasını gösterir. */
+function LanguageToggle() {
+  const t = useMessages(messages);
+  const locale = useLocale();
+  const next: Locale = locale === 'tr' ? 'en' : 'tr';
+
+  return (
+    <button
+      type="button"
+      onClick={() => setLocale(next)}
+      className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm font-medium text-muted transition-colors hover:bg-surface-2 hover:text-fg"
+      aria-label={t.switchLanguage}
+      title={t.switchLanguage}
+      lang={next}
+    >
+      <Languages className="size-4" aria-hidden />
+      <span>{next.toUpperCase()}</span>
+    </button>
+  );
+}
+
 function ThemeToggle() {
+  const t = useMessages(messages);
   const { theme, toggle } = useTheme();
   const Icon = theme === 'dark' ? Sun : Moon;
 
@@ -36,7 +110,7 @@ function ThemeToggle() {
       type="button"
       onClick={toggle}
       className="inline-flex size-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-2 hover:text-fg"
-      aria-label={theme === 'dark' ? 'Açık temaya geç' : 'Koyu temaya geç'}
+      aria-label={theme === 'dark' ? t.lightTheme : t.darkTheme}
     >
       <Icon className="size-4.5" aria-hidden />
     </button>
@@ -44,6 +118,8 @@ function ThemeToggle() {
 }
 
 function UserMenu() {
+  const t = useMessages(messages);
+  const locale = useLocale();
   const { user, isLoading } = useUser();
   const logout = useLogout();
   const navigate = useNavigate();
@@ -77,10 +153,10 @@ function UserMenu() {
     return (
       <div className="flex items-center gap-2">
         <ButtonLink to="/login" state={{ from }} variant="ghost" size="sm" className="hidden sm:inline-flex">
-          Giriş yap
+          {t.signIn}
         </ButtonLink>
         <ButtonLink to="/register" state={{ from }} size="sm">
-          Kayıt ol
+          {t.register}
         </ButtonLink>
       </div>
     );
@@ -89,7 +165,7 @@ function UserMenu() {
   const initials = user.displayName
     .split(/\s+/)
     .slice(0, 2)
-    .map((part) => part.charAt(0).toLocaleUpperCase('tr'))
+    .map((part) => part.charAt(0).toLocaleUpperCase(locale))
     .join('');
 
   return (
@@ -99,7 +175,7 @@ function UserMenu() {
         onClick={() => setOpen((value) => !value)}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={`Hesap menüsü: ${user.displayName}`}
+        aria-label={t.accountMenu(user.displayName)}
         className="flex size-9 items-center justify-center rounded-full bg-primary-soft text-sm font-semibold text-primary-text ring-primary/40 transition hover:ring-2"
       >
         {initials || '?'}
@@ -118,7 +194,7 @@ function UserMenu() {
             className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface-2"
           >
             <LayoutDashboard className="size-4 text-muted" aria-hidden />
-            Panelim
+            {t.dashboard}
           </Link>
           <button
             role="menuitem"
@@ -131,7 +207,7 @@ function UserMenu() {
             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-surface-2"
           >
             <LogOut className="size-4 text-muted" aria-hidden />
-            Çıkış yap
+            {t.signOut}
           </button>
         </div>
       )}
@@ -140,6 +216,8 @@ function UserMenu() {
 }
 
 function Header() {
+  const t = useMessages(messages);
+  const navigation = useNavigation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -153,7 +231,7 @@ function Header() {
       <div className="container-page flex h-16 items-center gap-4">
         <Logo />
 
-        <nav aria-label="Ana menü" className="ml-4 hidden items-center gap-1 lg:flex">
+        <nav aria-label={t.mainMenu} className="ml-4 hidden items-center gap-1 lg:flex">
           {navigation.map((item) => (
             <NavLink key={item.to} to={item.to} className={linkClass}>
               {item.label}
@@ -165,13 +243,14 @@ function Header() {
           <div className="hidden w-56 md:block">
             <SearchBox />
           </div>
+          <LanguageToggle />
           <ThemeToggle />
           <UserMenu />
           <button
             type="button"
             onClick={() => setMobileOpen((value) => !value)}
             className="inline-flex size-9 items-center justify-center rounded-lg text-muted hover:bg-surface-2 lg:hidden"
-            aria-label={mobileOpen ? 'Menüyü kapat' : 'Menüyü aç'}
+            aria-label={mobileOpen ? t.closeMenu : t.openMenu}
             aria-expanded={mobileOpen}
             aria-controls="mobile-menu"
           >
@@ -186,7 +265,7 @@ function Header() {
             <div className="pb-2 md:hidden">
               <SearchBox />
             </div>
-            <nav aria-label="Mobil menü" className="flex flex-col gap-1">
+            <nav aria-label={t.mobileMenu} className="flex flex-col gap-1">
               {navigation.map((item) => (
                 <NavLink key={item.to} to={item.to} className={linkClass} onClick={() => setMobileOpen(false)}>
                   {item.label}
@@ -201,16 +280,17 @@ function Header() {
 }
 
 function Footer() {
+  const t = useMessages(messages);
+  const navigation = useNavigation();
+
   return (
     <footer className="mt-20 border-t border-border">
       <div className="container-page flex flex-col gap-6 py-10 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <Logo />
-          <p className="mt-2 max-w-sm text-sm text-muted">
-            Büyük teknoloji şirketlerinde yazılım mühendisi olmak isteyenler için konu anlatımları, testler ve kodlama pratiği.
-          </p>
+          <p className="mt-2 max-w-sm text-sm text-muted">{t.tagline}</p>
         </div>
-        <nav aria-label="Alt menü" className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted">
+        <nav aria-label={t.footerMenu} className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted">
           {navigation.map((item) => (
             <Link key={item.to} to={item.to} className="hover:text-fg">
               {item.label}
@@ -228,6 +308,7 @@ function isWorkspaceRoute(pathname: string): boolean {
 }
 
 export function Layout() {
+  const t = useMessages(messages);
   const { pathname } = useLocation();
   const workspace = isWorkspaceRoute(pathname);
 
@@ -237,7 +318,7 @@ export function Layout() {
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-fg"
       >
-        İçeriğe geç
+        {t.skipToContent}
       </a>
       <Header />
       <main id="main" className="flex-1">

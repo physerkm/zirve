@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<base target="_blank">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Min Stack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: one reading column; the stepper is a single tool panel (controls, step card, calls, then stacks + variables | code) that stacks on phones. */
+:root {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --ink: #141b26;
+  --muted: #5a6779;
+  --line: #d6dce6;
+  --accent: #3346c8;
+  --accent-ink: #ffffff;
+  --range: #e3e9fb;
+  --range-ink: #1d2a6b;
+  --probe: #c46f00;
+  --good: #17824a;
+  --good-soft: #dcf1e4;
+  --good-soft-ink: #145c36;
+  --bad: #b8402a;
+  --code-bg: #f7f8fb;
+  --code-hl: #dfe5fb;
+  --kw: #7a3aa8;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+    --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+    --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+    --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+  --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+  --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+  --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+  color-scheme: dark;
+}
+
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 40px;
+}
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; color: var(--muted); margin: 0; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 6vw, 54px); line-height: 1.05; letter-spacing: -.02em; margin: 8px 0 14px; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0; font-size: 17px; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: -.01em; margin: 0 0 18px; text-wrap: balance; }
+code { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+
+/* Idea */
+.idea { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; list-style: none; padding: 0; margin: 0; }
+.idea li { border-top: 2px solid var(--ink); padding-top: 12px; min-width: 0; }
+.idea .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.idea h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 2px 0 6px; text-wrap: balance; }
+.idea p { margin: 0; color: var(--muted); font-size: 15px; }
+@media (max-width: 760px) { .idea { grid-template-columns: 1fr; gap: 20px; } }
+
+/* Stepper panel */
+.stepper { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+@media (max-width: 560px) { .stepper { padding: 16px; } }
+.stepper h2 { margin: 0; }
+.controls { display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+.field { flex: 1 1 22em; min-width: 0; }
+.field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+input[type="text"] { width: 100%; max-width: 34em; box-sizing: border-box; font: 600 16px var(--font-mono); padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.err { margin: 0; font-size: 13px; color: var(--bad); max-width: 78ch; }
+button { font: 500 14px var(--font-body); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.presets button { font-size: 13px; padding: 7px 10px; }
+.presets button[aria-pressed="true"] { border-color: var(--accent); background: var(--range); color: var(--range-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; }
+#play { min-width: 7.5em; }
+
+.step { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+.step-meta { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--range); color: var(--range-ink); }
+.tag[data-kind="ok"] { background: var(--good); color: var(--surface); }
+#step-text { margin: 8px 0 0; font-size: 16.5px; max-width: 78ch; min-height: 3.2em; }
+
+.panel-label { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+.panel-label .hint { font-weight: 400; }
+.empty-note { color: var(--muted); font-size: 15px; margin: 0; }
+
+/* Calls in LeetCode's input/output format: the call on top, what it returned below. */
+.calls { display: flex; flex-wrap: wrap; gap: 8px; }
+.call { display: flex; flex-direction: column; gap: 4px; }
+.call .op, .call .res {
+  min-width: 46px; height: 30px; padding: 0 8px; box-sizing: border-box; border-radius: 7px;
+  display: grid; place-items: center; white-space: nowrap;
+  font: 600 13px var(--font-mono); border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+}
+.call .res { background: var(--code-bg); color: var(--muted); }
+.call .res.num { background: var(--good-soft); color: var(--good-soft-ink); border-color: transparent; }
+.call.done .op { color: var(--muted); }
+.call.now .op { border-color: var(--accent); background: var(--range); color: var(--range-ink); }
+
+/* The two stacks side by side, top level first, standing on a shared floor. */
+.stacks { display: grid; grid-template-columns: 2.6em 68px 68px minmax(0, 1fr); column-gap: 10px; row-gap: 6px; align-items: center; }
+.stacks .head { font: 600 12px var(--font-mono); color: var(--muted); text-align: center; }
+.stacks .side { font: 600 11px var(--font-mono); color: var(--muted); text-align: right; }
+.stacks .note { font: 600 12px var(--font-mono); color: var(--probe); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stacks .note.new { color: var(--accent); }
+.stacks .note.bad { color: var(--bad); }
+.stacks .span { grid-column: 2 / 5; }
+.floor { grid-column: 2 / 4; border-top: 3px solid var(--ink); margin-top: 2px; }
+.cell {
+  height: 40px; box-sizing: border-box; border-radius: 9px; display: grid; place-items: center;
+  font: 700 17px var(--font-mono); font-variant-numeric: tabular-nums;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  transition: background-color .2s, color .2s, border-color .2s;
+}
+.cell[data-state="new"] { background: var(--range); color: var(--range-ink); border-color: transparent; }
+.cell[data-state="min"] { background: var(--good-soft); color: var(--good-soft-ink); border-color: transparent; }
+.cell.pending { background: transparent; border: 2px dashed var(--line); color: var(--muted); }
+.cell.gone { background: transparent; border: 2px dashed var(--bad); color: var(--bad); text-decoration: line-through; }
+.cell.probe { outline: 2px solid var(--probe); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .cell { transition: none; } }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 12px; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--line); }
+.sw.new { background: var(--range); border-color: transparent; }
+.sw.min { background: var(--good-soft); border-color: transparent; }
+.sw.probe { background: transparent; border: 2px solid var(--probe); }
+.sw.pending { background: transparent; border: 2px dashed var(--muted); }
+.sw.gone { background: transparent; border: 2px dashed var(--bad); }
+
+/* Stacks + variables | code */
+.board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 28px; }
+@media (max-width: 880px) { .board { grid-template-columns: 1fr; } }
+.col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.vars-block { margin-top: 20px; }
+.vars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.var { border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; background: var(--bg); min-width: 0; }
+.var dt { font: 400 12px var(--font-mono); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.var dd { margin: 0; font: 600 18px var(--font-mono); font-variant-numeric: tabular-nums; }
+.var.changed { border-color: var(--accent); background: var(--range); }
+.var.changed dd { color: var(--range-ink); }
+.code { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 0; overflow-x: auto; font: 13px/1.6 var(--font-mono); }
+@media (max-width: 560px) { .code { font-size: 12px; } }
+.ln { display: block; padding: 0 14px 0 11px; white-space: pre; border-left: 3px solid transparent; }
+.ln.hl { background: var(--code-hl); border-left-color: var(--accent); }
+.kw { color: var(--kw); }
+
+/* Two columns keep lines short enough to read while still using the page width. */
+.why-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 40px; }
+.why-grid > div { border-top: 1px solid var(--line); padding-top: 12px; min-width: 0; }
+.why h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 0 0 6px; text-wrap: balance; }
+.why p { margin: 0; color: var(--muted); }
+.why b { color: var(--ink); }
+@media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; gap: 20px; } }
+.foot { display: flex; flex-wrap: wrap; gap: 6px 20px; border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; color: var(--muted); }
+.foot a { color: var(--accent); }
+
+/* No ligatures: `==` and `-` combos should look the way they are typed.
+   Kept last because the `font` shorthand above would reset it. */
+code, .code, .cell, .call .op, .call .res, .var dd, input[type="text"] { font-variant-ligatures: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">LeetCode 155 · Min Stack · Medium</p>
+    <h1>Min Stack</h1>
+    <p class="lead">You can follow every step of the solution here. Pick a sequence of calls, press <b>Next</b> or click <b>Play</b>, and see how the second stack remembers the smallest number without ever searching for it.</p>
+  </header>
+
+  <section aria-labelledby="idea-h">
+    <h2 id="idea-h">The idea in three steps</h2>
+    <ol class="idea">
+      <li>
+        <span class="n">1</span>
+        <h3>Two stacks side by side</h3>
+        <p><code>values</code> holds the pushed numbers. <code>mins</code> keeps a note for each level: the smallest number at that level or below. The two stacks always have the same height.</p>
+      </li>
+      <li>
+        <span class="n">2</span>
+        <h3>Write the note on push</h3>
+        <p><code>Push</code> puts the number on <code>values</code>. It also writes the smaller of the new number and the note below it to <code>mins</code>: <code>Math.Min(val, mins.Peek())</code>.</p>
+      </li>
+      <li>
+        <span class="n">3</span>
+        <h3>Drop the note on pop</h3>
+        <p><code>Pop</code> removes one item from each stack; the note below already knows the minimum for its level. <code>GetMin</code> just looks at the top of <code>mins</code>.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="stepper" aria-labelledby="st-h">
+    <h2 id="st-h">Step through it</h2>
+
+    <div class="controls">
+      <div class="row">
+        <div class="field">
+          <label for="list">Calls (comma-separated: push number, pop, top, getMin; at most 10)</label>
+          <input id="list" type="text" value="push -2, push 0, push -3, getMin, pop, top, getMin" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="nav">
+          <button type="button" id="reset">Restart</button>
+          <button type="button" id="prev-btn">← Back</button>
+          <button type="button" id="next-btn" class="primary">Next →</button>
+          <button type="button" id="play">▶ Play</button>
+        </div>
+      </div>
+      <div class="presets" role="group" aria-label="Preset examples">
+        <button type="button" data-l="push -2, push 0, push -3, getMin, pop, top, getMin">LeetCode example</button>
+        <button type="button" data-l="push 2, push 3, push 2, getMin, pop, getMin, pop, getMin">same minimum twice</button>
+        <button type="button" data-l="push 5, push 4, push 3, getMin, pop, getMin, pop, getMin">decreasing numbers</button>
+        <button type="button" data-l="push 1, push 2, push 3, getMin, pop, pop, getMin">increasing numbers</button>
+      </div>
+      <p class="err" id="list-err" hidden>Separate the calls with commas: <code>push</code> and a number, <code>pop</code>, <code>top</code>, or <code>getMin</code>. You can enter at most 10 calls, and numbers must be between -999 and 999. <code>pop</code>, <code>top</code>, and <code>getMin</code> can't be called on an empty stack; LeetCode never does that either.</p>
+    </div>
+
+    <div class="step" aria-live="polite">
+      <div class="step-meta"><span id="step-count"></span><span id="step-tag" class="tag"></span></div>
+      <p id="step-text"></p>
+    </div>
+
+    <div>
+      <p class="panel-label">Calls <span class="hint">(call on top, return value below; like the input/output on LeetCode)</span></p>
+      <div class="calls" id="calls"></div>
+    </div>
+
+    <div class="board">
+      <div class="col">
+        <p class="panel-label">Stacks <span class="hint">(the highest level is the top of the stack)</span></p>
+        <div class="stacks" id="stacks"></div>
+        <div class="legend">
+          <span><i class="sw new"></i>pushed in this step</span>
+          <span><i class="sw min"></i>top of mins: the current minimum</span>
+          <span><i class="sw probe"></i>read with Peek()</span>
+          <span><i class="sw pending"></i>note not written yet</span>
+          <span><i class="sw gone"></i>popped in this step</span>
+        </div>
+        <div class="vars-block">
+          <p class="panel-label">Variables</p>
+          <dl class="vars" id="vars"></dl>
+        </div>
+      </div>
+      <div class="col">
+        <p class="panel-label">Code (MinStack.cs, without comment lines)</p>
+        <div class="code" id="code" role="region" aria-label="C# code" tabindex="0"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="why" aria-labelledby="why-h">
+    <h2 id="why-h">Why is every operation O(1)?</h2>
+    <div class="why-grid">
+      <div>
+        <h3>No method has a loop</h3>
+        <p>Each method performs at most two stack operations (<code>Push</code>, <code>Pop</code>, or <code>Peek</code>), and each of them finishes in constant time no matter how many numbers are on the stack: every operation is <b>O(1) time</b>. The price is memory: there is one note in <code>mins</code> for every number, so <b>O(n) extra space</b>.</p>
+      </div>
+      <div>
+        <h3>Why isn't a single min variable enough?</h3>
+        <p>Updating it on <code>Push</code> is easy, but once the smallest number is removed with <code>Pop</code>, the variable can't know the previous minimum; you would have to scan the whole stack to find it. Because <code>mins</code> stores the minimum for every level in order, the note below the popped level is the answer directly.</p>
+      </div>
+      <div>
+        <h3>Why is scanning the stack slow?</h3>
+        <p>Writing <code>values.Min()</code> inside <code>GetMin</code> also gives the right result, but it looks at every number on each call: <b>O(n)</b>. LeetCode allows 30,000 calls; with thousands of numbers on the stack, that means hundreds of millions of steps.</p>
+      </div>
+      <div>
+        <h3>Why is a note written every time?</h3>
+        <p>A note is written to <code>mins</code> even when the minimum doesn't change. That keeps the two stacks at the same height, so <code>Pop</code> can remove from both without checking anything. Even if the same minimum arrives twice, nothing breaks; try the "same minimum twice" example above. To save memory, there is also a variant that writes a note only when the new number is less than or equal to the current minimum, but then <code>Pop</code> has to compare the popped number with the note.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <a href="https://leetcode.com/problems/min-stack/">Problem: LeetCode 155</a>
+    <a href="https://github.com/physerkm/leetcode-solutions/blob/main/src/LeetCode/Problems/P0155_MinStack/MinStack.cs">Code: MinStack.cs</a>
+    <a href="https://github.com/physerkm/leetcode-solutions">Repo: physerkm/leetcode-solutions</a>
+  </footer>
+</div>
+
+<script src="walkthrough.js"></script>
+</body>
+</html>

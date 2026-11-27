@@ -1,0 +1,134 @@
+title: C# Fundamentals and Language Features
+description: Interview-style questions on value and reference types, boxing, async/await, LINQ and closures.
+questions:
+  - q: |
+      What is the output of the following code?
+
+      ```csharp
+      struct Point { public int X; }
+
+      var a = new Point { X = 1 };
+      var b = a;
+      b.X = 5;
+      Console.WriteLine(a.X);
+      ```
+    options:
+      - "1"
+      - "5"
+      - "0"
+      - "Compile error"
+    why: |
+      A `struct` is a value type; the assignment `var b = a` **copies** the data. Changing `b` does not affect `a`. If `Point` were a `class`, both variables would point to the same object and the output would be `5`.
+
+  - q: "Which of the following causes **boxing**?"
+    options:
+      - "`int x = 5; long y = x;`"
+      - "`int x = 5; object o = x;`"
+      - "`var list = new List<int> { 5 };`"
+      - "`string s = \"5\"; object o = s;`"
+    why: |
+      Boxing is converting a **value type** to `object` or to an interface type; the value is copied into a new object on the heap. Converting `int` to `long` is just a numeric widening. `List<int>` is generic, so it does not box its elements. `string` is already a reference type; assigning it to `object` is only a reference conversion.
+
+  - q: "When should you use `async void`?"
+    options:
+      - "In every asynchronous method that returns no result"
+      - "On performance-critical hot paths"
+      - "Only in event handlers"
+      - "Never; the compiler does not allow it"
+    why: |
+      `async void` methods cannot be awaited; the caller cannot find out when the work finishes or fails, and a thrown exception can crash the process. Their only legitimate use is event handlers, whose signature must be `void`. Asynchronous methods that return no result should be `async Task`.
+
+  - q: "In a UI application, why can the line `var data = GetDataAsync().Result;` cause a deadlock?"
+    options:
+      - "Because the `Result` property can be read only once."
+      - "Because the UI thread is blocked, while the task's continuation waits to return to that same thread to run."
+      - "Because `Task` objects are not thread-safe."
+      - "Because `async` methods always start a new thread and the thread pool runs out."
+    why: |
+      In environments with a synchronization context (SynchronizationContext), `await` by default tries to run the continuation on the captured context (the UI thread). If `.Result` blocks that thread, the continuation can never run and the task never completes. The fix is to use `await` all the way through. ASP.NET Core has no synchronization context, so this classic deadlock does not occur there, but blocking still exhausts the thread pool.
+
+  - q: |
+      What is the output of the following code?
+
+      ```csharp
+      var numbers = new List<int> { 1, 2, 3 };
+      var query = numbers.Where(n => n > 1);
+
+      numbers.Add(4);
+
+      Console.WriteLine(query.Count());
+      ```
+    options:
+      - "2"
+      - "3"
+      - "4"
+      - "Runtime error: the collection was modified"
+    why: |
+      LINQ queries use **deferred** execution: `Where` only builds a recipe. The query runs when `Count()` is called, that is, when the list is `[1, 2, 3, 4]`, and it finds three elements greater than 1. If you wanted to fix the result at the point of definition, you would need to call `ToList()`.
+
+  - q: "What is wrong with the EF Core expression `db.Orders.AsEnumerable().Where(o => o.Total > 100).ToList()`?"
+    options:
+      - "It does not compile; `AsEnumerable` cannot be used on a `DbSet`."
+      - "The `Where` condition is translated to SQL, but the result is read twice."
+      - "The entire table is loaded into memory and the filtering happens in application memory instead of the database."
+      - "Nothing is wrong; `AsEnumerable` speeds up the query."
+    why: |
+      Operators on `IQueryable` become an expression tree that the provider translates to SQL. `AsEnumerable()` breaks this chain: the operators after it run with LINQ to Objects, that is, in memory. The query sent to the database becomes `SELECT * FROM orders`. Do the filtering **before** the `AsEnumerable`/`ToList` call.
+
+  - q: |
+      What is the output of the following code?
+
+      ```csharp
+      var actions = new List<Action>();
+
+      for (var i = 0; i < 3; i++)
+      {
+          actions.Add(() => Console.Write(i));
+      }
+
+      foreach (var action in actions) action();
+      ```
+    options:
+      - "012"
+      - "333"
+      - "222"
+      - "000"
+    why: |
+      The lambda captures the variable `i` **itself**, not its value. A `for` loop has a single `i` and all the lambdas share it. By the time the lambdas are called, the loop has finished and `i` is 3. Declaring `var copy = i;` inside the loop and capturing that, or using `foreach` (whose variable is fresh on each iteration), gives `012`.
+
+  - q: |
+      What is the output of the following code?
+
+      ```csharp
+      public record Person(string Name, int Age);
+
+      var a = new Person("Ada", 36);
+      var b = new Person("Ada", 36);
+
+      Console.WriteLine($"{a == b} {ReferenceEquals(a, b)}");
+      ```
+    options:
+      - "True True"
+      - "True False"
+      - "False False"
+      - "False True"
+    why: |
+      For `record` types, the compiler generates **value-based** equality: two records whose fields are all equal are equal under `==`. Still, they are two separate objects on the heap, so `ReferenceEquals` is false. If `Person` were a plain `class`, `==` would also compare references and the output would be `False False`.
+
+  - q: "What is the difference between `ref` and `out` parameters?"
+    options:
+      - "`ref` is used only with value types, `out` only with reference types."
+      - "An `out` parameter must be assigned inside the method and the caller does not need to assign it beforehand; a `ref` parameter must be assigned before the call."
+      - "`ref` copies the value, `out` does not."
+      - "There is no difference; `out` is the old syntax."
+    why: |
+      Both pass the variable itself (a reference to it). `ref` is two-way: the caller must have assigned the variable, and the method can read and write it. `out` is for output: the method **must** assign it before returning. The typical example is `int.TryParse(text, out var value)`.
+
+  - q: "Which of the following are good reasons to define a `struct`? (More than one answer is correct.)"
+    options:
+      - "The type is small and logically represents a single value."
+      - "The type is immutable."
+      - "The type needs to inherit from another class."
+      - "The type is large (hundreds of bytes) and is frequently passed to methods as a parameter."
+    why: |
+      A `struct` is for small, immutable types that represent a single value (a coordinate, an amount of money). Structs cannot inherit (they can only implement interfaces). Large structs are expensive because they are copied on every assignment and every parameter pass; a `class` is a better fit in that case.

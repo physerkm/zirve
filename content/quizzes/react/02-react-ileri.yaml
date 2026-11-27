@@ -1,0 +1,92 @@
+title: React İleri Konular
+description: Sunucu ve istemci durumu, Context'in sınırları, Redux Toolkit ve Zustand, TanStack Query, React Testing Library, MSW, gereksiz render'lar ve performans teknikleri.
+level: intermediate
+timeLimitMinutes: 14
+questions:
+  - q: "Bir e-ticaret uygulamasında ürün listesi, kullanıcı profili ve sipariş geçmişi API'den geliyor. Bu veriler için en uygun yönetim yaklaşımı hangisidir?"
+    options:
+      - "Hepsini Redux mağazasına koyup yükleniyor, hata ve önbellek mantığını elle yazmak"
+      - "Sunucu durumu olarak TanStack Query (ya da RTK Query) gibi bir veri çekme kütüphanesine bırakmak"
+      - "Her bileşende `useEffect` ile ayrı ayrı çekip yerel durumda tutmak"
+      - "Hepsini `localStorage`'da saklamak"
+    answer: 2
+    difficulty: easy
+    why: |
+      API'den gelen veri sunucunun sahibi olduğu bir kopyadır. Önbellek, tekilleştirme, bayatlama, arka planda yeniden çekme, iptal ve hata durumları gibi sorunları vardır. Veri çekme kütüphaneleri bunları hazır çözer. Redux'a koyup elle yazmak gereksiz kod üretir. Her bileşende ayrı `useEffect` ise aynı veriyi defalarca çeker.
+
+  - q: "Ürün listesindeki filtreler, sıralama ve sayfa numarası nerede tutulmalıdır?"
+    options:
+      - "URL'de (sorgu parametreleri); paylaşılabilir, yenilemede korunur ve geri tuşu çalışır"
+      - "Global Redux mağazasında"
+      - "Context'te"
+      - "Bir `useRef` içinde"
+    answer: 1
+    difficulty: easy
+    why: |
+      Kullanıcının paylaşmak, yer imine eklemek ya da geri tuşuyla dönmek isteyeceği her durum URL'de olmalıdır. Mağazada ya da Context'te tutulan filtreler sayfa yenilenince kaybolur ve bağlantıyla paylaşılamaz.
+
+  - q: "Sık değişen bir sepet nesnesi Context ile sağlanıyor ve sepeti kullanan 200 bileşenin hepsi her değişiklikte yeniden render oluyor. Neden ve hangi çözüm uygundur?"
+    options:
+      - "React'in hatasıdır; düzeltilemez."
+      - "Context'te varsayılan değer tanımlanmamıştır."
+      - "Bileşenler `key` kullanmıyordur."
+      - "Context değeri değişince onu kullanan bütün bileşenler render olur; seçici (selector) destekleyen bir mağaza (Zustand, Redux) kullanmak ya da Context'i bölmek gerekir."
+    answer: 4
+    difficulty: medium
+    why: |
+      Context bir bağımlılık enjeksiyonu aracıdır ve parça parça aboneliği desteklemez: değer değişince bütün tüketiciler render olur. Değeri her render'da yeni nesne olarak oluşturmak durumu kötüleştirir. Seçicili bir mağazada bileşen yalnızca okuduğu parça değişince render olur.
+
+  - q: "TanStack Query'de `staleTime: 30_000` ayarı ne anlama gelir?"
+    options:
+      - "Veri 30 saniye sonra önbellekten silinir."
+      - "Veri 30 saniye boyunca taze sayılır ve bu sürede aynı sorgu için yeniden çekme yapılmaz."
+      - "İstek 30 saniye içinde cevap gelmezse iptal edilir."
+      - "Sorgu her 30 saniyede bir otomatik çalışır."
+    answer: 2
+    difficulty: medium
+    why: |
+      `staleTime`, verinin ne kadar süre taze kabul edileceğidir. Bu sürede bileşen yeniden bağlansa ya da pencere odaklansa bile yeniden çekme yapılmaz. Kullanılmayan verinin önbellekte ne kadar tutulacağını `gcTime` belirler. Belirli aralıklarla yeniden çekmek için `refetchInterval` kullanılır.
+
+  - q: "React Testing Library'de bir butonu bulmak için en çok önerilen sorgu hangisidir?"
+    options:
+      - "`getByTestId('submit-btn')`"
+      - "`container.querySelector('.btn-primary')`"
+      - "`getByRole('button', { name: /siparişi tamamla/i })`"
+      - "`getByClassName('btn')`"
+    answer: 3
+    difficulty: easy
+    why: |
+      RTL, öğeleri kullanıcının ve yardımcı teknolojilerin bulduğu gibi bulmayı önerir. `getByRole`, erişilebilirlik ağacını kullanır. Bir öğe rolüyle bulunamıyorsa çoğu zaman bir erişilebilirlik sorunu vardır. Test kimlikleri ve CSS seçicileri son çaredir, çünkü kullanıcı bunları görmez ve refactor'da kolayca kırılır.
+
+  - q: "Bir mesajın ekranda **olmadığını** doğrulamak için hangisi kullanılmalıdır?"
+    options:
+      - "`expect(screen.queryByText(/hata/i)).not.toBeInTheDocument()`"
+      - "`expect(screen.getByText(/hata/i)).not.toBeInTheDocument()`"
+      - "`await screen.findByText(/hata/i)`"
+      - "`expect(screen.getByText(/hata/i)).toBeNull()`"
+    answer: 1
+    difficulty: medium
+    why: |
+      `getBy...` öğeyi bulamazsa hata fırlatır, bu yüzden yokluğu doğrulamak için kullanılamaz. `queryBy...` bulamazsa `null` döner. `findBy...` öğe görünene kadar bekler ve bulamazsa zaman aşımıyla başarısız olur. Yokluk için `queryBy` kullanılır.
+
+  - q: "API çağrısı yapan bir bileşenin hata durumunu test etmek için en gerçekçi yaklaşım hangisidir?"
+    options:
+      - "`fetch` fonksiyonunu global olarak elle değiştirmek"
+      - "Bileşenin iç durumunu doğrudan `error` olarak ayarlamak"
+      - "MSW ile ağ düzeyinde o uç nokta için 500 yanıtı tanımlayıp bileşenin gösterdiği hata mesajını doğrulamak"
+      - "Hata durumunu test etmemek"
+    answer: 3
+    difficulty: medium
+    why: |
+      MSW istekleri ağ katmanında yakalar. Bileşen gerçek `fetch` çağrısını yapar, yanıtı ayrıştırır ve hata yolunu gerçekten çalıştırır. İç durumu doğrudan ayarlamak uygulama ayrıntısını test eder ve gerçek hata yolunu atlar. Bu yaklaşım kullanıcının gördüğünü test eder.
+
+  - q: "10 000 satırlık bir tablo kaydırılırken takılıyor. Hangisi genellikle en büyük iyileştirmeyi sağlar?"
+    options:
+      - "Her satır bileşenini `useCallback` ile sarmak"
+      - "Sanallaştırma: yalnızca ekranda görünen satırları render etmek (ör. @tanstack/react-virtual)"
+      - "Satırların `key` değeri olarak dizi indeksini kullanmak"
+      - "Bütün tabloyu tek bir `useMemo` içine almak"
+    answer: 2
+    difficulty: medium
+    why: |
+      Sanallaştırma, DOM'daki satır sayısını on binlerden onlara indirir. Bu, memoizasyondan çok daha büyük bir kazançtır. `useCallback` fonksiyon referanslarını sabitler, bileşenleri sarmaz. İndeks anahtarları sıralama ve silmede hatalara ve gereksiz yeniden oluşturmaya yol açar.

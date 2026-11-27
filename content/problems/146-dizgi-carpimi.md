@@ -35,7 +35,7 @@ Girdi:  num1 = "123", num2 = "456"
 ## İpuçları
 
 - Kâğıt üzerinde alt alta çarpma nasıl yapılır? Her basamak çarpımı sonucun hangi basamağına düşer?
-- `num1[i] × num2[j]` çarpımı, sağdan sayınca sonucun `i + j` ve `i + j + 1` konumlarına etki eder.
+- `num1[i] × num2[j]` çarpımı, soldan sayınca sonucun `i + j` ve `i + j + 1` konumlarına etki eder.
 - Sonuç en fazla `m + n` basamaklıdır. Bu uzunlukta bir dizi tutup çarpımları biriktirin, eldeleri anında taşıyın.
 
 ## Çözüm

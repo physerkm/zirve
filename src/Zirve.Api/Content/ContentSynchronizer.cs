@@ -11,7 +11,8 @@ namespace Zirve.Api.Content;
 /// <summary>
 /// Dosyalardaki içeriği veritabanına eşitler. Kayıtlar slug üzerinden eşleştirilir; böylece içerik
 /// güncellense bile kimlikler (ve onlara bağlı kullanıcı ilerlemesi) korunur. Dosyalardan silinen
-/// içerik veritabanından da silinir.
+/// içerik veritabanından da silinir. İngilizce alanlar çeviriden yazılır; çevirisi olmayan içerikte
+/// Türkçe metin kullanılır, böylece sorgular her zaman dolu bir alan okur.
 /// </summary>
 public sealed class ContentSynchronizer(AppDbContext db, TimeProvider timeProvider, ILogger<ContentSynchronizer> logger)
 {
@@ -81,6 +82,8 @@ public sealed class ContentSynchronizer(AppDbContext db, TimeProvider timeProvid
 
             track.Title = content.Title;
             track.Description = content.Description;
+            track.TitleEn = content.English?.Title ?? content.Title;
+            track.DescriptionEn = content.English?.Description ?? content.Description;
             track.Icon = content.Icon;
             track.Accent = content.Accent;
             track.Order = content.Order;
@@ -100,6 +103,8 @@ public sealed class ContentSynchronizer(AppDbContext db, TimeProvider timeProvid
 
                 module.Title = moduleContent.Title;
                 module.Description = moduleContent.Description;
+                module.TitleEn = moduleContent.English?.Title ?? moduleContent.Title;
+                module.DescriptionEn = moduleContent.English?.Description ?? moduleContent.Description;
                 module.Order = moduleContent.Order;
 
                 foreach (var lessonContent in moduleContent.Lessons)
@@ -117,6 +122,9 @@ public sealed class ContentSynchronizer(AppDbContext db, TimeProvider timeProvid
                     lesson.Title = lessonContent.Title;
                     lesson.Summary = lessonContent.Summary;
                     lesson.Content = lessonContent.Markdown;
+                    lesson.TitleEn = lessonContent.English?.Title ?? lessonContent.Title;
+                    lesson.SummaryEn = lessonContent.English?.Summary ?? lessonContent.Summary;
+                    lesson.ContentEn = lessonContent.English?.Markdown ?? lessonContent.Markdown;
                     lesson.Minutes = lessonContent.Minutes;
                     lesson.Level = lessonContent.Level;
                     lesson.Order = lessonContent.Order;
@@ -162,6 +170,8 @@ public sealed class ContentSynchronizer(AppDbContext db, TimeProvider timeProvid
             quiz.Track = tracks[content.TrackSlug];
             quiz.Title = content.Title;
             quiz.Description = content.Description;
+            quiz.TitleEn = content.English?.Title ?? content.Title;
+            quiz.DescriptionEn = content.English?.Description ?? content.Description;
             quiz.Level = content.Level;
             quiz.TimeLimitMinutes = content.TimeLimitMinutes;
             quiz.Order = content.Order;
@@ -186,12 +196,15 @@ public sealed class ContentSynchronizer(AppDbContext db, TimeProvider timeProvid
                     Order = index + 1,
                     Text = question.Text,
                     Explanation = question.Explanation,
+                    TextEn = question.English?.Text ?? question.Text,
+                    ExplanationEn = question.English?.Explanation ?? question.Explanation,
                     Difficulty = question.Difficulty,
                     IsMultiple = question.IsMultiple,
                     Options = [.. question.Options.Select((option, optionIndex) => new QuestionOption
                     {
                         Order = optionIndex + 1,
                         Text = option.Text,
+                        TextEn = question.English?.Options[optionIndex] ?? option.Text,
                         IsCorrect = option.IsCorrect,
                     })],
                 }),
@@ -239,6 +252,15 @@ public sealed class ContentSynchronizer(AppDbContext db, TimeProvider timeProvid
             problem.TestsJson = testsJson;
             problem.Editorial = content.Editorial;
             problem.SolutionsJson = JsonSerializer.Serialize(content.Solutions, ZirveJson.Options);
+
+            var english = content.English;
+            problem.TitleEn = english?.Title ?? content.Title;
+            problem.StatementEn = english?.Statement ?? content.Statement;
+            problem.HintsEn = [.. english?.Hints ?? content.Hints];
+            problem.EditorialEn = english is null ? content.Editorial : english.Editorial;
+            problem.SolutionsJsonEn = JsonSerializer.Serialize(
+                content.Solutions.ToDictionary(pair => pair.Key, pair => english?.Solutions.GetValueOrDefault(pair.Key) ?? pair.Value),
+                ZirveJson.Options);
         }
 
         await db.SaveChangesAsync(cancellationToken);

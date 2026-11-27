@@ -4,7 +4,7 @@ Bu belge, projenin başından bu yana yapılan her şeyi tek yerde toplar: ne in
 
 - **Konum:** `C:\Users\HP\Desktop\github\zirve`
 - **GitHub:** https://github.com/physerkm/zirve (açık depo, `main` dalı)
-- **Son güncelleme:** 21 Kasım 2026
+- **Son güncelleme:** 24 Kasım 2026
 - **Durum:** Platform uçtan uca çalışıyor ve testleri geçiyor. İçerik sınırlı. Docker dağıtımı yazıldı ama hiç çalıştırılmadı. Proje Git ile sürümleniyor (`main` dalı).
 
 ---
@@ -23,7 +23,7 @@ C#, .NET, React, JavaScript, TypeScript, algoritmalar ve sistem tasarımı konul
 | Runner (kod çalıştırma servisi) | Tamam, testli |
 | Frontend (React 19) | Tamam; lint, tip denetimi, testler ve derleme temiz |
 | Yerel geliştirme (`npm run dev`) | Çalışıyor (Docker gerektirmez) |
-| İçerik | 73 ders, 12 quiz (126 soru), 171 problem (hepsinde adım adım anlatım); 12 yolun hepsi yayında |
+| İçerik | 104 ders, 22 quiz (232 soru), 171 problem (hepsinde adım adım anlatım); 14 yolun hepsi yayında |
 | Docker / nginx / CI dosyaları | Yazıldı, **hiç çalıştırılmadı** |
 | Sürüm kontrolü ve CI | GitHub'da (`physerkm/zirve`); CI'ın iki işi de yeşil |
 
@@ -31,20 +31,24 @@ C#, .NET, React, JavaScript, TypeScript, algoritmalar ve sistem tasarımı konul
 
 | Yol | Ders | Quiz |
 | --- | --- | --- |
-| Mülakat Hazırlığı | 4 | — |
+| Mülakat Hazırlığı | 5 | 1 (12 soru) |
 | Algoritmalar ve Veri Yapıları | 7 | 1 (12 soru) |
 | Sistem Tasarımı | 27 | 4 (46 soru) |
-| C# | 3 | 1 (10 soru) |
-| .NET ve ASP.NET Core | 1 | 1 (8 soru) |
+| C# | 6 | 2 (20 soru) |
+| .NET ve ASP.NET Core | 14 | 4 (43 soru) |
 | Pratik Projesi: Kütüphane Yönetim API'si | 18 | — |
 | JavaScript | 2 | 1 (10 soru) |
-| TypeScript | 1 | 1 (8 soru) |
-| React | 1 | 1 (8 soru) |
-| Şirket Rehberleri | 1 | — |
-| Veritabanları | 4 | 1 (12 soru) |
+| TypeScript | 2 | 2 (16 soru) |
+| React | 3 | 2 (16 soru) |
+| Veritabanları | 6 | 2 (22 soru) |
+| DevOps ve Bulut | 5 | 1 (12 soru) |
 | Bilgisayar Bilimi Temelleri | 4 | 1 (12 soru) |
+| Mühendislik Pratikleri | 4 | 1 (11 soru) |
+| Şirket Rehberleri | 1 | — |
 
-Veritabanları dersleri: SQL sorguları ve join'ler; indeksler ve sorgu planları; transaction'lar ve izolasyon seviyeleri; veri modelleme ve normalizasyon. Bilgisayar Bilimi Temelleri dersleri: süreçler, thread'ler ve bellek; ağ temelleri (TCP, TLS, HTTP); SOLID ilkeleri; tasarım desenleri.
+Veritabanları dersleri: SQL sorguları ve join'ler; indeksler ve sorgu planları; SQL Server ve T-SQL; transaction'lar ve izolasyon seviyeleri; veri modelleme ve normalizasyon; NoSQL ve arama (MongoDB, Elasticsearch). Bilgisayar Bilimi Temelleri dersleri: süreçler, thread'ler ve bellek; ağ temelleri (TCP, TLS, HTTP); SOLID ilkeleri; tasarım desenleri.
+
+İş ilanı analizi (24 Kasım 2026): .NET Backend ve Full-stack ilanları (Türkiye, Avrupa, ABD, uzaktan) incelendi, ilanların istediği ama Zirve'de olmayan konular çıkarıldı. Rapor ve yöntem: `ILAN-ANALIZI.md`. Raporun üç fazı da uygulandı (Angular hariç, kullanıcı kararıyla): 31 ders ve 10 quiz (106 soru). .NET yolu 1 dersten 14 derse çıktı ve iki yeni bölüm aldı (Mimari ve Mesajlaşma; Yapay Zekâ ile Geliştirme). Planlanıp boş kalan `csharp/ileri`, `dotnet/veri-ve-uretim`, `react/ileri`, `typescript/ileri` bölümleri dolduruldu. İki yeni yol eklendi: DevOps ve Bulut (Docker, Kubernetes, CI/CD, Azure/AWS, Linux) ve Mühendislik Pratikleri (Git, Agile ve Scrum, code review ve ADR, olay yönetimi). Mülakat yoluna ".NET Backend Mülakatlarında Sık Sorulan Sorular" dersi ve prova quizi eklendi. Yeni yollar için `TrackIcon` ve `accents` dosyalarına `cloud`/`git` ikonları ve `lime`/`fuchsia` renkleri eklendi.
 
 Sistem Tasarımı (21 Kasım 2026): dört bölüm. Temeller (4): mülakat çerçevesi, ölçekleme, kapasite tahmini, ağ ve API tasarımı. Yapı Taşları (7): önbellek ve kuyruklar, veri depolama, tutarlılık ve uzlaşma, dayanıklılık ve gözlemlenebilirlik, arama/konum/büyük dosyalar, akış işleme ve olasılıksal yapılar, tekrarlayan tasarım kalıpları. Örnek Tasarımlar (9): URL kısaltıcı, hız sınırlayıcı, haber akışı, sohbet, video platformu, Uber, Ticketmaster, web tarayıcı, Dynamo tarzı anahtar–değer deposu. Uygulamalı Projeler ve Kaynaklar (7): proje yol haritası (Gossip Glomers, MIT 6.5840, CodeCrafters, PingCAP talent-plan), beş proje (URL kısaltıcı + k6 yük testi, dağıtık hız sınırlayıcı, outbox ve saga, kendi Redis'in, Raft KV) ve seçilmiş kaynaklar. İlk quizde doğru şıkların 8/10'u 2. sıradaydı; şıkların yeri değiştirildi.
 

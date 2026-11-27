@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<base target="_blank">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Missing Number</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: one reading column; the stepper is a single tool panel (controls, step card, array, 0..n row, then variables + sums | code) that stacks on phones. */
+:root {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --ink: #141b26;
+  --muted: #5a6779;
+  --line: #d6dce6;
+  --accent: #3346c8;
+  --accent-ink: #ffffff;
+  --range: #e3e9fb;
+  --range-ink: #1d2a6b;
+  --good: #17824a;
+  --miss: #b86a00;
+  --miss-soft: #fdeccc;
+  --miss-soft-ink: #6b3d00;
+  --bad: #b8402a;
+  --code-bg: #f7f8fb;
+  --code-hl: #dfe5fb;
+  --kw: #7a3aa8;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+    --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff;
+    --good: #3fbf7a; --miss: #e6a23c; --miss-soft: #3a2a10; --miss-soft-ink: #f5c77a; --bad: #ff7d66;
+    --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+  --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff;
+  --good: #3fbf7a; --miss: #e6a23c; --miss-soft: #3a2a10; --miss-soft-ink: #f5c77a; --bad: #ff7d66;
+  --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+  color-scheme: dark;
+}
+
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 40px;
+}
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; color: var(--muted); margin: 0; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 6vw, 54px); line-height: 1.05; letter-spacing: -.02em; margin: 8px 0 14px; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0; font-size: 17px; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: -.01em; margin: 0 0 18px; text-wrap: balance; }
+code { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+
+/* Idea */
+.idea { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; list-style: none; padding: 0; margin: 0; }
+.idea li { border-top: 2px solid var(--ink); padding-top: 12px; min-width: 0; }
+.idea .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.idea h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 2px 0 6px; text-wrap: balance; }
+.idea p { margin: 0; color: var(--muted); font-size: 15px; }
+@media (max-width: 760px) { .idea { grid-template-columns: 1fr; gap: 20px; } }
+
+/* Stepper panel */
+.stepper { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+@media (max-width: 560px) { .stepper { padding: 16px; } }
+.stepper h2 { margin: 0; }
+.controls { display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+.field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+input[type="text"] { width: 16em; max-width: 100%; box-sizing: border-box; font: 600 18px var(--font-mono); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.err { margin: 0; font-size: 13px; color: var(--bad); }
+button { font: 500 14px var(--font-body); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.presets button { font-size: 13px; padding: 7px 10px; }
+.presets .mono { font-family: var(--font-mono); font-weight: 700; margin-right: 4px; }
+.presets button[aria-pressed="true"] { border-color: var(--accent); background: var(--range); color: var(--range-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; }
+#play { min-width: 7.5em; }
+
+.step { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+.step-meta { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--range); color: var(--range-ink); }
+.tag[data-kind="ok"] { background: var(--good); color: var(--surface); }
+#step-text { margin: 8px 0 0; font-size: 16.5px; max-width: 78ch; min-height: 3.2em; }
+
+.panel-label { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+.panel-label small { font-weight: 400; font-size: 13px; }
+
+/* Array and the 0..n row share one look: a box per number. */
+.arr-scroll { overflow-x: auto; padding: 4px 6px 6px; }
+.arr { display: flex; gap: 8px; width: max-content; }
+.cell { display: flex; flex-direction: column; align-items: center; width: 52px; }
+.tags { display: flex; align-items: flex-end; justify-content: center; min-height: 22px; padding-bottom: 6px; font: 600 11px/1.35 var(--font-mono); color: var(--ink); }
+.box {
+  width: 52px; height: 46px; box-sizing: border-box; border-radius: 10px;
+  display: grid; place-items: center;
+  font: 700 18px var(--font-mono); font-variant-numeric: tabular-nums;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  transition: background-color .2s, color .2s, border-color .2s;
+}
+.box[data-state="added"] { background: var(--range); color: var(--range-ink); border-color: transparent; }
+.box[data-state="missing"] { background: var(--miss-soft); color: var(--miss-soft-ink); border: 2px solid var(--miss); }
+.box.reading { outline: 2px dashed var(--muted); outline-offset: 3px; }
+.box.target { outline: 2px solid var(--accent); outline-offset: 3px; }
+.chips .box { border-style: dashed; }
+.chips .box[data-state="added"] { border-style: solid; }
+@media (prefers-reduced-motion: reduce) { .box { transition: none; } }
+.idx { margin-top: 8px; font: 500 12px var(--font-mono); color: var(--muted); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 6px; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--line); }
+.sw.added { background: var(--range); border-color: transparent; }
+.sw.missing { background: var(--miss-soft); border: 2px solid var(--miss); }
+.sw.reading { background: transparent; border: 2px dashed var(--muted); }
+.sw.target { background: transparent; border: 2px solid var(--accent); }
+
+/* Variables + sums | code */
+.board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 28px; }
+@media (max-width: 880px) { .board { grid-template-columns: 1fr; } }
+.col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.vars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.var { border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; background: var(--bg); min-width: 0; }
+.var dt { font: 400 12px var(--font-mono); color: var(--muted); }
+.var dd { margin: 0; font: 600 18px var(--font-mono); font-variant-numeric: tabular-nums; }
+.var.changed { border-color: var(--accent); background: var(--range); }
+.var.changed dd { color: var(--range-ink); }
+.sums { margin-top: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 0; background: var(--bg); }
+.sum-row { display: grid; grid-template-columns: 7.2em minmax(0, 1fr) auto; gap: 10px; align-items: baseline; padding: 4px 12px; border-left: 3px solid transparent; font: 14px/1.5 var(--font-mono); font-variant-numeric: tabular-nums; }
+.sum-row.changed { background: var(--range); border-left-color: var(--accent); }
+.sum-row .k { color: var(--muted); font-size: 12px; }
+.sum-row .terms { overflow-wrap: anywhere; }
+.sum-row .v { font-weight: 700; }
+.sum-row.changed .terms, .sum-row.changed .v { color: var(--range-ink); }
+.out { margin-top: 4px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; background: var(--bg); }
+.out.changed { border: 2px solid var(--miss); background: var(--miss-soft); }
+.out span { display: block; font: 400 12px var(--font-mono); color: var(--muted); }
+.out b { font: 700 18px var(--font-mono); overflow-wrap: anywhere; }
+.out.changed b { color: var(--miss-soft-ink); }
+.code { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 0; overflow-x: auto; font: 13px/1.6 var(--font-mono); }
+@media (max-width: 560px) { .code { font-size: 12px; } }
+.ln { display: block; padding: 0 14px 0 11px; white-space: pre; border-left: 3px solid transparent; }
+.ln.hl { background: var(--code-hl); border-left-color: var(--accent); }
+.kw { color: var(--kw); }
+
+/* Two columns keep lines short enough to read while still using the page width. */
+.why-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 40px; }
+.why-grid > div { border-top: 1px solid var(--line); padding-top: 12px; min-width: 0; }
+.why h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 0 0 6px; text-wrap: balance; }
+.why p { margin: 0; color: var(--muted); }
+.why b { color: var(--ink); }
+.gauss { margin: 10px 0 0; padding: 8px 12px; background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; font: 14px/1.6 var(--font-mono); color: var(--ink); white-space: pre; overflow-x: auto; }
+@media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; gap: 20px; } }
+.foot { display: flex; flex-wrap: wrap; gap: 6px 20px; border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; color: var(--muted); }
+.foot a { color: var(--accent); }
+
+/* No ligatures: `>` and `-` combos should look the way they are typed.
+   Kept last because the `font` shorthand above would reset it. */
+code, .code, .box, .var dd, .sum-row, .out b, .gauss, input[type="text"] { font-variant-ligatures: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">LeetCode 268 · Missing Number · Easy</p>
+    <h1>Missing Number</h1>
+    <p class="lead">You can follow every step of the solution here. Pick an array, press <b>Next</b> or click <b>Play</b>; see how the array's sum builds up and how its difference from the expected sum gives the missing number.</p>
+  </header>
+
+  <section aria-labelledby="idea-h">
+    <h2 id="idea-h">The idea in three steps</h2>
+    <ol class="idea">
+      <li>
+        <span class="n">1</span>
+        <h3>What would the sum be if nothing were missing?</h3>
+        <p>If the array has length n, the numbers are between 0 and n. If all of them were there, the sum would be <code>0 + 1 + … + n</code>. There is no need to add these up in a loop; there is a formula: <code>n * (n + 1) / 2</code>.</p>
+      </li>
+      <li>
+        <span class="n">2</span>
+        <h3>Add up the numbers in the array</h3>
+        <p>We walk the array once and add each element to <code>actualSum</code>. There is no need to record separately which numbers we have seen.</p>
+      </li>
+      <li>
+        <span class="n">3</span>
+        <h3>The difference is the missing number itself</h3>
+        <p>Every number except the missing one appears in both sums, so they cancel out when you subtract. What remains, <code>expectedSum - actualSum</code>, is the missing number.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="stepper" aria-labelledby="st-h">
+    <h2 id="st-h">Step through it</h2>
+
+    <div class="controls">
+      <div class="row">
+        <div class="field">
+          <label for="list">Array (comma-separated, at most 10 numbers)</label>
+          <input id="list" type="text" value="3, 0, 1" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="nav">
+          <button type="button" id="reset">Restart</button>
+          <button type="button" id="prev-btn">← Back</button>
+          <button type="button" id="next-btn" class="primary">Next →</button>
+          <button type="button" id="play">▶ Play</button>
+        </div>
+      </div>
+      <div class="presets" role="group" aria-label="Preset examples">
+        <button type="button" data-l="3, 0, 1"><span class="mono">[3,0,1]</span></button>
+        <button type="button" data-l="0, 1"><span class="mono">[0,1]</span>n is missing</button>
+        <button type="button" data-l="3, 1, 2"><span class="mono">[3,1,2]</span>0 is missing</button>
+        <button type="button" data-l="9, 6, 4, 2, 3, 5, 7, 0, 1"><span class="mono">[9,6,4,2,3,5,7,0,1]</span></button>
+      </div>
+      <p class="err" id="list-err" hidden>Enter at least 1 and at most 10 comma-separated integers. The numbers must be between 0 and the array length and must not repeat; for example, an array of 3 elements can hold three of 0, 1, 2, and 3.</p>
+    </div>
+
+    <div class="step" aria-live="polite">
+      <div class="step-meta"><span id="step-count"></span><span id="step-tag" class="tag"></span></div>
+      <p id="step-text"></p>
+    </div>
+
+    <div>
+      <p class="panel-label">nums</p>
+      <div class="arr-scroll"><div class="arr" id="arr"></div></div>
+    </div>
+
+    <div>
+      <p class="panel-label">The numbers that should be there, from 0 to n <small>(for display only; the code does not store them)</small></p>
+      <div class="arr-scroll"><div class="arr chips" id="chips"></div></div>
+      <div class="legend">
+        <span><i class="sw added"></i>added</span>
+        <span><i class="sw reading"></i>element being read (num)</span>
+        <span><i class="sw target"></i>num's place in 0..n</span>
+        <span><i class="sw missing"></i>missing number</span>
+      </div>
+    </div>
+
+    <div class="board">
+      <div class="col">
+        <p class="panel-label">Variables</p>
+        <dl class="vars" id="vars"></dl>
+        <div class="sums" id="sums"></div>
+        <div class="out" id="out"><span>return expectedSum - actualSum</span><b id="result"></b></div>
+      </div>
+      <div class="col">
+        <p class="panel-label">Code (method in Solution.cs)</p>
+        <div class="code" id="code" role="region" aria-label="C# code" tabindex="0"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="why" aria-labelledby="why-h">
+    <h2 id="why-h">Why O(n) time and O(1) space?</h2>
+    <div class="why-grid">
+      <div>
+        <h3>O(n) time</h3>
+        <p>We walk the array only once. The expected sum comes from the formula in a single operation, with no loop. The work grows in proportion to the array's length: <b>O(n) time</b>.</p>
+      </div>
+      <div>
+        <h3>O(1) space</h3>
+        <p>No matter how many elements the array has, we keep only four variables: <code>n</code>, <code>expectedSum</code>, <code>actualSum</code>, and <code>num</code>. There is no array or set recording which numbers we have seen: <b>O(1) space</b>.</p>
+      </div>
+      <div>
+        <h3>Where does the formula come from?</h3>
+        <p>Write the numbers from 0 to n once in order and once in reverse, one row under the other. Each column adds up to n, and there are n + 1 columns. The two rows together add up to <b>n · (n + 1)</b>. Since we counted every number twice, we divide by 2.</p>
+        <div class="gauss">  0 + 1 + 2 + 3
++ 3 + 2 + 1 + 0
+───────────────
+  3 + 3 + 3 + 3 = 3 · 4 = 12
+
+12 / 2 = 6</div>
+      </div>
+      <div>
+        <h3>Can it overflow?</h3>
+        <p>An <code>int</code> can hold at most 2,147,483,647. In this problem n is at most 10,000, so the expected sum is at most 50,005,000; it fits easily. If n were 46,341 or larger, the product <code>n * (n + 1)</code> would not fit in an <code>int</code> and you would need a <code>long</code>.</p>
+      </div>
+      <div>
+        <h3>What if the missing number is 0?</h3>
+        <p>0 adds nothing to a sum. If 0 is missing, the two sums come out equal and the difference is <b>0</b>; the answer is still correct. For example <code>[3, 1, 2]</code>: 6 − 6 = 0. You can follow it in the preset examples above.</p>
+      </div>
+      <div>
+        <h3>Other approaches</h3>
+        <p>Sorting the array and looking for the spot where the numbers shift also works, but sorting takes <b>O(n log n)</b>. Marking the seen numbers with a <code>HashSet</code> or a <code>bool[]</code> runs in O(n) time but needs <b>O(n) space</b>. XOR also solves it in O(n) time and O(1) space, but the sum method is shorter and easier to read.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <a href="https://leetcode.com/problems/missing-number/">Problem: LeetCode 268</a>
+    <a href="https://github.com/physerkm/leetcode-solutions/blob/main/src/LeetCode/Problems/P0268_MissingNumber/Solution.cs">Code: Solution.cs</a>
+    <a href="https://github.com/physerkm/leetcode-solutions">Repo: physerkm/leetcode-solutions</a>
+  </footer>
+</div>
+
+<script src="walkthrough.js"></script>
+</body>
+</html>

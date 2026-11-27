@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import { setLocale } from '@/i18n/locale';
 import { formatArguments, formatDuration, formatMinutes, formatOperations, formatRelative, formatValue, percent, tagLabel } from './format';
 import { buildToc } from './toc';
 
@@ -45,6 +46,21 @@ describe('biçimlendirme yardımcıları', () => {
     expect(formatRelative('2026-11-15T11:59:50Z', now)).toBe('az önce');
     expect(formatRelative('2026-11-15T09:00:00Z', now)).toBe('3 saat önce');
     expect(formatRelative('2026-11-14T12:00:00Z', now)).toBe('dün');
+  });
+});
+
+describe('İngilizce biçimlendirme', () => {
+  afterEach(() => setLocale('tr'));
+
+  it('etiketleri, süreleri ve göreli zamanı İngilizce yazar', () => {
+    setLocale('en');
+    const now = new Date('2026-11-15T12:00:00Z');
+
+    expect(tagLabel('hash-tablosu')).toBe('Hash Table');
+    expect(tagLabel('bilinmeyen-etiket')).toBe('Bilinmeyen Etiket');
+    expect(formatMinutes(135)).toBe('2 h 15 min');
+    expect(formatRelative('2026-11-15T11:59:50Z', now)).toBe('just now');
+    expect(formatRelative('2026-11-14T12:00:00Z', now)).toBe('yesterday');
   });
 });
 

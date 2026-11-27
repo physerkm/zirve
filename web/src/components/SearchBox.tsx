@@ -1,11 +1,32 @@
 import { Search } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router';
+import { defineMessages, useMessages } from '@/i18n/messages';
 import { useDebouncedValue } from '@/lib/hooks';
 import { useSearch } from '@/lib/queries';
 import { DifficultyBadge, Spinner } from './ui';
 
+const messages = defineMessages({
+  tr: {
+    label: 'Derslerde, problemlerde ve testlerde ara',
+    placeholder: 'Ara…',
+    noResults: (query: string) => `"${query}" için sonuç bulunamadı.`,
+    lessons: 'Dersler',
+    problems: 'Problemler',
+    quizzes: 'Testler',
+  },
+  en: {
+    label: 'Search lessons, problems and quizzes',
+    placeholder: 'Search…',
+    noResults: (query: string) => `No results for "${query}".`,
+    lessons: 'Lessons',
+    problems: 'Problems',
+    quizzes: 'Quizzes',
+  },
+});
+
 export function SearchBox() {
+  const t = useMessages(messages);
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -52,7 +73,7 @@ export function SearchBox() {
   return (
     <div ref={containerRef} className="relative w-full max-w-xs">
       <label className="relative block">
-        <span className="sr-only">Derslerde, problemlerde ve testlerde ara</span>
+        <span className="sr-only">{t.label}</span>
         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle" aria-hidden />
         <input
           ref={inputRef}
@@ -70,7 +91,7 @@ export function SearchBox() {
           onKeyDown={(event) => {
             if (event.key === 'Escape') close();
           }}
-          placeholder="Ara…"
+          placeholder={t.placeholder}
           className="h-9 w-full rounded-lg border border-border bg-surface pr-9 pl-9 text-sm outline-none transition-colors placeholder:text-subtle focus:border-primary focus:ring-2 focus:ring-primary/25 [&::-webkit-search-cancel-button]:hidden"
         />
         <kbd className="pointer-events-none absolute top-1/2 right-2.5 hidden -translate-y-1/2 rounded border border-border px-1.5 font-mono text-[10px] text-subtle sm:block">
@@ -89,11 +110,11 @@ export function SearchBox() {
             </div>
           )}
 
-          {isEmpty && <p className="px-3 py-6 text-center text-sm text-muted">"{debounced}" için sonuç bulunamadı.</p>}
+          {isEmpty && <p className="px-3 py-6 text-center text-sm text-muted">{t.noResults(debounced)}</p>}
 
           {results && results.lessons.length > 0 && (
-            <section aria-label="Dersler">
-              <h3 className="px-3 pt-2 pb-1 text-xs font-semibold tracking-wide text-subtle uppercase">Dersler</h3>
+            <section aria-label={t.lessons}>
+              <h3 className="px-3 pt-2 pb-1 text-xs font-semibold tracking-wide text-subtle uppercase">{t.lessons}</h3>
               {results.lessons.map((lesson) => (
                 <Link key={`${lesson.trackSlug}/${lesson.slug}`} to={`/tracks/${lesson.trackSlug}/${lesson.slug}`} onClick={close} className={itemClass}>
                   <span className="min-w-0">
@@ -106,8 +127,8 @@ export function SearchBox() {
           )}
 
           {results && results.problems.length > 0 && (
-            <section aria-label="Problemler">
-              <h3 className="px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-subtle uppercase">Problemler</h3>
+            <section aria-label={t.problems}>
+              <h3 className="px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-subtle uppercase">{t.problems}</h3>
               {results.problems.map((problem) => (
                 <Link key={problem.slug} to={`/problems/${problem.slug}`} onClick={close} className={itemClass}>
                   <span className="truncate font-medium">
@@ -120,8 +141,8 @@ export function SearchBox() {
           )}
 
           {results && results.quizzes.length > 0 && (
-            <section aria-label="Testler">
-              <h3 className="px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-subtle uppercase">Testler</h3>
+            <section aria-label={t.quizzes}>
+              <h3 className="px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-subtle uppercase">{t.quizzes}</h3>
               {results.quizzes.map((quiz) => (
                 <Link key={quiz.slug} to={`/quizzes/${quiz.slug}`} onClick={close} className={itemClass}>
                   <span className="min-w-0">

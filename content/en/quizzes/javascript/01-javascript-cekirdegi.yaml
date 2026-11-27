@@ -1,0 +1,135 @@
+title: JavaScript Core
+description: Mostly "what does this code print" questions on scope, closures, this, the event loop and Promises.
+questions:
+  - q: |
+      What is the output of the following code?
+
+      ```javascript
+      console.log('1');
+      setTimeout(() => console.log('2'), 0);
+      Promise.resolve().then(() => console.log('3'));
+      console.log('4');
+      ```
+    options:
+      - "1 2 3 4"
+      - "1 4 2 3"
+      - "1 4 3 2"
+      - "1 3 4 2"
+    why: |
+      The synchronous code runs first: `1`, `4`. Once the call stack is empty, **all microtasks** (Promise callbacks) are processed: `3`. Only after that is a task taken from the macrotask queue (`setTimeout`): `2`. `setTimeout(fn, 0)` does not mean "immediately"; it means "after the current code and the microtasks have finished".
+
+  - q: |
+      What is the output of the following code?
+
+      ```javascript
+      for (var i = 0; i < 3; i++) {
+        setTimeout(() => console.log(i), 0);
+      }
+      ```
+    options:
+      - "0 1 2"
+      - "3 3 3"
+      - "2 2 2"
+      - "undefined undefined undefined"
+    why: |
+      `var` is function-scoped: there is a single `i` for the whole loop, and all three callbacks capture it. The callbacks run after the loop has finished, when `i` is 3. With `let`, each iteration would get its own `i` variable and the output would be `0 1 2`.
+
+  - q: |
+      What is the result of the following code (in an ES module)?
+
+      ```javascript
+      const user = {
+        name: 'Ada',
+        greet() { return this.name; },
+      };
+
+      const greet = user.greet;
+      console.log(greet());
+      ```
+    options:
+      - "\"Ada\""
+      - "undefined"
+      - "It throws a TypeError"
+      - "\"\" (an empty string)"
+    why: |
+      `this` is determined by **how the function is called**. `greet()` is a plain function call; there is no object to the left of a dot. Modules run in strict mode, so `this` is `undefined`, and reading `undefined.name` throws a `TypeError`. The fix: `user.greet.bind(user)` or `() => user.greet()`.
+
+  - q: "Which is a difference between arrow functions (`=>`) and regular functions?"
+    options:
+      - "Arrow functions always run faster."
+      - "Arrow functions have no `this` of their own; they use the `this` of the scope they are defined in."
+      - "Arrow functions cannot create closures."
+      - "Arrow functions can only be one line long."
+    why: |
+      Arrow functions take `this` from the enclosing scope, and it cannot be changed with `call`/`bind`. That makes them ideal for callbacks but unsuitable as object methods. They also have no `arguments` object and cannot be called with `new`.
+
+  - q: "What is a closure?"
+    options:
+      - "A function's ability to access the variables in the scope where it was defined, even after that scope has ended."
+      - "The deletion of all of a function's local variables when it finishes running."
+      - "A function that calls another function from inside it."
+      - "A special method that can be defined only inside a `class`."
+    why: |
+      Functions carry a link to the lexical scope they were defined in. When an inner function is returned outward or stored as a callback, the outer function's variables stay alive. Data hiding, memoization, debounce and React hooks all rely on this mechanism.
+
+  - q: "Which of the following expressions evaluate to `true`? (More than one answer is correct.)"
+    options:
+      - "`0 == ''`"
+      - "`null == undefined`"
+      - "`NaN === NaN`"
+      - "`[] === []`"
+    why: |
+      `==` converts types before comparing: an empty string becomes `0` when converted to a number, so `0 == ''` is true. `null` and `undefined` are equal to each other under `==` (and to nothing else). `NaN` is not equal to any value, including itself; use `Number.isNaN` to check for it. Two separate array literals are different objects, and `===` compares identity. The rule: always use `===`.
+
+  - q: "You start five API requests at the same time. Even if some of them fail, you want to see **the result of every one** (success or error). Which do you use?"
+    options:
+      - "`Promise.all`"
+      - "`Promise.race`"
+      - "`Promise.allSettled`"
+      - "`Promise.any`"
+    why: |
+      `Promise.allSettled` waits until every Promise has settled and returns `{ status, value | reason }` for each one; it never rejects. `Promise.all` rejects immediately on the first rejection, and you cannot see the other results. `race` returns the first one to settle, and `any` returns the first one to succeed.
+
+  - q: |
+      What happens when the following function is called?
+
+      ```javascript
+      async function saveAll(items) {
+        items.forEach(async (item) => {
+          await save(item);
+        });
+        console.log('done');
+      }
+      ```
+    options:
+      - "The items are saved in order, then 'done' is printed."
+      - "'done' is printed before the saves complete."
+      - "The items are saved concurrently and 'done' is printed when they have all finished."
+      - "It is a syntax error; `await` cannot be used inside `forEach`."
+    why: |
+      `forEach` does **not wait** for the Promises the callback returns. Each callback pauses at its first `await` and `forEach` finishes immediately; `'done'` is printed while the saves are still in progress. To process in order, use `await` inside `for...of`; to process concurrently and wait, use `await Promise.all(items.map(save))`.
+
+  - q: "What happens if you try to access a variable declared with `let` or `const` **before** its declaration line?"
+    options:
+      - "`undefined` is read."
+      - "`null` is read."
+      - "A `ReferenceError` is thrown (temporal dead zone)."
+      - "The variable is looked up in the global scope."
+    why: |
+      `let` and `const` are also hoisted to the top of their scope, but until the declaration line they stay in the **temporal dead zone**, and accessing them throws a `ReferenceError`. A `var`, by contrast, reads as `undefined` before its declaration line; this difference lets `let`/`const` catch bugs early.
+
+  - q: |
+      What is the output of the following code?
+
+      ```javascript
+      const config = { retries: 3 };
+      config.retries = 5;
+      console.log(config.retries);
+      ```
+    options:
+      - "3"
+      - "5"
+      - "TypeError: Assignment to constant variable"
+      - "undefined"
+    why: |
+      `const` prevents the variable from being **reassigned** to a different value; it does not freeze the contents of the object it points to. `config = {}` would throw, but changing its properties is allowed. To make the object immutable you need `Object.freeze` (which is shallow).

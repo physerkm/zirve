@@ -1,0 +1,74 @@
+title: Advanced React
+description: Server and client state, the limits of Context, Redux Toolkit and Zustand, TanStack Query, React Testing Library, MSW, unnecessary renders and performance techniques.
+questions:
+  - q: "In an e-commerce app, the product list, user profile and order history come from an API. What is the best way to manage this data?"
+    options:
+      - "Put everything in a Redux store and write the loading, error and caching logic by hand"
+      - "Treat it as server state and leave it to a data-fetching library such as TanStack Query (or RTK Query)"
+      - "Fetch it separately in every component with `useEffect` and keep it in local state"
+      - "Store everything in `localStorage`"
+    why: |
+      Data from an API is a copy of something the server owns. It comes with problems such as caching, deduplication, staleness, background refetching, cancellation and error states. Data-fetching libraries solve these out of the box. Putting it in Redux and writing it all by hand produces unnecessary code. A separate `useEffect` in every component fetches the same data over and over.
+
+  - q: "Where should the filters, sort order and page number of a product list be kept?"
+    options:
+      - "In the URL (query parameters); it can be shared, survives a refresh, and the back button works"
+      - "In a global Redux store"
+      - "In Context"
+      - "Inside a `useRef`"
+    why: |
+      Any state the user may want to share, bookmark or return to with the back button belongs in the URL. Filters kept in a store or in Context are lost when the page is refreshed and can't be shared via a link.
+
+  - q: "A frequently changing cart object is provided through Context, and all 200 components that use the cart re-render on every change. Why, and what is the right fix?"
+    options:
+      - "It's a React bug; it can't be fixed."
+      - "No default value was defined for the Context."
+      - "The components don't use a `key`."
+      - "When a Context value changes, every component that uses it renders; you need a store that supports selectors (Zustand, Redux), or you split the Context."
+    why: |
+      Context is a dependency injection tool and doesn't support subscribing to individual parts: when the value changes, every consumer renders. Creating the value as a new object on every render makes this worse. With a selector-based store, a component renders only when the part it reads changes.
+
+  - q: "What does the setting `staleTime: 30_000` mean in TanStack Query?"
+    options:
+      - "The data is removed from the cache after 30 seconds."
+      - "The data is considered fresh for 30 seconds, and no refetch happens for the same query during that time."
+      - "The request is canceled if no response arrives within 30 seconds."
+      - "The query runs automatically every 30 seconds."
+    why: |
+      `staleTime` is how long the data is considered fresh. During that time no refetch happens, even if the component remounts or the window regains focus. How long unused data stays in the cache is controlled by `gcTime`. To refetch at regular intervals, use `refetchInterval`.
+
+  - q: "Which query is most recommended for finding a button in React Testing Library?"
+    options:
+      - "`getByTestId('submit-btn')`"
+      - "`container.querySelector('.btn-primary')`"
+      - "`getByRole('button', { name: /place order/i })`"
+      - "`getByClassName('btn')`"
+    why: |
+      RTL recommends finding elements the way users and assistive technologies find them. `getByRole` uses the accessibility tree. If an element can't be found by its role, there is usually an accessibility problem. Test IDs and CSS selectors are a last resort, because users don't see them and they break easily during a refactor.
+
+  - q: "Which should you use to verify that a message is **not** on the screen?"
+    options:
+      - "`expect(screen.queryByText(/error/i)).not.toBeInTheDocument()`"
+      - "`expect(screen.getByText(/error/i)).not.toBeInTheDocument()`"
+      - "`await screen.findByText(/error/i)`"
+      - "`expect(screen.getByText(/error/i)).toBeNull()`"
+    why: |
+      `getBy...` throws if it can't find the element, so it can't be used to verify absence. `queryBy...` returns `null` if it can't find it. `findBy...` waits until the element appears and fails with a timeout if it can't find it. For absence, use `queryBy`.
+
+  - q: "What is the most realistic way to test the error state of a component that makes an API call?"
+    options:
+      - "Replace the `fetch` function globally by hand"
+      - "Set the component's internal state to `error` directly"
+      - "Use MSW to define a 500 response for that endpoint at the network level and verify the error message the component shows"
+      - "Don't test the error state"
+    why: |
+      MSW intercepts requests at the network layer. The component makes a real `fetch` call, parses the response and actually runs the error path. Setting internal state directly tests an implementation detail and skips the real error path. This approach tests what the user sees.
+
+  - q: "A table with 10,000 rows stutters while scrolling. Which usually gives the biggest improvement?"
+    options:
+      - "Wrap every row component in `useCallback`"
+      - "Virtualization: render only the rows visible on screen (e.g. @tanstack/react-virtual)"
+      - "Use the array index as the rows' `key`"
+      - "Put the whole table inside a single `useMemo`"
+    why: |
+      Virtualization cuts the number of rows in the DOM from tens of thousands to tens. That is a much bigger win than memoization. `useCallback` stabilizes function references; it doesn't wrap components. Index keys lead to bugs and unnecessary re-creation when sorting and deleting.

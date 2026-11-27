@@ -2,9 +2,23 @@ import Editor, { loader, type OnMount } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import EditorWorker from 'monaco-editor/editor/editor.worker.js?worker';
 import TsWorker from 'monaco-editor/language/typescript/ts.worker.js?worker';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { defineMessages, useMessages } from '@/i18n/messages';
 import { useTheme } from '@/lib/theme';
 import type { CompileDiagnostic, Language } from '@/lib/types';
+
+const messages = defineMessages({
+  tr: {
+    runtimeError: 'Çalışma zamanı hatası bu satırda oluştu.',
+    run: 'Çalıştır',
+    submit: 'Gönder',
+  },
+  en: {
+    runtimeError: 'The runtime error occurred on this line.',
+    run: 'Run',
+    submit: 'Submit',
+  },
+});
 
 // ------------------------------------------------------------------ tek seferlik Monaco kurulumu
 // Monaco CDN yerine paketten yüklenir: çevrim dışı çalışır ve katı bir CSP ile uyumludur.
@@ -96,6 +110,33 @@ typescript.javascriptDefaults.addExtraLib(SANDBOX_GLOBALS, 'file:///zirve/sandbo
 
 const MARKER_OWNER = 'zirve';
 
+interface EditorHandlers {
+  onRun?: () => void;
+  onSubmit?: () => void;
+}
+
+// Eylem etiketleri dile bağlıdır; dil değişince eylemler yeni etiketlerle yeniden kaydedilir.
+function addActions(
+  editor: monaco.editor.IStandaloneCodeEditor,
+  labels: { run: string; submit: string },
+  handlers: { current: EditorHandlers },
+): monaco.IDisposable[] {
+  return [
+    editor.addAction({
+      id: 'zirve.run',
+      label: labels.run,
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
+      run: () => handlers.current.onRun?.(),
+    }),
+    editor.addAction({
+      id: 'zirve.submit',
+      label: labels.submit,
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Enter],
+      run: () => handlers.current.onSubmit?.(),
+    }),
+  ];
+}
+
 // ------------------------------------------------------------------ bileşen
 
 interface CodeEditorProps {
@@ -114,13 +155,21 @@ interface CodeEditorProps {
 }
 
 export default function CodeEditor({ path, language, value, onChange, diagnostics, errorLine, onRun, onSubmit, ariaLabel }: CodeEditorProps) {
+  const t = useMessages(messages);
   const { theme } = useTheme();
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-  const handlers = useRef({ onRun, onSubmit });
+  const [editor, setEditor] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const handlers = useRef<EditorHandlers>({ onRun, onSubmit });
 
   useEffect(() => {
     handlers.current = { onRun, onSubmit };
   }, [onRun, onSubmit]);
+
+  useEffect(() => {
+    if (!editor) return;
+    const actions = addActions(editor, t, handlers);
+    return () => actions.forEach((action) => action.dispose());
+  }, [editor, t]);
 
   useEffect(() => {
     const model = editorRef.current?.getModel();
@@ -146,7 +195,7 @@ export default function CodeEditor({ path, language, value, onChange, diagnostic
     if (errorLine && errorLine > 0 && errorLine <= model.getLineCount()) {
       markers.push({
         severity: monaco.MarkerSeverity.Warning,
-        message: 'Çalışma zamanı hatası bu satırda oluştu.',
+        message: t.runtimeError,
         startLineNumber: errorLine,
         startColumn: model.getLineFirstNonWhitespaceColumn(errorLine) || 1,
         endLineNumber: errorLine,
@@ -155,24 +204,11 @@ export default function CodeEditor({ path, language, value, onChange, diagnostic
     }
 
     monaco.editor.setModelMarkers(model, MARKER_OWNER, markers);
-  }, [diagnostics, errorLine, path]);
+  }, [diagnostics, errorLine, path, t]);
 
-  const handleMount: OnMount = (editor) => {
-    editorRef.current = editor;
-
-    editor.addAction({
-      id: 'zirve.run',
-      label: 'Çalıştır',
-      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
-      run: () => handlers.current.onRun?.(),
-    });
-
-    editor.addAction({
-      id: 'zirve.submit',
-      label: 'Gönder',
-      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Enter],
-      run: () => handlers.current.onSubmit?.(),
-    });
+  const handleMount: OnMount = (mounted) => {
+    editorRef.current = mounted;
+    setEditor(mounted);
   };
 
   return (
