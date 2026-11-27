@@ -25,7 +25,7 @@ Açıklama: İki 'A' harfini 'B' ile (veya iki 'B' harfini 'A' ile) değiştirer
 ```text
 Girdi:  s = "AABABBA", k = 1
 Çıktı:  4
-Açıklama: Ortadaki 'B' harfini 'A' ile değiştirerek "AAAA" alt dizgisini içeren "AAAAABBA" veya 2..5 aralığında "BBBB" elde edilebilir; en uzun aynı harfli alt dizgi 4 uzunluğundadır.
+Açıklama: Ortadaki 'B' harfini 'A' ile değiştirerek "AAAA" alt dizgisini içeren "AAAABBA" veya 2..5 aralığında "BBBB" elde edilebilir; en uzun aynı harfli alt dizgi 4 uzunluğundadır.
 ```
 
 ### Kısıtlar

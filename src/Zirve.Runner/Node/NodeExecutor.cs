@@ -98,7 +98,8 @@ public sealed class NodeExecutor
         {
             { OutputLimitExceeded: true } => ExecutionStatus.OutputLimit,
             { TimedOut: true } => ExecutionStatus.Timeout,
-            { ExitCode: not 0 } when outcome.Stderr.Contains("Süre sınırı aşıldı", StringComparison.Ordinal) => ExecutionStatus.Timeout,
+            { ExitCode: not 0 } when outcome.Stderr.Contains("Süre sınırı aşıldı", StringComparison.Ordinal)
+                                     || outcome.Stderr.Contains("Time limit exceeded", StringComparison.Ordinal) => ExecutionStatus.Timeout,
             { ExitCode: not 0 } => ExecutionStatus.RuntimeError,
             _ => ExecutionStatus.Completed,
         };
@@ -138,6 +139,7 @@ public sealed class NodeExecutor
             environment["SystemRoot"] = systemRoot;
         }
 
+        environment[RunnerText.EnvironmentVariable] = RunnerText.Locale;
         environment["TEMP"] = directory;
         environment["TMP"] = directory;
         environment["TMPDIR"] = directory;
@@ -152,23 +154,25 @@ public sealed class NodeExecutor
     {
         if (outcome.OutputLimitExceeded)
         {
-            return "Çıktı sınırı aşıldı.";
+            return RunnerText.T("Çıktı sınırı aşıldı.", "Output limit exceeded.");
         }
 
         if (outcome.TimedOut)
         {
-            return "Süre sınırı aşıldı.";
+            return RunnerText.T("Süre sınırı aşıldı.", "Time limit exceeded.");
         }
 
         if (outcome.Stderr.Contains("heap out of memory", StringComparison.OrdinalIgnoreCase)
             || outcome.Stderr.Contains("heap limit", StringComparison.OrdinalIgnoreCase))
         {
-            return "Bellek sınırı aşıldı.";
+            return RunnerText.T("Bellek sınırı aşıldı.", "Memory limit exceeded.");
         }
 
         var lastLine = outcome.Stderr.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).LastOrDefault();
         return lastLine is null
-            ? $"Program beklenmedik biçimde sonlandı (çıkış kodu {outcome.ExitCode})."
+            ? RunnerText.T(
+                $"Program beklenmedik biçimde sonlandı (çıkış kodu {outcome.ExitCode}).",
+                $"The program exited unexpectedly (exit code {outcome.ExitCode}).")
             : Truncate(lastLine, 500)!;
     }
 

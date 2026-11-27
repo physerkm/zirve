@@ -39,7 +39,7 @@ public sealed class QuizAttemptRequest
     [Required]
     public Dictionary<int, List<int>> Answers { get; set; } = [];
 
-    [Range(0, 24 * 60 * 60, ErrorMessage = "Süre geçersiz.")]
+    [Range(0, 24 * 60 * 60, ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.InvalidDuration))]
     public int DurationSeconds { get; set; }
 }
 
@@ -72,6 +72,8 @@ public static class QuizEndpoints
 
     private static async Task<Ok<List<QuizSummary>>> ListAsync(AppDbContext db, HttpContext http, CancellationToken cancellationToken)
     {
+        var en = Localization.IsEnglish;
+
         var quizzes = await db.Quizzes
             .AsNoTracking()
             .OrderBy(quiz => quiz.Track.Order)
@@ -80,13 +82,13 @@ public static class QuizEndpoints
             {
                 quiz.Id,
                 quiz.Slug,
-                quiz.Title,
-                quiz.Description,
+                Title = en ? quiz.TitleEn : quiz.Title,
+                Description = en ? quiz.DescriptionEn : quiz.Description,
                 quiz.Level,
                 quiz.TimeLimitMinutes,
                 QuestionCount = quiz.Questions.Count,
                 TrackSlug = quiz.Track.Slug,
-                TrackTitle = quiz.Track.Title,
+                TrackTitle = en ? quiz.Track.TitleEn : quiz.Track.Title,
             })
             .ToListAsync(cancellationToken);
 
@@ -117,25 +119,27 @@ public static class QuizEndpoints
 
     private static async Task<Results<Ok<QuizDetail>, NotFound>> GetAsync(string slug, AppDbContext db, CancellationToken cancellationToken)
     {
+        var en = Localization.IsEnglish;
+
         var quiz = await db.Quizzes
             .AsNoTracking()
             .AsSplitQuery()
             .Where(q => q.Slug == slug)
             .Select(q => new QuizDetail(
                 q.Slug,
-                q.Title,
-                q.Description,
+                en ? q.TitleEn : q.Title,
+                en ? q.DescriptionEn : q.Description,
                 q.Level,
                 q.TimeLimitMinutes,
-                new LessonLink(q.Track.Slug, q.Track.Title),
+                new LessonLink(q.Track.Slug, en ? q.Track.TitleEn : q.Track.Title),
                 q.Questions
                     .OrderBy(question => question.Order)
                     .Select(question => new QuizQuestion(
                         question.Id,
-                        question.Text,
+                        en ? question.TextEn : question.Text,
                         question.IsMultiple,
                         question.Difficulty,
-                        question.Options.OrderBy(option => option.Order).Select(option => new QuizOption(option.Id, option.Text)).ToList()))
+                        question.Options.OrderBy(option => option.Order).Select(option => new QuizOption(option.Id, en ? option.TextEn : option.Text)).ToList()))
                     .ToList()))
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -194,6 +198,7 @@ public static class QuizEndpoints
         var selectedIds = (selected ?? []).Where(validIds.Contains).Distinct().Order().ToList();
         var isCorrect = selectedIds.Count == correctIds.Count && selectedIds.All(correctIds.Contains);
 
-        return new QuestionResult(question.Id, isCorrect, correctIds, selectedIds, question.Explanation);
+        return new QuestionResult(
+            question.Id, isCorrect, correctIds, selectedIds, Localization.IsEnglish ? question.ExplanationEn : question.Explanation);
     }
 }

@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<base target="_blank">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Permutations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: one reading column; the stepper is a single tool panel (controls, step card, then the decision tree
+   beside current / nums+used / result; then variables + call stack + return value | code) that stacks on phones. */
+:root {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --ink: #141b26;
+  --muted: #5a6779;
+  --line: #d6dce6;
+  --accent: #3346c8;
+  --accent-ink: #ffffff;
+  --range: #e3e9fb;
+  --range-ink: #1d2a6b;
+  --good: #17824a;
+  --good-soft: #dcf1e4;
+  --good-soft-ink: #145c36;
+  --bad: #b8402a;
+  --bad-soft: #f9e3dd;
+  --bad-soft-ink: #7a2615;
+  --code-bg: #f7f8fb;
+  --code-hl: #dfe5fb;
+  --kw: #7a3aa8;
+  --str: #17824a;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+    --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff;
+    --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2;
+    --bad: #ff7d66; --bad-soft: #3a1c17; --bad-soft-ink: #ffb4a5;
+    --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0; --str: #8fe0b2;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+  --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff;
+  --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2;
+  --bad: #ff7d66; --bad-soft: #3a1c17; --bad-soft-ink: #ffb4a5;
+  --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0; --str: #8fe0b2;
+  color-scheme: dark;
+}
+
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 40px;
+}
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; color: var(--muted); margin: 0; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 6vw, 54px); line-height: 1.05; letter-spacing: -.02em; margin: 8px 0 14px; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0; font-size: 17px; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: -.01em; margin: 0 0 18px; text-wrap: balance; }
+code { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+
+/* Idea */
+.idea { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; list-style: none; padding: 0; margin: 0; }
+.idea li { border-top: 2px solid var(--ink); padding-top: 12px; min-width: 0; }
+.idea .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.idea h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 2px 0 6px; text-wrap: balance; }
+.idea p { margin: 0; color: var(--muted); font-size: 15px; }
+@media (max-width: 760px) { .idea { grid-template-columns: 1fr; gap: 20px; } }
+
+/* Stepper panel */
+.stepper { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+@media (max-width: 560px) { .stepper { padding: 16px; } }
+.stepper h2 { margin: 0; }
+.controls { display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+.field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+input[type="text"] { width: 12em; max-width: 100%; box-sizing: border-box; font: 600 18px var(--font-mono); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.err { margin: 0; font-size: 13px; color: var(--bad); }
+button { font: 500 14px var(--font-body); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.presets button { font-size: 13px; padding: 7px 10px; }
+.presets .mono { font-family: var(--font-mono); font-weight: 700; margin-right: 4px; }
+.presets button[aria-pressed="true"] { border-color: var(--accent); background: var(--range); color: var(--range-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; }
+#play { min-width: 7.5em; }
+
+.step { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+.step-meta { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--range); color: var(--range-ink); }
+.tag[data-kind="ok"] { background: var(--good); color: var(--surface); }
+.tag[data-kind="bad"] { background: var(--bad-soft); color: var(--bad-soft-ink); }
+#step-text { margin: 8px 0 0; font-size: 16.5px; max-width: 78ch; min-height: 4.8em; }
+
+.panel-label { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+.panel-label code { font-weight: 500; }
+.empty { font-size: 14px; color: var(--muted); margin: 0; min-height: 32px; display: flex; align-items: center; }
+
+/* Tree on the left, the three data rows on the right. */
+.viz { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 24px 36px; align-items: start; }
+@media (max-width: 760px) { .viz { grid-template-columns: 1fr; } }
+.tree-col { min-width: 0; max-width: 100%; }
+.tree { display: block; max-width: 100%; height: auto; }
+.lanes { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+
+/* Decision tree. One circle per choice; the path from the top spells out current. */
+.tree .edge { stroke: var(--line); stroke-width: 2; stroke-dasharray: 4 4; transition: stroke .2s; }
+.tree .edge[data-st="path"] { stroke: var(--accent); stroke-width: 3; stroke-dasharray: none; }
+.tree .edge[data-st="done"] { stroke: var(--muted); stroke-dasharray: none; opacity: .55; }
+.tree .edge[data-st="undo"] { stroke: var(--bad); stroke-width: 3; stroke-dasharray: none; }
+.tree circle { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 3 3; transition: fill .2s, stroke .2s; }
+.tree text { fill: var(--muted); font: 600 12px var(--font-mono); text-anchor: middle; dominant-baseline: central; font-variant-ligatures: none; }
+.tree .node[data-st="path"] circle { fill: var(--range); stroke: var(--accent); stroke-width: 2; stroke-dasharray: none; }
+.tree .node[data-st="path"] text { fill: var(--range-ink); }
+.tree .node[data-st="cur"] circle { fill: var(--accent); stroke: var(--accent); stroke-width: 2; stroke-dasharray: none; }
+.tree .node[data-st="cur"] text { fill: var(--accent-ink); }
+.tree .node[data-st="done"] circle { fill: var(--bg); stroke: var(--muted); stroke-dasharray: none; }
+.tree .node[data-st="done"] text { fill: var(--ink); }
+.tree .node[data-st="saved"] circle { fill: var(--good-soft); stroke: var(--good); stroke-width: 2; stroke-dasharray: none; }
+.tree .node[data-st="saved"] text { fill: var(--good-soft-ink); }
+.tree .node[data-st="new"] circle { fill: var(--good); stroke: var(--good); stroke-width: 2; stroke-dasharray: none; }
+.tree .node[data-st="new"] text { fill: var(--surface); }
+.tree .node[data-st="undo"] circle { fill: var(--bad-soft); stroke: var(--bad); stroke-width: 2; stroke-dasharray: none; }
+.tree .node[data-st="undo"] text { fill: var(--bad-soft-ink); }
+.tree .order { fill: var(--good); font-size: 11px; font-weight: 700; }
+.tree-note { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+
+/* Boxes for current, nums and used. */
+.vgrid { display: grid; gap: 4px 6px; align-items: center; justify-content: start; }
+.rh { font-size: 13px; color: var(--muted); padding-right: 4px; }
+.lbl { min-height: 15px; font: 700 11px/15px var(--font-mono); color: var(--accent); text-align: center; white-space: nowrap; }
+.lbl.skip { color: var(--muted); font-weight: 500; }
+.cell {
+  height: 32px; box-sizing: border-box; border-radius: 6px;
+  display: grid; place-items: center; font: 600 15px var(--font-mono);
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  transition: background-color .2s, color .2s;
+}
+.cell.f { color: var(--muted); font-weight: 500; font-size: 13px; }
+.cell.t { font-size: 13px; }
+.cell[data-st="path"] { background: var(--range); color: var(--range-ink); border-color: transparent; }
+.cell[data-st="cur"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.cell[data-st="saved"] { background: var(--good-soft); color: var(--good-soft-ink); border-color: var(--good); }
+.cell[data-st="undo"] { background: var(--bad-soft); color: var(--bad-soft-ink); border: 2px solid var(--bad); }
+.cell[data-st="ptr"] { border: 2px solid var(--accent); }
+.cell[data-st="empty"] { border-style: dashed; background: transparent; }
+.cell.strike { text-decoration: line-through; }
+.idx { font: 500 12px var(--font-mono); color: var(--muted); text-align: center; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  padding: 5px 10px; border-radius: 8px; font: 600 14px var(--font-mono); white-space: nowrap;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  transition: background-color .2s, color .2s;
+}
+.chip .k { color: var(--muted); font-weight: 500; margin-right: 6px; }
+.chip[data-st="new"] { background: var(--good-soft); color: var(--good-soft-ink); border-color: var(--good); }
+.chip[data-st="new"] .k { color: var(--good-soft-ink); }
+@media (prefers-reduced-motion: reduce) { .cell, .chip, .tree .edge, .tree circle { transition: none; } }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--line); box-sizing: border-box; }
+.sw.cur { background: var(--accent); border-color: var(--accent); }
+.sw.path { background: var(--range); border: 2px solid var(--accent); }
+.sw.saved { background: var(--good-soft); border: 2px solid var(--good); }
+.sw.undo { background: var(--bad-soft); border: 2px solid var(--bad); }
+.sw.done { background: var(--bg); border-color: var(--muted); }
+.sw.todo { border: 1px dashed var(--muted); }
+
+/* Variables + call stack + return value | code */
+.board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 28px; }
+@media (max-width: 880px) { .board { grid-template-columns: 1fr; } }
+.col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.vars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.var { border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; background: var(--bg); min-width: 0; }
+.var dt { font: 400 12px var(--font-mono); color: var(--muted); overflow-wrap: anywhere; }
+.var dd { margin: 0; font: 600 18px var(--font-mono); font-variant-numeric: tabular-nums; }
+.var.changed { border-color: var(--accent); background: var(--range); }
+.var.changed dd { color: var(--range-ink); }
+.note { margin: 0; font-size: 13px; color: var(--muted); }
+.stack { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.stack li { font: 500 13px var(--font-mono); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stack li.top { border-color: var(--accent); background: var(--range); color: var(--range-ink); font-weight: 600; }
+.out { margin-top: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; background: var(--bg); min-width: 0; }
+.out span { display: block; font-size: 12px; color: var(--muted); }
+.out b { font: 700 16px var(--font-mono); overflow-wrap: anywhere; }
+.out[data-kind="done"] { border: 2px solid var(--good); background: var(--good-soft); }
+.out[data-kind="done"] b { color: var(--good-soft-ink); }
+.code { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 0; overflow-x: auto; font: 13px/1.6 var(--font-mono); }
+@media (max-width: 560px) { .code { font-size: 12px; } }
+.ln { display: block; padding: 0 14px 0 11px; white-space: pre; border-left: 3px solid transparent; }
+.ln.hl { background: var(--code-hl); border-left-color: var(--accent); }
+.kw { color: var(--kw); }
+
+/* Two columns keep lines short enough to read while still using the page width. */
+.why-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 40px; }
+.why-grid > div { border-top: 1px solid var(--line); padding-top: 12px; min-width: 0; }
+.why h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 0 0 6px; text-wrap: balance; }
+.why p { margin: 0; color: var(--muted); }
+.why b { color: var(--ink); }
+.snippet { margin: 10px 0 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto; font: 12.5px/1.55 var(--font-mono); color: var(--ink); }
+@media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; gap: 20px; } }
+.foot { display: flex; flex-wrap: wrap; gap: 6px 20px; border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; color: var(--muted); }
+.foot a { color: var(--accent); }
+
+/* No ligatures: `==` and `<` should look the way they are typed.
+   Kept last because the `font` shorthand above would reset it. */
+code, .code, .snippet, .cell, .chip, .var dd, .stack li, .out b, input[type="text"] { font-variant-ligatures: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">LeetCode 46 · Permutations · Medium</p>
+    <h1>Permutations</h1>
+    <p class="lead">You can follow every step of the solution here. Pick the numbers, press <b>Next</b> or click <b>Play</b>. See step by step which branch of the decision tree is being explored, how <code>current</code> and <code>used</code> change, and how the permutations are added to <code>result</code>.</p>
+  </header>
+
+  <section aria-labelledby="idea-h">
+    <h2 id="idea-h">The idea in three steps</h2>
+    <ol class="idea">
+      <li>
+        <span class="n">1</span>
+        <h3>Choose</h3>
+        <p>Pick a number not used yet for the next slot. Add it to <code>current</code> and mark it as "used" in <code>used</code>.</p>
+      </li>
+      <li>
+        <span class="n">2</span>
+        <h3>Explore</h3>
+        <p><code>Backtrack</code> calls itself to fill the next slot. When all slots are full, a <b>copy</b> of the list as it is at that moment is added to <code>result</code>.</p>
+      </li>
+      <li>
+        <span class="n">3</span>
+        <h3>Undo</h3>
+        <p>When the call returns, remove the last number from the list and clear its mark. Everything goes back to how it was before the choice. The loop then tries the next number for the same slot.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="stepper" aria-labelledby="st-h">
+    <h2 id="st-h">Step through it</h2>
+
+    <div class="controls">
+      <div class="row">
+        <div class="field">
+          <label for="list">Numbers (comma-separated, at most 3 distinct numbers)</label>
+          <input id="list" type="text" value="1, 2, 3" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="nav">
+          <button type="button" id="reset">Restart</button>
+          <button type="button" id="prev-btn">← Back</button>
+          <button type="button" id="next-btn" class="primary">Next →</button>
+          <button type="button" id="play">▶ Play</button>
+        </div>
+      </div>
+      <div class="presets" role="group" aria-label="Preset examples">
+        <button type="button" data-l="1, 2, 3"><span class="mono">[1, 2, 3]</span></button>
+        <button type="button" data-l="0, 1"><span class="mono">[0, 1]</span></button>
+        <button type="button" data-l="1"><span class="mono">[1]</span>single number</button>
+        <button type="button" data-l="4, -2, 0"><span class="mono">[4, -2, 0]</span>negative, unsorted</button>
+      </div>
+      <p class="err" id="list-err" hidden>Enter 1 to 3 distinct integers, each between -10 and 10, separated by commas. With 4 numbers the tree grows to 24 leaves and doesn't fit on the screen.</p>
+    </div>
+
+    <div class="step" aria-live="polite">
+      <div class="step-meta"><span id="step-count"></span><span id="step-tag" class="tag"></span></div>
+      <p id="step-text"></p>
+    </div>
+
+    <div class="viz">
+      <div class="tree-col" id="tree-col">
+        <p class="panel-label">Decision tree</p>
+        <div id="tree"></div>
+        <p class="tree-note">Each circle is a choice. The path down from the top builds <code>current</code>; <b>#1</b>, <b>#2</b> … is the order in which permutations are added to <code>result</code>.</p>
+      </div>
+      <div class="lanes">
+        <div>
+          <p class="panel-label"><code>current</code> (the permutation being built, slot by slot)</p>
+          <div id="cur-row"></div>
+        </div>
+        <div>
+          <p class="panel-label"><code>nums</code> and <code>used</code></p>
+          <div id="nu-row"></div>
+        </div>
+        <div>
+          <p class="panel-label"><code>result</code> (permutations found)</p>
+          <div id="res-row"></div>
+        </div>
+      </div>
+    </div>
+    <div class="legend">
+      <span><i class="sw cur"></i>choice of the call running now</span>
+      <span><i class="sw path"></i>choices in <code>current</code></span>
+      <span><i class="sw saved"></i>saved permutation</span>
+      <span><i class="sw undo"></i>undone choice</span>
+      <span><i class="sw done"></i>fully explored branch</span>
+      <span><i class="sw todo"></i>not explored yet</span>
+    </div>
+
+    <div class="board">
+      <div class="col">
+        <p class="panel-label">Variables</p>
+        <dl class="vars" id="vars"></dl>
+        <p class="note">Each <code>Backtrack</code> call has its own <code>i</code>; this shows the one for the call running now. <code>current</code>, <code>used</code>, and <code>result</code>, on the other hand, are the same objects in every call.</p>
+        <p class="panel-label" style="margin-top: 12px">Call stack (the bottom one is running now)</p>
+        <ul class="stack" id="stack"></ul>
+        <div class="out" id="out"><span>return value</span><b id="result"></b></div>
+      </div>
+      <div class="col">
+        <p class="panel-label">Code (the methods in Solution.cs)</p>
+        <div class="code" id="code" role="region" aria-label="C# code" tabindex="0"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="why" aria-labelledby="why-h">
+    <h2 id="why-h">Why O(n · n!) time and O(n) space?</h2>
+    <div class="why-grid">
+      <div>
+        <h3>O(n · n!) time</h3>
+        <p>n distinct numbers have n! permutations, so the bottom row of the tree has n! leaves. At each leaf, a copy of the n-number list is made: n · n! work. The other circles in the tree add up to at most about 1.72 times the number of leaves, and each runs an n-step <code>for</code> loop. The total is still <b>O(n · n!) time</b>.</p>
+      </div>
+      <div>
+        <h3>O(n) extra space</h3>
+        <p><code>current</code> holds at most n numbers, and <code>used</code> has n slots. At most n + 1 <code>Backtrack</code> calls are open at the same time: one per slot, plus the one that sees the list is full. The result list holds n · n! numbers, but since the problem asks for it anyway, it's usually not counted: <b>O(n) extra space</b>.</p>
+      </div>
+      <div>
+        <h3>Why do we add a copy?</h3>
+        <p><code>current</code> is a single list shared by all calls. If you write <code>result.Add(current)</code>, <code>result</code> doesn't get six separate lists; it gets six references pointing to the same list. The undo steps eventually empty that list, and the result looks like this:</p>
+<pre class="snippet">[[], [], [], [], [], []]</pre>
+        <p style="margin-top: 10px"><code>new List&lt;int&gt;(current)</code>, on the other hand, takes a snapshot of the list as it is at that moment. Even if <code>current</code> changes later, the copy doesn't.</p>
+      </div>
+      <div>
+        <h3>What if there were no undo?</h3>
+        <p>If you delete the two undo lines, only the first permutation is found. After <code>[1, 2, 3]</code>, every slot of <code>used</code> stays <code>true</code> and no call can pick a new number. Undoing restores everything to how it was before the choice once a branch is finished. That way the next number can be tried for the same slot. This is where the method gets its name: <b>backtracking</b>, meaning choose, explore the branch, go back.</p>
+      </div>
+      <div>
+        <h3>Without <code>used</code>: by swapping</h3>
+        <p>Another common solution arranges the numbers by swapping them inside the array. The slots before <code>start</code> count as filled. Each number in turn is brought into the <code>start</code> slot, and the swap is undone when the child call finishes. You don't need <code>used</code> or <code>current</code>, and the time is still O(n · n!). But <code>nums</code> gets shuffled while it runs, and the code is harder to follow. That's why the solution uses the version with <code>used</code>.</p>
+<pre class="snippet"><span class="kw">private static void</span> Backtrack(<span class="kw">int</span>[] nums, <span class="kw">int</span> start,
+    List&lt;IList&lt;<span class="kw">int</span>&gt;&gt; result)
+{
+    <span class="kw">if</span> (start == nums.Length)
+    {
+        result.Add(<span class="kw">new</span> List&lt;<span class="kw">int</span>&gt;(nums));
+        <span class="kw">return</span>;
+    }
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = start; i &lt; nums.Length; i++)
+    {
+        (nums[start], nums[i]) = (nums[i], nums[start]);  // choose
+        Backtrack(nums, start + 1, result);                // explore
+        (nums[start], nums[i]) = (nums[i], nums[start]);  // undo
+    }
+}</pre>
+      </div>
+      <div>
+        <h3>Can it be faster?</h3>
+        <p>No. The answer itself is n! lists with n numbers each; just writing them out takes n · n! steps. Since this solution finds each permutation exactly once, it sits at that bound. n! grows very fast: 3 numbers mean 6 permutations, 6 numbers 720, 10 numbers 3,628,800. That's why LeetCode gives at most 6 numbers. The same <b>choose → explore → undo</b> pattern is also used in problems like Subsets (78), Combination Sum (39), and N-Queens (51).</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <a href="https://leetcode.com/problems/permutations/">Problem: LeetCode 46</a>
+    <a href="https://github.com/physerkm/leetcode-solutions/blob/main/src/LeetCode/Problems/P0046_Permutations/Solution.cs">Code: Solution.cs</a>
+    <a href="https://github.com/physerkm/leetcode-solutions">Repo: physerkm/leetcode-solutions</a>
+  </footer>
+</div>
+
+<script src="walkthrough.js"></script>
+</body>
+</html>

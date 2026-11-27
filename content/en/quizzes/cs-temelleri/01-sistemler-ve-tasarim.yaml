@@ -1,0 +1,120 @@
+title: Systems, Networking and Object-Oriented Design
+description: Processes and threads, memory, concurrency, TCP/UDP, TLS, HTTP, SOLID and design patterns.
+questions:
+  - q: "Which of the following do threads in the same process **not share**?"
+    options:
+      - "Objects on the heap"
+      - "Global and static variables"
+      - "Open file handles"
+      - "The stack and the registers"
+    why: |
+      Threads share the process's address space: the heap, global data and open files. Each thread has its own stack (local variables, call frames), registers and program counter. Sharing makes communication between threads cheap, but it means access to shared data must be synchronized.
+
+  - q: |
+      Two threads run this code at the same time. Each one runs the loop 1,000,000 times. What can you say about `counter` at the end?
+
+      ```csharp
+      static int counter = 0;
+
+      static void Work()
+      {
+          for (var i = 0; i < 1_000_000; i++) counter++;
+      }
+      ```
+    options:
+      - "It is always exactly 2,000,000."
+      - "It can be less than 2,000,000, because `counter++` consists of read, increment and write steps and is not atomic."
+      - "It can be greater than 2,000,000."
+      - "The program is guaranteed to throw an exception."
+    why: |
+      If both threads read the same value (e.g. 41) and both write 42, one increment is lost. This is a race condition. The fix is `Interlocked.Increment(ref counter)`, a lock, or having each thread keep its own local counter and summing them at the end.
+
+  - q: "What is the most common practical way to break **circular wait**, one of the four conditions for deadlock?"
+    options:
+      - "Creating more threads"
+      - "Always acquiring all locks in the same global order"
+      - "Holding locks for longer"
+      - "Raising thread priorities"
+    why: |
+      A deadlock requires all four conditions at once: mutual exclusion, hold and wait, no preemption and circular wait. If everyone acquires locks in the same order (e.g. in a transfer between two accounts, the one with the smaller ID first), the chain of waiting can never form a cycle. Trying to acquire a lock with a timeout also breaks the "hold and wait" condition.
+
+  - q: "What happens when a process accesses a virtual memory page that is not in physical memory?"
+    options:
+      - "The process is always terminated with a segmentation fault."
+      - "A page fault occurs; the operating system brings the page into memory and the process continues where it left off."
+      - "The processor silently ignores the access."
+      - "The entire process's memory is written to disk."
+    why: |
+      A page fault is a normal event: the operating system allocates the page on first use or reads it from swap space (disk), updates the page table and re-runs the instruction. Page faults that require a disk read are very expensive. The process is terminated only if it accesses an address that was never mapped or that it has no permission for.
+
+  - q: "Why do video calling apps mostly use UDP-based protocols instead of TCP for audio and video data?"
+    options:
+      - "UDP encrypts the data automatically."
+      - "UDP guarantees packet order."
+      - "Retransmitting a late packet is pointless; TCP's retransmission and head-of-line blocking increase latency."
+      - "TCP can send only one packet per second."
+    why: |
+      In real-time media, an audio fragment lost a few milliseconds ago is useless by the time it arrives. TCP, however, retransmits the lost packet and does not deliver the data behind it to the application until it arrives. UDP gives none of these guarantees; the application tolerates loss with its own techniques (e.g. interpolation).
+
+  - q: "Why does TLS use **symmetric** rather than asymmetric encryption to encrypt data after the handshake?"
+    options:
+      - "Symmetric encryption is much faster; asymmetric encryption is used only for authentication and for securely agreeing on a key."
+      - "Asymmetric encryption has been broken and is not secure."
+      - "Symmetric encryption needs no certificate, so it is more secure."
+      - "Browsers do not support asymmetric encryption."
+    why: |
+      Asymmetric methods make it possible to agree on a shared key over an insecure channel and to prove the server's identity with a certificate, but they are computationally expensive. With the session key derived in the handshake, data is encrypted with fast symmetric algorithms such as AES-GCM or ChaCha20. Because ephemeral keys are used for each connection, forward secrecy is also achieved.
+
+  - q: "Which HTTP methods are considered **idempotent**? (More than one answer is correct.)"
+    options:
+      - "`GET`"
+      - "`POST`"
+      - "`PUT`"
+      - "`DELETE`"
+    why: |
+      Whether an idempotent request is sent once or ten times, the final state on the server is the same. `PUT` replaces the resource with the given representation; repeating it gives the same result. `DELETE` may return 404 on the second call, but the state does not change. `POST` may create a new record or operation on every call; for it to be safely retried, the client needs to send an idempotency key.
+
+  - q: "A signed-in user calls an endpoint that only administrators can access. What is the correct status code?"
+    options:
+      - "`401 Unauthorized`"
+      - "`403 Forbidden`"
+      - "`404 Not Found`"
+      - "`400 Bad Request`"
+    why: |
+      Despite its name, `401` means the identity is **not authenticated**: there is no session or the token is invalid. If the server knows who the user is but the user lacks permission for this operation, it returns `403`. When even the existence of the resource must be hidden, some APIs deliberately return `404`, but semantically the correct code is `403`.
+
+  - q: "HTTP/2 already offers multiplexing over a single connection. What is the main reason HTTP/3 uses QUIC (over UDP) instead of TCP?"
+    options:
+      - "UDP packets are larger than TCP packets."
+      - "In HTTP/2, a single packet lost at the TCP level stalls every stream on the connection; in QUIC, a loss affects only the stream involved."
+      - "QUIC does not use encryption, so it is faster."
+      - "TCP does not work with IPv6."
+    why: |
+      HTTP/2 solved head-of-line blocking at the application level, but because all streams share one TCP connection, blocking at the TCP level remained. QUIC handles streams independently at the transport layer. It also builds TLS 1.3 into the handshake to set up connections faster, and thanks to connection IDs it can keep a connection alive even when the network changes (Wi-Fi → mobile). Encryption is mandatory in QUIC.
+
+  - q: "The `Square` class derives from `Rectangle` and sets the height to the same value whenever the width is assigned. A method that expects a `Rectangle` sets the width to 5 and the height to 4 and expects an area of 20, but gets 16. Which principle is violated?"
+    options:
+      - "Single responsibility principle"
+      - "Open-closed principle"
+      - "Liskov substitution principle"
+      - "Interface segregation principle"
+    why: |
+      According to the Liskov principle, a subtype must be usable in place of its base type without breaking the program's correctness. The contract of `Rectangle` includes the assumption that "changing the width does not change the height"; `Square` breaks it. The mathematical relation "a square is a rectangle" does not hold for the behavior of mutable objects.
+
+  - q: "Which design follows the dependency inversion principle (DIP)?"
+    options:
+      - "Creating the repository directly inside `OrderService` with `new SqlOrderRepository()`"
+      - "Defining the `IOrderRepository` interface in the business layer, having `OrderService` depend on that interface, and placing the PostgreSQL implementation in the infrastructure layer"
+      - "Defining the `IOrderRepository` interface inside the database driver and having the business layer reference the driver package"
+      - "Accessing the repository from everywhere through a static `Instance` property"
+    why: |
+      According to DIP, high-level business code should depend on abstractions, not on infrastructure details, and the abstraction is owned by the layer that **uses** it. This turns the dependency arrow around, from infrastructure to the business layer: the business code does not change when the database does, and it can be tested with a fake repository. Dependency injection is the technique for applying this principle.
+
+  - q: "You want to add caching to an `IProductRepository` implementation without changing it or the code that uses it. You write a class that implements the same interface and holds the real repository inside. Which pattern is this?"
+    options:
+      - "Singleton"
+      - "Factory"
+      - "Observer"
+      - "Decorator"
+    why: |
+      A decorator adds behavior to an object by implementing the same interface and wrapping the real object: if the item is in the cache it returns it, otherwise it forwards the call to the inner repository. Decorators can be stacked (logging → cache → real repository). The classic example in .NET is streams: `GZipStream` or `BufferedStream` wraps another `Stream`.

@@ -1,0 +1,109 @@
+title: React Fundamentals
+description: The render model, state updates, keys, useEffect and the rules of hooks.
+questions:
+  - q: |
+      `count` starts at `0`. After the button is clicked once, what is `count`?
+
+      ```tsx
+      function handleClick() {
+        setCount(count + 1);
+        setCount(count + 1);
+        setCount(count + 1);
+      }
+      ```
+    options:
+      - "1"
+      - "3"
+      - "0"
+      - "It goes into an infinite loop"
+    why: |
+      State is a **snapshot**: `count` in this render is `0` on all three lines. All three calls say "set it to 1", and React batches them into a single render. To update based on the previous value, use an updater function: calling `setCount(c => c + 1)` three times gives `3`.
+
+  - q: "When does a component re-render? (More than one answer is correct.)"
+    options:
+      - "When its own state changes"
+      - "When its parent component re-renders"
+      - "When a context value it uses changes"
+      - "When the `current` field of a `useRef` value changes"
+    why: |
+      A state change, a render of the parent component and a change in a consumed context all trigger a re-render. When a parent renders, its children re-render by default even if their props haven't changed (`React.memo` can prevent this). Changing `ref.current` doesn't notify React and doesn't trigger a render; that is exactly why refs are for values that don't affect what is drawn.
+
+  - q: "What is the drawback of using the array index as the `key` in a list where items can be added and removed?"
+    options:
+      - "React shows a warning and doesn't draw the list at all."
+      - "When the list changes, the indexes shift; React matches the wrong components, and a component's internal state can end up on the wrong row."
+      - "It hurts performance but doesn't cause correctness problems."
+      - "There is no drawback; it is the recommended approach."
+    why: |
+      `key` tells React an item's **identity** across renders. When an item is added at the start, every index shifts by one; React thinks "item 0 is still the same item" and matches internal state (the text in an input, focus, an animation) with the wrong item. Use a stable, unique ID that comes from the data.
+
+  - q: |
+      Why does this counter get stuck at 1?
+
+      ```tsx
+      useEffect(() => {
+        const id = setInterval(() => setCount(count + 1), 1000);
+        return () => clearInterval(id);
+      }, []);
+      ```
+    options:
+      - "`setInterval` doesn't work inside React."
+      - "The effect runs only on the first render, and the callback inside it always sees the `count` value from that render (0)."
+      - "The cleanup function cancels the timer every second."
+      - "`setCount` can't be called inside an effect."
+    why: |
+      This is a **stale closure** bug. Because the dependency array is empty, the effect runs once; the timer callback has captured `count` from the first render (0) and calls `setCount(0 + 1)` every second. The cleanest fix is an updater function: `setCount(c => c + 1)`; then the effect no longer needs `count`.
+
+  - q: |
+      Which approach in the code below is more correct?
+
+      ```tsx
+      // A
+      const [fullName, setFullName] = useState('');
+      useEffect(() => { setFullName(first + ' ' + last); }, [first, last]);
+
+      // B
+      const fullName = first + ' ' + last;
+      ```
+    options:
+      - "A; derived values should always be kept in state."
+      - "B; state and an effect are unnecessary for a value that can be computed from other values."
+      - "They are equivalent; it's a matter of preference."
+      - "A; because B is recomputed on every render, which is slow."
+    why: |
+      Putting a value that can be **computed** from props or state into state creates one more thing that has to be kept in sync. Version A first renders with a stale `fullName`, then the effect runs and triggers a second render. Version B is always correct in a single render. If the computation is truly expensive, use `useMemo`.
+
+  - q: |
+      Why doesn't this code update the screen?
+
+      ```tsx
+      function addItem(item: string) {
+        items.push(item);
+        setItems(items);
+      }
+      ```
+    options:
+      - "`push` runs asynchronously."
+      - "`setItems` can only be called inside an effect."
+      - "Because the array is mutated in place, its reference stays the same; React thinks the state hasn't changed."
+      - "`items` is a `const`, so it can't be changed."
+    why: |
+      React compares the new state with the previous one using `Object.is`. `push` mutates the same array in place; the reference passed to `setItems` is the same as before, and React skips the re-render. Treat state as immutable: `setItems([...items, item])`.
+
+  - q: "Why can't hooks be called inside conditions, loops or nested functions?"
+    options:
+      - "For performance reasons; hooks inside conditions run slowly."
+      - "React matches a component's hooks by call order; if the order changes between renders, the states get mixed up."
+      - "JavaScript syntax doesn't allow it."
+      - "Hooks can be called conditionally only in class components."
+    why: |
+      React keeps hook state in an ordered list per component and matches it on every render as "first hook, second hook…". If a hook is called in one render and skipped in another, every hook after it maps to the wrong state. That is why hooks must be called in the same order on every render, at the top level of the component.
+
+  - q: "Which of the following is an **appropriate** use of `useEffect`?"
+    options:
+      - "Computing a third value from two props"
+      - "Sending form data to the server when a button is clicked"
+      - "Opening a WebSocket connection while the component is on screen and closing it when it leaves"
+      - "Resetting the component's state when a prop changes"
+    why: |
+      An effect is for **synchronizing the component with a system outside React**: connections, subscriptions, browser APIs. Deriving values happens during render; reacting to user interaction belongs in an event handler; and the way to reset state when a prop changes is to give the component a different `key`.

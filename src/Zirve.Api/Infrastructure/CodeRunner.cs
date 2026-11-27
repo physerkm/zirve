@@ -41,30 +41,33 @@ public sealed class HttpCodeRunner(HttpClient http) : ICodeRunner
     {
         try
         {
-            using var response = await http.PostAsJsonAsync("execute", request, ZirveJson.Options, cancellationToken);
+            using var response = await http.PostAsJsonAsync(
+                "execute", request with { Locale = Localization.LanguageCode }, ZirveJson.Options, cancellationToken);
 
             switch (response.StatusCode)
             {
                 case HttpStatusCode.ServiceUnavailable:
-                    throw new RunnerUnavailableException("Kod çalıştırma servisi şu anda yoğun. Lütfen birkaç saniye sonra tekrar deneyin.");
+                    throw new RunnerUnavailableException(Localization.Text(
+                        "Kod çalıştırma servisi şu anda yoğun. Lütfen birkaç saniye sonra tekrar deneyin.",
+                        "The code runner is busy right now. Please try again in a few seconds."));
 
                 case HttpStatusCode.BadRequest:
                     var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(ZirveJson.Options, cancellationToken);
-                    throw new RunnerRejectedException(problem?.Title ?? "Kod çalıştırma isteği geçersiz.");
+                    throw new RunnerRejectedException(problem?.Title ?? Localization.Text("Kod çalıştırma isteği geçersiz.", "The code execution request is invalid."));
             }
 
             response.EnsureSuccessStatusCode();
 
             return await response.Content.ReadFromJsonAsync<ExecutionResult>(ZirveJson.Options, cancellationToken)
-                   ?? throw new RunnerUnavailableException("Kod çalıştırma servisi boş yanıt döndürdü.");
+                   ?? throw new RunnerUnavailableException(Localization.Text("Kod çalıştırma servisi boş yanıt döndürdü.", "The code runner returned an empty response."));
         }
         catch (HttpRequestException ex)
         {
-            throw new RunnerUnavailableException("Kod çalıştırma servisine ulaşılamıyor.", ex);
+            throw new RunnerUnavailableException(Localization.Text("Kod çalıştırma servisine ulaşılamıyor.", "The code runner can't be reached."), ex);
         }
         catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
         {
-            throw new RunnerUnavailableException("Kod çalıştırma servisi zamanında yanıt vermedi.", ex);
+            throw new RunnerUnavailableException(Localization.Text("Kod çalıştırma servisi zamanında yanıt vermedi.", "The code runner didn't respond in time."), ex);
         }
     }
 }

@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<base target="_blank">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Non-overlapping Intervals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --ink: #141b26;
+  --muted: #5a6779;
+  --line: #d6dce6;
+  --accent: #3346c8;
+  --accent-ink: #ffffff;
+  --range: #e3e9fb;
+  --range-ink: #1d2a6b;
+  --probe: #c46f00;
+  --good: #17824a;
+  --good-soft: #dcf1e4;
+  --good-soft-ink: #145c36;
+  --bad: #b8402a;
+  --bad-soft: #fce8e5;
+  --code-bg: #f7f8fb;
+  --code-hl: #dfe5fb;
+  --kw: #7a3aa8;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+    --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+    --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66; --bad-soft: #361b18;
+    --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+  --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+  --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66; --bad-soft: #361b18;
+  --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+  color-scheme: dark;
+}
+
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 40px;
+}
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; color: var(--muted); margin: 0; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 6vw, 54px); line-height: 1.05; letter-spacing: -.02em; margin: 8px 0 14px; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0; font-size: 17px; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: -.01em; margin: 0 0 18px; text-wrap: balance; }
+code { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+
+.idea { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; list-style: none; padding: 0; margin: 0; }
+.idea li { border-top: 2px solid var(--ink); padding-top: 12px; min-width: 0; }
+.idea .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.idea h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 2px 0 6px; text-wrap: balance; }
+.idea p { margin: 0; color: var(--muted); font-size: 15px; }
+@media (max-width: 760px) { .idea { grid-template-columns: 1fr; gap: 20px; } }
+
+.stepper { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+@media (max-width: 560px) { .stepper { padding: 16px; } }
+.stepper h2 { margin: 0; }
+.controls { display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+.field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+input[type="text"] { width: 22em; max-width: 100%; box-sizing: border-box; font: 600 16px var(--font-mono); padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.err { margin: 0; font-size: 13px; color: var(--bad); }
+button { font: 500 14px var(--font-body); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.presets button { font-size: 13px; padding: 7px 10px; }
+.presets .mono { font-family: var(--font-mono); font-weight: 700; margin-right: 4px; }
+.presets button[aria-pressed="true"] { border-color: var(--accent); background: var(--range); color: var(--range-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; }
+#play { min-width: 7.5em; }
+
+.step { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+.step-meta { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--range); color: var(--range-ink); }
+.tag[data-kind="skip"] { background: var(--bad-soft); color: var(--bad); }
+.tag[data-kind="ok"] { background: var(--good); color: var(--surface); }
+#step-text { margin: 8px 0 0; font-size: 16.5px; max-width: 78ch; min-height: 3.2em; }
+
+.panel-label { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+.panel-label .hint { font-weight: 400; }
+
+/* Timeline bars */
+.timeline-box { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; position: relative; overflow-x: auto; }
+.axis { display: flex; justify-content: space-between; font: 600 12px var(--font-mono); color: var(--muted); border-bottom: 1px dashed var(--line); padding-bottom: 6px; margin-left: 88px; }
+.bar-row { display: flex; align-items: center; gap: 12px; min-height: 34px; }
+.bar-lbl { width: 76px; flex-shrink: 0; font: 600 13px var(--font-mono); color: var(--muted); text-align: right; }
+.bar-track { flex: 1; position: relative; height: 30px; min-width: 260px; }
+.bar {
+  position: absolute; top: 2px; bottom: 2px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font: 700 12px var(--font-mono); padding: 0 6px; box-sizing: border-box;
+  border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
+  transition: all .2s; white-space: nowrap; overflow: hidden;
+}
+.bar[data-state="kept"] { background: var(--good-soft); color: var(--good-soft-ink); border-color: var(--good); }
+.bar[data-state="removed"] { background: var(--bad-soft); color: var(--bad); border-color: var(--bad); border-style: dashed; text-decoration: line-through; opacity: .82; }
+.bar.cur { outline: 2.5px solid var(--accent); outline-offset: 2px; }
+.prev-line { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--probe); pointer-events: none; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 8px; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--line); }
+.sw.cur { background: transparent; border: 2px solid var(--accent); }
+.sw.kept { background: var(--good-soft); border-color: var(--good); }
+.sw.removed { background: var(--bad-soft); border: 1.5px dashed var(--bad); }
+.sw.probe { background: var(--probe); border-color: var(--probe); }
+
+.board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 28px; }
+@media (max-width: 880px) { .board { grid-template-columns: 1fr; } }
+.col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.vars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.var { border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; background: var(--bg); min-width: 0; }
+.var dt { font: 400 12px var(--font-mono); color: var(--muted); }
+.var dd { margin: 0; font: 600 18px var(--font-mono); font-variant-numeric: tabular-nums; }
+.var.changed { border-color: var(--accent); background: var(--range); }
+.var.changed dd { color: var(--range-ink); }
+.code { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 0; overflow-x: auto; font: 13px/1.6 var(--font-mono); }
+@media (max-width: 560px) { .code { font-size: 12px; } }
+.ln { display: block; padding: 0 14px 0 11px; white-space: pre; border-left: 3px solid transparent; }
+.ln.hl { background: var(--code-hl); border-left-color: var(--accent); }
+.kw { color: var(--kw); }
+
+.why-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 40px; }
+.why-grid > div { border-top: 1px solid var(--line); padding-top: 12px; min-width: 0; }
+.why h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 0 0 6px; text-wrap: balance; }
+.why p { margin: 0; color: var(--muted); }
+.why b { color: var(--ink); }
+@media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; gap: 20px; } }
+.foot { display: flex; flex-wrap: wrap; gap: 6px 20px; border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; color: var(--muted); }
+.foot a { color: var(--accent); }
+
+code, .code, .bar, .var dd, input[type="text"] { font-variant-ligatures: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">LeetCode 435 · Non-overlapping Intervals · Medium</p>
+    <h1>Non-overlapping Intervals</h1>
+    <p class="lead">Once the intervals are sorted <b>by end time</b>, keeping the one that ends earlier at every overlap leaves the most room for the intervals that come later.</p>
+  </header>
+
+  <section aria-labelledby="idea-h">
+    <h2 id="idea-h">The idea in three steps</h2>
+    <ol class="idea">
+      <li>
+        <span class="n">1</span>
+        <h3>Sort by end time</h3>
+        <p>The interval that ends earliest leaves the most free space to its right. That's why we sort by <code>end</code>, not by start.</p>
+      </li>
+      <li>
+        <span class="n">2</span>
+        <h3>Track the last end point</h3>
+        <p>We store the end of the last kept interval in <code>prevEnd</code>. The first interval always ends earliest, so it's kept right away.</p>
+      </li>
+      <li>
+        <span class="n">3</span>
+        <h3>Remove overlaps, keep the rest</h3>
+        <p>If the next interval's start satisfies <code>start &lt; prevEnd</code>, there's an overlap (<code>removed++</code>); otherwise we keep the interval and set <code>prevEnd = end</code>.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="stepper" aria-labelledby="st-h">
+    <h2 id="st-h">Step through it</h2>
+
+    <div class="controls">
+      <div class="row">
+        <div class="field">
+          <label for="list">Intervals (comma-separated, in the form <code>start-end</code>, at most 7 intervals)</label>
+          <input id="list" type="text" value="1-2, 2-3, 3-4, 1-3" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="nav">
+          <button type="button" id="reset">Restart</button>
+          <button type="button" id="prev-btn">← Back</button>
+          <button type="button" id="next-btn" class="primary">Next →</button>
+          <button type="button" id="play">▶ Play</button>
+        </div>
+      </div>
+      <div class="presets" role="group" aria-label="Preset examples">
+        <button type="button" data-l="1-2, 2-3, 3-4, 1-3"><span class="mono">[[1,2],[2,3],[3,4],[1,3]]</span></button>
+        <button type="button" data-l="1-10, 2-4, 4-7, 7-9"><span class="mono">[[1,10],[2,4],[4,7],[7,9]]</span>long covering interval</button>
+        <button type="button" data-l="1-2, 1-2, 1-2"><span class="mono">[[1,2],[1,2],[1,2]]</span>identical intervals</button>
+        <button type="button" data-l="0-2, 1-3, 2-4, 3-5, 4-6"><span class="mono">chained overlaps</span></button>
+      </div>
+      <p class="err" id="list-err" hidden>Enter at least 1 and at most 7 intervals (for example: 1-2, 2-3, 1-3). Each interval must have start &lt; end.</p>
+    </div>
+
+    <div class="step" aria-live="polite">
+      <div class="step-meta"><span id="step-count"></span><span id="step-tag" class="tag"></span></div>
+      <p id="step-text"></p>
+    </div>
+
+    <div>
+      <p class="panel-label">Timeline <span class="hint">(intervals sorted by end time, and the <code>prevEnd</code> boundary)</span></p>
+      <div class="timeline-box" id="timeline"></div>
+      <div class="legend">
+        <span><i class="sw cur"></i>interval being examined (i)</span>
+        <span><i class="sw kept"></i>kept interval</span>
+        <span><i class="sw removed"></i>removed interval (overlapped)</span>
+        <span><i class="sw probe"></i>prevEnd boundary</span>
+      </div>
+    </div>
+
+    <div class="board">
+      <div class="col">
+        <p class="panel-label">Variables</p>
+        <dl class="vars" id="vars"></dl>
+      </div>
+      <div class="col">
+        <p class="panel-label">Code (Solution.cs)</p>
+        <div class="code" id="code" role="region" aria-label="C# code" tabindex="0"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="why" aria-labelledby="why-h">
+    <h2 id="why-h">Why is it so efficient?</h2>
+    <div class="why-grid">
+      <div>
+        <h3>Why sort by end and not by start?</h3>
+        <p>Consider <code>[1, 10]</code>, <code>[2, 4]</code>, <code>[4, 7]</code>. If we keep <code>[1, 10]</code>, which comes first by start, we have to remove the other two. But if we keep <code>[2, 4]</code>, which ends earliest, everything after 4 stays completely free.</p>
+      </div>
+      <div>
+        <h3>Why don't touching end points count as an overlap?</h3>
+        <p><code>[2, 3]</code> can start the moment <code>[1, 2]</code> ends. That's why our overlap condition is the strict <b><code>start &lt; prevEnd</code></b>, not <code>start &lt;= prevEnd</code>.</p>
+      </div>
+      <div>
+        <h3>Time and Space Complexity</h3>
+        <p>The sorting step takes <b>O(n log n)</b> and the single-pass loop takes <b>O(n)</b>. We use no extra data structure, so auxiliary space is <b>O(1)</b>.</p>
+      </div>
+      <div>
+        <h3>Connection to Activity Selection</h3>
+        <p>The question "what's the minimum number of intervals to remove?" is the same as <code>n - (the maximum number of non-overlapping intervals you can pick)</code>. Our code gets the same result in a single pass by counting the overlaps directly.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <a href="https://leetcode.com/problems/non-overlapping-intervals/">Problem: LeetCode 435</a>
+  </footer>
+</div>
+
+<script src="walkthrough.js"></script>
+</body>
+</html>

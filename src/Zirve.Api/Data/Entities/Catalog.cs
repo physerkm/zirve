@@ -13,6 +13,12 @@ public sealed class Track
 
     public string Description { get; set; } = string.Empty;
 
+    /// <summary><see cref="Title"/> alanının İngilizce karşılığı; çevirisi yoksa Türkçe metin yazılır.</summary>
+    public string TitleEn { get; set; } = string.Empty;
+
+    /// <summary><see cref="Description"/> alanının İngilizce karşılığı; çevirisi yoksa Türkçe metin yazılır.</summary>
+    public string DescriptionEn { get; set; } = string.Empty;
+
     public string Icon { get; set; } = string.Empty;
 
     public string Accent { get; set; } = string.Empty;
@@ -37,6 +43,12 @@ public sealed class Module
     public required string Title { get; set; }
 
     public string Description { get; set; } = string.Empty;
+
+    /// <summary><see cref="Title"/> alanının İngilizce karşılığı; çevirisi yoksa Türkçe metin yazılır.</summary>
+    public string TitleEn { get; set; } = string.Empty;
+
+    /// <summary><see cref="Description"/> alanının İngilizce karşılığı; çevirisi yoksa Türkçe metin yazılır.</summary>
+    public string DescriptionEn { get; set; } = string.Empty;
 
     public int Order { get; set; }
 
@@ -65,6 +77,15 @@ public sealed class Lesson
     /// <summary>Markdown içerik.</summary>
     public required string Content { get; set; }
 
+    /// <summary><see cref="Title"/> alanının İngilizce karşılığı; çevirisi yoksa Türkçe metin yazılır.</summary>
+    public string TitleEn { get; set; } = string.Empty;
+
+    /// <summary><see cref="Summary"/> alanının İngilizce karşılığı; çevirisi yoksa Türkçe metin yazılır.</summary>
+    public string SummaryEn { get; set; } = string.Empty;
+
+    /// <summary><see cref="Content"/> alanının İngilizce karşılığı; çevirisi yoksa Türkçe metin yazılır.</summary>
+    public string ContentEn { get; set; } = string.Empty;
+
     public int Minutes { get; set; }
 
     public ContentLevel Level { get; set; }
@@ -73,6 +94,9 @@ public sealed class Lesson
 
     /// <summary>PostgreSQL tarafından üretilen tam metin arama vektörü.</summary>
     public NpgsqlTsVector SearchVector { get; set; } = null!;
+
+    /// <summary>İngilizce metinlerden üretilen arama vektörü.</summary>
+    public NpgsqlTsVector SearchVectorEn { get; set; } = null!;
 }
 
 /// <summary>İçerik dosyalarının en son eşitlenen özetini tutar; değişiklik yoksa eşitleme atlanır.</summary>

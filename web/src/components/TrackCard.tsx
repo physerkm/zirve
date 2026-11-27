@@ -1,12 +1,31 @@
 import { ArrowRight, BookOpen, Clock, ListChecks } from 'lucide-react';
 import { Link } from 'react-router';
+import { defineMessages, useMessages } from '@/i18n/messages';
 import { accentBarClass } from '@/lib/accents';
 import { formatMinutes, percent } from '@/lib/format';
 import type { TrackSummary } from '@/lib/types';
 import { TrackIcon } from './TrackIcon';
 import { ProgressBar } from './ui';
 
+const messages = defineMessages({
+  tr: {
+    lessons: (n: number) => `${n} ders`,
+    quizzes: (n: number) => `${n} test`,
+    progress: 'İlerleme',
+    percent: (n: number) => `%${n}`,
+    progressLabel: (track: string) => `${track} ilerlemesi`,
+  },
+  en: {
+    lessons: (n: number) => (n === 1 ? '1 lesson' : `${n} lessons`),
+    quizzes: (n: number) => (n === 1 ? '1 quiz' : `${n} quizzes`),
+    progress: 'Progress',
+    percent: (n: number) => `${n}%`,
+    progressLabel: (track: string) => `${track} progress`,
+  },
+});
+
 export function TrackCard({ track }: { track: TrackSummary }) {
+  const t = useMessages(messages);
   const progress = percent(track.completedLessons, track.lessonCount);
 
   return (
@@ -25,7 +44,7 @@ export function TrackCard({ track }: { track: TrackSummary }) {
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
         <span className="inline-flex items-center gap-1">
           <BookOpen className="size-3.5" aria-hidden />
-          {track.lessonCount} ders
+          {t.lessons(track.lessonCount)}
         </span>
         <span className="inline-flex items-center gap-1">
           <Clock className="size-3.5" aria-hidden />
@@ -34,7 +53,7 @@ export function TrackCard({ track }: { track: TrackSummary }) {
         {track.quizCount > 0 && (
           <span className="inline-flex items-center gap-1">
             <ListChecks className="size-3.5" aria-hidden />
-            {track.quizCount} test
+            {t.quizzes(track.quizCount)}
           </span>
         )}
       </div>
@@ -42,10 +61,10 @@ export function TrackCard({ track }: { track: TrackSummary }) {
       {track.completedLessons > 0 && (
         <div className="mt-4">
           <div className="mb-1.5 flex justify-between text-xs">
-            <span className="text-muted">İlerleme</span>
-            <span className="font-medium">%{progress}</span>
+            <span className="text-muted">{t.progress}</span>
+            <span className="font-medium">{t.percent(progress)}</span>
           </div>
-          <ProgressBar value={progress} barClassName={accentBarClass(track.accent)} label={`${track.title} ilerlemesi`} />
+          <ProgressBar value={progress} barClassName={accentBarClass(track.accent)} label={t.progressLabel(track.title)} />
         </div>
       )}
     </Link>

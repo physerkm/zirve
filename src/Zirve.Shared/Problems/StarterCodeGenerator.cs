@@ -5,15 +5,20 @@ namespace Zirve.Shared.Problems;
 /// <summary>Problem imzasından her dil için başlangıç (iskelet) kodu üretir.</summary>
 public static class StarterCodeGenerator
 {
-    public static string Generate(ProblemSpec spec, string language)
+    /// <param name="spec">Problem imzası.</param>
+    /// <param name="language">Programlama dili.</param>
+    /// <param name="locale">Koddaki açıklama satırlarının dili: "tr" (varsayılan) ya da "en".</param>
+    public static string Generate(ProblemSpec spec, string language, string locale = "tr")
     {
         ArgumentNullException.ThrowIfNull(spec);
 
+        var english = locale == "en";
+
         return language switch
         {
-            Languages.CSharp => CSharp(spec),
-            Languages.TypeScript => TypeScript(spec),
-            Languages.JavaScript => JavaScript(spec),
+            Languages.CSharp => CSharp(spec, english),
+            Languages.TypeScript => TypeScript(spec, english),
+            Languages.JavaScript => JavaScript(spec, english),
             _ => throw new ArgumentOutOfRangeException(nameof(language), language, "Desteklenmeyen dil."),
         };
     }
@@ -46,13 +51,17 @@ public static class StarterCodeGenerator
 
     // ---------------------------------------------------------------- C#
 
-    private static string CSharp(ProblemSpec spec)
+    /// <summary>Hazır tanımlı yardımcı tipi anlatan açıklama satırı.</summary>
+    private static string Predefined(string type, bool english) =>
+        english ? $"// {type} is already defined:" : $"// {type} hazır olarak tanımlıdır:";
+
+    private static string CSharp(ProblemSpec spec, bool english)
     {
         var sb = new StringBuilder();
 
         if (Uses(spec, "ListNode"))
         {
-            sb.AppendLine("// ListNode hazır olarak tanımlıdır:");
+            sb.AppendLine(Predefined("ListNode", english));
             sb.AppendLine("// public class ListNode {");
             sb.AppendLine("//     public int val;");
             sb.AppendLine("//     public ListNode next;");
@@ -62,7 +71,7 @@ public static class StarterCodeGenerator
 
         if (Uses(spec, "TreeNode"))
         {
-            sb.AppendLine("// TreeNode hazır olarak tanımlıdır:");
+            sb.AppendLine(Predefined("TreeNode", english));
             sb.AppendLine("// public class TreeNode {");
             sb.AppendLine("//     public int val;");
             sb.AppendLine("//     public TreeNode left;");
@@ -108,13 +117,13 @@ public static class StarterCodeGenerator
 
     // ---------------------------------------------------------------- TypeScript
 
-    private static string TypeScript(ProblemSpec spec)
+    private static string TypeScript(ProblemSpec spec, bool english)
     {
         var sb = new StringBuilder();
 
         if (Uses(spec, "ListNode"))
         {
-            sb.AppendLine("// ListNode hazır olarak tanımlıdır:");
+            sb.AppendLine(Predefined("ListNode", english));
             sb.AppendLine("// class ListNode {");
             sb.AppendLine("//   val: number;");
             sb.AppendLine("//   next: ListNode | null;");
@@ -124,7 +133,7 @@ public static class StarterCodeGenerator
 
         if (Uses(spec, "TreeNode"))
         {
-            sb.AppendLine("// TreeNode hazır olarak tanımlıdır:");
+            sb.AppendLine(Predefined("TreeNode", english));
             sb.AppendLine("// class TreeNode {");
             sb.AppendLine("//   val: number;");
             sb.AppendLine("//   left: TreeNode | null;");
@@ -163,19 +172,19 @@ public static class StarterCodeGenerator
 
     // ---------------------------------------------------------------- JavaScript
 
-    private static string JavaScript(ProblemSpec spec)
+    private static string JavaScript(ProblemSpec spec, bool english)
     {
         var sb = new StringBuilder();
 
         if (Uses(spec, "ListNode"))
         {
-            sb.AppendLine("// ListNode hazır olarak tanımlıdır:");
+            sb.AppendLine(Predefined("ListNode", english));
             sb.AppendLine("// function ListNode(val, next) { this.val = val ?? 0; this.next = next ?? null; }");
         }
 
         if (Uses(spec, "TreeNode"))
         {
-            sb.AppendLine("// TreeNode hazır olarak tanımlıdır:");
+            sb.AppendLine(Predefined("TreeNode", english));
             sb.AppendLine("// function TreeNode(val, left, right) { this.val = val ?? 0; this.left = left ?? null; this.right = right ?? null; }");
         }
 

@@ -1,0 +1,110 @@
+title: Communication, Resilience and Specialized Building Blocks
+description: Capacity math, APIs and real-time communication, retries and circuit breakers, SLOs, search and location, large files, stream processing and probabilistic data structures.
+questions:
+  - q: "100 million photos are uploaded per day, with an average of 500 KB per photo. Roughly how much raw media storage is needed per day?"
+    options:
+      - "~5 TB"
+      - "~50 GB"
+      - "~50 TB"
+      - "~500 TB"
+    why: |
+      10⁸ × 500 KB = 5 × 10¹⁰ KB = 5 × 10¹³ bytes = 50 TB. That comes to ~18 PB per year. The takeaway: media goes to an object store, not a database; metadata is estimated separately. Working with exponents (10⁸ × 5 × 10⁵ bytes) lets you do the math in seconds.
+
+  - q: "For a feature that pushes live score updates to the browser and needs no messages from client to server, what is the simplest suitable technique?"
+    options:
+      - "Server-Sent Events (SSE)"
+      - "WebRTC"
+      - "Short polling every second"
+      - "gRPC bidirectional streaming"
+    why: |
+      If the stream is one-way (server → client), SSE is the simplest choice: an ordinary HTTP response streams, the browser automatically reconnects a dropped connection, and it works with existing HTTP infrastructure (proxies, authentication). WebSocket is needed when you need two-way communication (chat, games). Short polling is wasteful and adds latency; WebRTC is for peer-to-peer audio/video.
+
+  - q: "Why is cursor-based pagination recommended over `?offset=10000&limit=20` for an infinite-scroll feed? (More than one answer is correct.)"
+    options:
+      - "With large offsets the query slows down because the database also reads the skipped rows; a cursor runs in constant time with an index."
+      - "A cursor makes it easy for the user to jump to an arbitrary page (e.g. page 500)."
+      - "When new records are inserted between pages, offsets cause duplicates or skips; a cursor prevents this because it continues from the last record seen."
+      - "With a cursor, no index is needed."
+    why: |
+      `OFFSET 10000` means the database reads 10,020 rows and throws away 10,000 of them. A cursor carries the last seen sort key (`WHERE (created_at, id) < (...)`) and starts directly from that point using an index. When new records are inserted, the offset shifts; the cursor doesn't. The cost: you can't jump to an arbitrary page, and you need an index on the sort columns.
+
+  - q: "In a three-tier call chain (gateway → service A → service B), every tier retries a failed request **3 times**. If B is completely down, at most how many requests can a single user request turn into at B?"
+    options:
+      - "3"
+      - "9"
+      - "27"
+      - "81"
+    why: |
+      If every tier makes 3 attempts in total, the multiplier is 3 per tier: each gateway attempt means 3 attempts at A, and each A attempt means 3 requests to B. 3 × 3 × 3 = 27. This "retry storm" finishes off a struggling service. Solutions: retry in a single tier only, a retry budget, exponential backoff + jitter, and a circuit breaker.
+
+  - q: "What is the purpose of a circuit breaker's **half-open** state?"
+    options:
+      - "Reject half of all requests"
+      - "Retry failed requests at half speed"
+      - "Let only read requests through"
+      - "After the wait period, let a few trial requests through to test whether the dependency has recovered"
+    why: |
+      In the closed state, requests pass through and failures are counted; when the failure threshold is exceeded, the circuit opens and requests are rejected without ever reaching the dependency. When the wait period ends, the circuit moves to half-open: a few trial requests are sent. If they succeed, the circuit closes; if they fail, it opens again. This is how you wait for a failed dependency to recover without flooding it with requests.
+
+  - q: "Why is it dangerous to add a database connection check to a service's **liveness** probe in Kubernetes?"
+    options:
+      - "Liveness probes accept only HTTP 200."
+      - "When the database slows down, all instances fail at the same time and get restarted; this turns a brief slowdown into a full outage."
+      - "A database connection can't be opened in a liveness probe."
+      - "It isn't dangerous; it's the recommended practice."
+    why: |
+      A liveness probe asks "is this process in a state it can't recover from?", and a failure leads to a restart. A dependency problem isn't a problem with the process: restarting doesn't fix it, and on top of that every instance restarts at once. Dependency status is reflected at most in the readiness probe (and even then carefully); the liveness probe measures in-process health.
+
+  - q: "Over a 30-day window, roughly how much downtime (error budget) does a 99.9% availability SLO allow?"
+    options:
+      - "~4 minutes"
+      - "~43 minutes"
+      - "~7 hours"
+      - "~3 days"
+    why: |
+      30 days = 43,200 minutes; 0.1% of that ≈ 43 minutes. The error budget manages the balance between reliability and development speed: while there is budget left, you ship fast; when it runs out, the team focuses on reliability. For 99.99%, it drops to ~4 minutes.
+
+  - q: "For a \"restaurants near me\" query with geohash, why isn't it enough to look only at the user's own cell?"
+    options:
+      - "Geohash encodes only latitude."
+      - "The cells are so large that there are too many results."
+      - "If the user is near the edge of a cell, the nearest restaurant may be in a neighboring cell; that is why the 8 neighboring cells are scanned too."
+      - "Geohash values change on every query."
+    why: |
+      Geohash divides the world into fixed cells; points with a long common prefix are close, but the converse isn't always true: two points on either side of a boundary can be very close to each other yet sit in different cells. The standard query scans the user's cell + its 8 neighbors, then filters and sorts by actual distance.
+
+  - q: "In a system where users upload 2 GB videos, what is the benefit of uploading directly to the object store with a **presigned URL** instead of passing the file through the application server?"
+    options:
+      - "The application server's bandwidth and memory aren't tied up with large files; the upload benefits from the object store's scale, and the server only handles authorization and metadata."
+      - "Files are encrypted and compressed automatically."
+      - "Video transcoding becomes unnecessary."
+      - "Presigned URLs never expire, so the user can upload whenever they like."
+    why: |
+      A presigned URL is a signed link that grants permission to perform a specific operation on a specific object for a specific period. The application checks authorization and quotas and hands out the URL; the file goes directly to the object store. Combined with multipart upload, you get parallel uploads that can resume where they left off. The URLs are short-lived; if they never expired, that would be a security hole.
+
+  - q: "A web crawler uses a Bloom filter to check 10 billion URLs for \"have I seen this before?\". Which property of the Bloom filter makes this acceptable?"
+    options:
+      - "It produces neither false positives nor false negatives."
+      - "It can produce false negatives but never false positives; so no page is missed."
+      - "It is exact because it stores the full URL for every element."
+      - "It can produce false positives but never false negatives; at worst a few new URLs are skipped, and no URL is crawled twice."
+    why: |
+      A Bloom filter says "definitely not present" or "probably present". A false positive = mistaking an unseen URL for a seen one; for a crawler that's a small loss. A false negative never happens, so the same URL is never crawled again. With ~10 bits per element you get ~1% false positives: ~12 GB for 10 billion URLs, which is very small compared with a full set.
+
+  - q: "Which structure do you use to estimate the number of **distinct** users who visit a site in a day, with a few KB of memory and ~1% error, without keeping a set of 100 million IDs?"
+    options:
+      - "Count-Min Sketch"
+      - "HyperLogLog"
+      - "Bloom filter"
+      - "Min-heap"
+    why: |
+      HyperLogLog estimates the number of distinct elements (cardinality): it works from the distribution of leading zeros in hash values, gives ~0.8% error with ~12 KB, and is mergeable (a daily distinct count from hourly counts). Count-Min Sketch is for frequency, a Bloom filter for membership, and a heap for top-K. It's built into Redis as `PFADD`/`PFCOUNT`.
+
+  - q: "Ad clicks from a mobile app sometimes reach the server 10 minutes late. What should the stream processor do to get correct per-minute click counts?"
+    options:
+      - "Window events by the time they reach the server (processing time)"
+      - "Always drop late events"
+      - "Window events by event time, and use a watermark to decide when to close a window for late arrivals"
+      - "Keep a running total without windows"
+    why: |
+      Correct aggregation is done by the time the click actually happened (event time); windowing by processing time puts late events in the wrong minute. A watermark is an estimate that "events before this time have mostly arrived"; a window closes when the watermark passes. Events that arrive even later are either processed as corrections or dropped. Where exactness matters, as in billing, reconciliation with batch processing is added.

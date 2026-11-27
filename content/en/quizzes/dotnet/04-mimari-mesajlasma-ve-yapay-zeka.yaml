@@ -1,0 +1,119 @@
+title: Architecture, Messaging and AI
+description: Clean Architecture, Vertical Slice and CQRS, DDD building blocks, modular monoliths and microservices, delivery guarantees, RabbitMQ, Kafka and Azure Service Bus, the outbox, LLM integration and RAG.
+questions:
+  - q: "In Clean Architecture, in which layer is the `IEmailSender` interface defined, and in which layer does the class that sends via SMTP live?"
+    options:
+      - "Both in the Infrastructure layer"
+      - "The interface in Domain, its implementation in the API layer"
+      - "The interface in the Application layer, its implementation in the Infrastructure layer"
+      - "The interface in Infrastructure, its implementation in the Application layer"
+    why: |
+      The dependency rule requires dependencies to point inward. Application says "I need an email sender" and defines the interface itself. Infrastructure implements that interface with SMTP and depends on Application, not the other way around. This keeps the business logic independent of the infrastructure and lets tests use a fake sender.
+
+  - q: "Which statement about CQRS is true?"
+    options:
+      - "CQRS always requires a separate read database."
+      - "CQRS cannot be implemented without Event Sourcing."
+      - "In its simplest form, on the same database, the command side uses the domain model and the query side uses direct DTO projections."
+      - "CQRS can be implemented only with MediatR."
+    why: |
+      CQRS means writing operations that change state and operations that read it with different models. Its most common and cheapest form uses the same database: commands go through the rich domain model, and queries project directly into the DTO the screen needs. A separate read model and Event Sourcing are optional extra steps. MediatR is just one way to implement it.
+
+  - q: "Which of the following are true about aggregates in DDD? (Select more than one)"
+    options:
+      - "Invariants (business rules that must always hold) are protected within the aggregate boundary."
+      - "Aggregates refer to each other by identity, not by object reference."
+      - "A transaction should change as many aggregates as possible."
+      - "Aggregates should be kept as large as possible to increase consistency."
+    why: |
+      An aggregate is a consistency boundary: the root protects the rules, and it is accessed from outside only through the root. Other aggregates are referenced by identity. A transaction usually changes a single aggregate. If more than one must change, domain events and eventual consistency are used. Large aggregates cause lock contention and performance problems, so they are kept small.
+
+  - q: "What is the key difference between a value object and an entity?"
+    options:
+      - "A value object is defined by its identity, an entity by its values."
+      - "An entity is defined by its identity and can change over its lifetime; a value object is defined by its values and is immutable."
+      - "A value object cannot be stored in the database."
+      - "Entities must always be structs, and value objects must always be classes."
+    why: |
+      Two orders with the same amount and date are different entities if their identities differ. A value object such as `Money(100, "TRY")`, on the other hand, is defined only by its values: two instances with the same values are equal, and it is immutable. In EF Core, value objects can be stored in the same table as owned or complex types.
+
+  - q: "A team says \"we moved to microservices\", but to deploy one service they have to deploy three others at the same time, and the services read and write the same tables. What is this called?"
+    options:
+      - "Modular monolith"
+      - "Strangler fig"
+      - "Bounded context"
+      - "Distributed monolith"
+    why: |
+      A distributed monolith combines the tight coupling of a monolith with all the difficulties of a distributed system: services that cannot be deployed independently, share a common database and are tied together by synchronous call chains. Good service boundaries follow bounded contexts, each service owns its own data, and services can be deployed independently.
+
+  - q: "What is the recommended approach for modernizing a 20-year-old system without downtime?"
+    options:
+      - "Rewriting the system from scratch all at once and cutting over in one go"
+      - "Putting a router in front of it, moving capabilities to the new system one by one, translating between the models with an anti-corruption layer, and deleting each migrated piece from the old system (strangler fig)"
+      - "Sharing the old system's database directly with the new services"
+      - "Freezing the old system, building new features only in the new system, and never migrating"
+    why: |
+      Big-bang rewrites are high risk: the new system can't catch up for years while the old system keeps changing. The strangler fig pattern routes traffic to the new system one capability at a time. Each step is small and reversible. The anti-corruption layer keeps the new system from being polluted by the old model.
+
+  - q: "A consumer processed a message and wrote to the database, but crashed before sending an acknowledgment (ack) to the broker. In a system with an at-least-once delivery guarantee, what happens and what should you do?"
+    options:
+      - "The message is lost; you should switch to at-most-once delivery."
+      - "The broker redelivers the message; the consumer should be written to be idempotent (e.g. a table of processed message IDs or a unique index on the business key)."
+      - "The broker automatically moves the message to the DLQ."
+      - "The database write is automatically rolled back."
+    why: |
+      Because no ack arrived, the broker considers the message unprocessed and redelivers it. This is the natural consequence of at-least-once delivery. End-to-end exactly-once delivery does not exist in practice. Its effect is achieved by making the consumer idempotent: the message ID is written to a unique table in the same transaction as the business data, and a redelivered message is skipped.
+
+  - q: "In Kafka, you read a topic with 6 partitions using 10 consumers in the same consumer group. What happens?"
+    options:
+      - "Every message is delivered to all 10 consumers."
+      - "The partitions are split into 10 pieces."
+      - "Kafka automatically increases the number of partitions to 10."
+      - "Only 6 consumers get a partition; 4 sit idle."
+    why: |
+      Within a consumer group, each partition is assigned to only one consumer. So parallelism is limited by the number of partitions, and extra consumers sit idle. Different consumer groups, by contrast, read the same messages independently. The partition count does not grow automatically, and increasing it later changes the key-to-partition mapping.
+
+  - q: "The events for an order (Created, Paid, Shipped) must be processed in order in Kafka. What should you do?"
+    options:
+      - "Use the order ID as the message key; messages with the same key go to the same partition, and order is preserved within a partition."
+      - "Making the topic single-partition is the only correct solution."
+      - "Give the messages random keys."
+      - "Kafka already guarantees ordering across the whole topic."
+    why: |
+      Kafka guarantees ordering only within a partition. Because the same key always goes to the same partition, using the order ID as the key preserves the order of an order's events, while different orders can still be processed in parallel. A single partition also preserves order, but it kills all parallelism.
+
+  - q: "What is the best approach for a \"poison\" RabbitMQ message that throws an exception in the consumer every time?"
+    options:
+      - "Sending `BasicNack` with `requeue: true` to put the message straight back at the head of the queue"
+      - "Holding the message without acknowledging it"
+      - "A limited number of delayed retries, then sending the message to a DLQ through a dead-letter exchange and setting up an alert"
+      - "Stopping the consumer"
+    why: |
+      Requeuing immediately creates a hot loop that reprocesses the message hundreds of times per second and clogs the queue. The right approach: delayed retries using a wait queue with a TTL, and once the limit is exceeded, rejecting with `requeue: false` so the message drops into the DLQ through the DLX. The DLQ needs an alert and a reprocessing procedure.
+
+  - q: "After an order is saved to the database, an `OrderCreated` event is published. Which pattern keeps the two consistent (prevents one from happening without the other)?"
+    options:
+      - "Two-phase commit (2PC)"
+      - "Transactional outbox: the event is written to an outbox table in the same transaction as the order, and a separate process forwards it to the broker."
+      - "Publishing the event first and then saving the order"
+      - "Waiting with `Thread.Sleep` after publishing the event"
+    why: |
+      The database and the broker cannot take part in the same transaction. Whichever order you write them in, a crash in between creates an inconsistency. The outbox stores the event in the same local transaction as the business data. A separate process forwards the events at least once, so consumers must still be idempotent. 2PC is not practical with microservices and most brokers.
+
+  - q: "You are building an assistant that answers questions about the company's internal return policy. The model sometimes makes up rules that are not in the policy. What is the best approach?"
+    options:
+      - "Raising the model's temperature above 1"
+      - "Chunking the policy documents and putting them with their embeddings into a vector store, retrieving the most relevant chunks at question time and giving them to the model with the instruction \"answer only based on these documents; otherwise, say you don't know\" (RAG), and measuring the results with an evaluation set"
+      - "Adding the entire policy document to the system message, unabridged, on every question, and never measuring"
+      - "Writing the model's answer directly to the database"
+    why: |
+      The most effective remedy for hallucination is giving the model accurate and relevant context. RAG retrieves documents at question time, shows the source of the answer, and stays up to date when the documents change without retraining the model. A high temperature increases randomness. Sending the whole document every time is costly and strains the context window. Without an evaluation set, improvement cannot be measured.
+
+  - q: "You gave an LLM the function `IssueRefund(orderId, amount)` as a tool. Which statement is true from a security standpoint?"
+    options:
+      - "The model is an authorization boundary; it calls the function only in appropriate cases."
+      - "Writing \"issue refunds only for authorized users\" in the system message is enough."
+      - "Inside the function, the user's permission on that order and the business rules must be checked in code, and extra confirmation should be required for irreversible operations; the model can be steered by prompt injection."
+      - "Function calling is never safe and should not be used."
+    why: |
+      The model can be steered by user input or by a document retrieved through RAG (prompt injection). That is why it is never treated as an authorization boundary. Instructions can be one layer of defense, but they are not enough. Permission and business rule checks are done in code, inside the function. Irreversible operations such as refunds require human approval or additional verification.

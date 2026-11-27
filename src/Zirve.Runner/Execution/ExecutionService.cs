@@ -7,7 +7,7 @@ using Zirve.Shared.Problems;
 
 namespace Zirve.Runner.Execution;
 
-public sealed class RunnerBusyException() : Exception("Kod çalıştırma servisi şu anda dolu.");
+public sealed class RunnerBusyException() : Exception(RunnerText.T("Kod çalıştırma servisi şu anda dolu.", "The code runner is busy right now."));
 
 public sealed class InvalidExecutionRequestException(string message) : Exception(message);
 
@@ -34,6 +34,7 @@ public sealed class ExecutionService
 
     public async Task<ExecutionResult> ExecuteAsync(ExecutionRequest request, CancellationToken cancellationToken)
     {
+        RunnerText.Use(request.Locale);
         Validate(request);
 
         if (!await _slots.WaitAsync(TimeSpan.FromSeconds(_options.QueueTimeoutSeconds), cancellationToken))
@@ -56,7 +57,9 @@ public sealed class ExecutionService
             return new ExecutionResult
             {
                 Status = ExecutionStatus.InternalError,
-                Message = "Kod çalıştırılırken beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.",
+                Message = RunnerText.T(
+                    "Kod çalıştırılırken beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.",
+                    "An unexpected error occurred while running the code. Please try again."),
             };
         }
         finally
@@ -74,7 +77,7 @@ public sealed class ExecutionService
 
         if (string.IsNullOrWhiteSpace(request.Code))
         {
-            throw new InvalidExecutionRequestException("Kod boş olamaz.");
+            throw new InvalidExecutionRequestException(RunnerText.T("Kod boş olamaz.", "Code can't be empty."));
         }
 
         if (request.Code.Length > _options.MaxCodeLength)
@@ -89,25 +92,28 @@ public sealed class ExecutionService
 
         if (request.Spec is null)
         {
-            throw new InvalidExecutionRequestException("Test modunda problem imzası (spec) zorunludur.");
+            throw new InvalidExecutionRequestException(RunnerText.T(
+                "Test modunda problem imzası (spec) zorunludur.", "A problem signature (spec) is required in test mode."));
         }
 
         if (request.Tests.Count == 0 || request.Tests.Count > _options.MaxTests)
         {
-            throw new InvalidExecutionRequestException($"Test sayısı 1 ile {_options.MaxTests} arasında olmalı.");
+            throw new InvalidExecutionRequestException(RunnerText.T(
+                $"Test sayısı 1 ile {_options.MaxTests} arasında olmalı.", $"The number of tests must be between 1 and {_options.MaxTests}."));
         }
 
         foreach (var test in request.Tests)
         {
             if (test.Args.ValueKind != JsonValueKind.Array)
             {
-                throw new InvalidExecutionRequestException($"Test {test.Id}: 'args' bir dizi olmalı.");
+                throw new InvalidExecutionRequestException(RunnerText.T($"Test {test.Id}: 'args' bir dizi olmalı.", $"Test {test.Id}: 'args' must be an array."));
             }
 
             if (request.Spec.Kind == ProblemKinds.Class
                 && (test.Ops is null || test.Ops.Count == 0 || test.Ops.Count != test.Args.GetArrayLength()))
             {
-                throw new InvalidExecutionRequestException($"Test {test.Id}: 'ops' ve 'args' aynı uzunlukta olmalı.");
+                throw new InvalidExecutionRequestException(RunnerText.T(
+                    $"Test {test.Id}: 'ops' ve 'args' aynı uzunlukta olmalı.", $"Test {test.Id}: 'ops' and 'args' must have the same length."));
             }
         }
     }

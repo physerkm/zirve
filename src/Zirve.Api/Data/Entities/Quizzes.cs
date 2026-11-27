@@ -14,6 +14,12 @@ public sealed class Quiz
 
     public string Description { get; set; } = string.Empty;
 
+    /// <summary><see cref="Title"/> alanının İngilizce karşılığı; çevirisi yoksa Türkçe metin yazılır.</summary>
+    public string TitleEn { get; set; } = string.Empty;
+
+    /// <summary><see cref="Description"/> alanının İngilizce karşılığı; çevirisi yoksa Türkçe metin yazılır.</summary>
+    public string DescriptionEn { get; set; } = string.Empty;
+
     public ContentLevel Level { get; set; }
 
     public int? TimeLimitMinutes { get; set; }
@@ -42,6 +48,12 @@ public sealed class Question
     /// <summary>Markdown açıklama; yanıt gönderildikten sonra gösterilir.</summary>
     public string Explanation { get; set; } = string.Empty;
 
+    /// <summary><see cref="Text"/> alanının İngilizce karşılığı; çevirisi yoksa Türkçe metin yazılır.</summary>
+    public string TextEn { get; set; } = string.Empty;
+
+    /// <summary><see cref="Explanation"/> alanının İngilizce karşılığı; çevirisi yoksa Türkçe metin yazılır.</summary>
+    public string ExplanationEn { get; set; } = string.Empty;
+
     public Difficulty Difficulty { get; set; }
 
     /// <summary>Birden fazla doğru şık varsa true.</summary>
@@ -61,6 +73,9 @@ public sealed class QuestionOption
     public int Order { get; set; }
 
     public required string Text { get; set; }
+
+    /// <summary><see cref="Text"/> alanının İngilizce karşılığı; çevirisi yoksa Türkçe metin yazılır.</summary>
+    public string TextEn { get; set; } = string.Empty;
 
     public bool IsCorrect { get; set; }
 }

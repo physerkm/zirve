@@ -1,0 +1,101 @@
+title: Engineering Practices
+description: Merge, rebase, revert and reflog in Git, branching strategies, Scrum and story points, Kanban, code review and ADRs, SLOs and error budgets, alert design, incident response and postmortems.
+questions:
+  - q: "What is the safest way to undo a faulty commit that has been pushed to the main branch and that others have already pulled?"
+    options:
+      - "`git reset --hard HEAD~1` and `git push --force`"
+      - "`git commit --amend`"
+      - "Creating a new commit that reverses the commit with `git revert <commit>`"
+      - "Deleting the commit locally and telling the others"
+    why: |
+      Rewriting history on a shared branch (reset, amend, force push) creates a mismatch with other people's local history and can make them lose work. `revert` records the undo as a new commit. History is preserved, and the undo itself becomes auditable.
+
+  - q: "Which statement about rebase is true?"
+    options:
+      - "It reapplies commits on top of the new base and creates new commits with new hashes; commits shared with others should not be rebased."
+      - "Rebase does not change commit hashes."
+      - "Rebase always creates a merge commit."
+      - "Rebase works only on remote branches."
+    why: |
+      Rebase recreates commits and gives you a linear history. Because the hashes change, rebasing shared commits breaks other developers' history. It is a safe and common practice for bringing your own local branch up to date on top of the main branch. A merge commit is a feature of merge.
+
+  - q: "You accidentally deleted three commits with `git reset --hard`. How do you get them back?"
+    options:
+      - "They cannot be recovered."
+      - "`git stash pop`"
+      - "`git revert HEAD`"
+      - "Finding the commits' hash with `git reflog` and going back to that point or creating a branch from it"
+    why: |
+      Git records every position HEAD has been at in the local reflog. Anything that was committed can be recovered until the reflog entry expires: `git reflog`, then `git branch recovery <hash>` or `git reset --hard <hash>`. Uncommitted changes, however, are truly lost with `reset --hard`.
+
+  - q: "What is the fastest way to find which of the last 200 commits introduced a bug?"
+    options:
+      - "Trying the commits manually one by one"
+      - "Running a binary search with `git bisect`; if possible, running a test automatically with `git bisect run`"
+      - "Looking at every file with `git blame`"
+      - "Reading the `git log` output"
+    why: |
+      `bisect` runs a binary search between two points marked good and bad. 200 commits are covered in at most 8 steps. `bisect run` automates this completely based on a script's exit code. That is why it matters that every commit builds.
+
+  - q: "Which statement about story points is true?"
+    options:
+      - "A story point is an estimate of how many hours the work will take."
+      - "Velocity should be used to compare performance across teams."
+      - "Story points express the relative size of the work (complexity, uncertainty, amount of work); their real value lies in the assumptions that surface during the estimation discussion."
+      - "The points for a task should be updated continuously during the sprint."
+    why: |
+      Story points use relative size instead of person-dependent hour estimates. In planning poker, discussing the reasons behind different estimates brings hidden assumptions to light. Velocity is meaningful only for the team's own planning. Comparing teams leads to point inflation.
+
+  - q: "What does a work-in-progress limit (WIP limit) achieve in Kanban?"
+    options:
+      - "It lets the team start more work at the same time"
+      - "It makes bottlenecks visible and encourages finishing stuck work instead of starting new work"
+      - "It shortens the sprint length"
+      - "It makes story point estimation unnecessary"
+    why: |
+      When the number of items in a column is limited, no new work can start once the limit is reached. The team turns to finishing the stuck items or helping the stage that is the bottleneck. As a result, cycle time gets shorter and the "everything started, nothing finished" situation is avoided.
+
+  - q: "In code review, which of the following should be left to tools rather than human review? (Select more than one)"
+    options:
+      - "Code formatting and indentation"
+      - "Whether the business rule was understood correctly"
+      - "Detecting dependencies with known security vulnerabilities"
+      - "Whether the design fits the existing architecture"
+    why: |
+      Formatting, simple bugs that static analysis can find, and dependencies with known vulnerabilities should be checked automatically by formatters, analyzers and CI scans. Human review focuses on what the machine cannot see: correctness, interpretation of the business rule, design and maintainability.
+
+  - q: "Which of the following should **not** be part of an architecture decision record (ADR)?"
+    options:
+      - "The context in which the decision was made"
+      - "The alternatives that were considered"
+      - "The negative consequences of the decision"
+      - "Deleting the content of the old ADR and rewriting it for the new decision when the decision changes"
+    why: |
+      ADRs are not modified. If a decision changes, a new ADR is written and the old one is marked "superseded by ADR-031". The history of the decision and its rationale at the time are valuable. Context, alternatives and negative consequences are the core parts of a good ADR.
+
+  - q: "Over a 28-day window, about how much downtime does a 99.9% availability SLO allow?"
+    options:
+      - "4 minutes"
+      - "40 minutes"
+      - "4 hours"
+      - "It allows no downtime at all"
+    why: |
+      The error budget is 0.1%: 28 days × 24 hours × 60 minutes × 0.001 ≈ 40 minutes. While there is budget left, the team can deploy quickly. When the budget runs out, the priority shifts to reliability. A 99.99% target comes down to about 4 minutes over the same window. Each additional "nine" multiplies the cost.
+
+  - q: "At midnight, a \"payment error rate high\" alert fires. The last deployment went out 20 minutes ago. What should the first step be?"
+    options:
+      - "Applying a quick mitigation, such as rolling back the last deployment or turning off the relevant feature flag; investigating the root cause later"
+      - "Making no changes until you find the root cause"
+      - "Telling the team in the morning"
+      - "Restarting the database"
+    why: |
+      The goal during an incident is to stop the user impact as fast as possible. Most incidents start after a change. Asking "what changed?" and rolling back is the fastest mitigation. Root cause analysis happens after the impact has been stopped and in the postmortem. Restarts without a reason can muddy the situation.
+
+  - q: "What is the purpose of a blameless postmortem?"
+    options:
+      - "Finding and warning the person who made the mistake"
+      - "Erasing the incident from the records"
+      - "Only informing the customer"
+      - "Letting people share their mistakes without hiding them, and finding systemic improvements by asking \"why did the system make this mistake possible?\""
+    why: |
+      People make decisions that seem reasonable given what they know at the time. Where there is blame, mistakes get hidden and the organization cannot learn. A postmortem identifies the contributing factors (a missing approval step, inadequate alerting, a difference from staging) and ends with action items that each have an owner and a due date.

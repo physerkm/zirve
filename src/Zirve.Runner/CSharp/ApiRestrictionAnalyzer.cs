@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Zirve.Runner.Execution;
 using Zirve.Shared.Execution;
 
 namespace Zirve.Runner.CSharp;
@@ -114,7 +115,9 @@ public static class ApiRestrictionAnalyzer
                 violations.Add(new CompileDiagnostic(
                     position.Line + 1,
                     position.Character + 1,
-                    $"Güvenlik nedeniyle bu ortamda '{violation}' kullanılamaz."));
+                    RunnerText.T(
+                        $"Güvenlik nedeniyle bu ortamda '{violation}' kullanılamaz.",
+                        $"'{violation}' can't be used in this environment for security reasons.")));
             }
 
             if (violations.Count >= MaxViolations)

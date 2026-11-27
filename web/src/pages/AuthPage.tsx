@@ -2,8 +2,50 @@ import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 import { Logo } from '@/components/Layout';
 import { Button, Card, ErrorNotice, Field, PageLoading } from '@/components/ui';
+import { defineMessages, useMessages } from '@/i18n/messages';
 import { ApiError } from '@/lib/api';
 import { useLogin, useRegister, useUser } from '@/lib/queries';
+
+const messages = defineMessages({
+  tr: {
+    registerPageTitle: 'Kayıt ol — Zirve',
+    loginPageTitle: 'Giriş yap — Zirve',
+    registerHeading: 'Hesap oluşturun',
+    loginHeading: 'Tekrar hoş geldiniz',
+    registerIntro: 'İlerlemenizi kaydedin, kod çalıştırın ve testlerde kendinizi sınayın.',
+    loginIntro: 'Kaldığınız yerden devam etmek için giriş yapın.',
+    displayName: 'Görünen ad',
+    email: 'E-posta',
+    password: 'Parola',
+    passwordHint: 'En az 8 karakter. Uzun bir parola cümlesi, karmaşık kısa bir paroladan daha güvenlidir.',
+    rememberMe: 'Bu cihazda oturumumu açık tut',
+    registerSubmit: 'Kayıt ol',
+    loginSubmit: 'Giriş yap',
+    haveAccount: 'Zaten hesabınız var mı?',
+    noAccount: 'Hesabınız yok mu?',
+    loginLink: 'Giriş yapın',
+    registerLink: 'Kayıt olun',
+  },
+  en: {
+    registerPageTitle: 'Sign up — Zirve',
+    loginPageTitle: 'Sign in — Zirve',
+    registerHeading: 'Create your account',
+    loginHeading: 'Welcome back',
+    registerIntro: 'Save your progress, run code and test yourself with quizzes.',
+    loginIntro: 'Sign in to pick up where you left off.',
+    displayName: 'Display name',
+    email: 'Email',
+    password: 'Password',
+    passwordHint: 'At least 8 characters. A long passphrase is more secure than a short, complex password.',
+    rememberMe: 'Keep me signed in on this device',
+    registerSubmit: 'Sign up',
+    loginSubmit: 'Sign in',
+    haveAccount: 'Already have an account?',
+    noAccount: "Don't have an account?",
+    loginLink: 'Sign in',
+    registerLink: 'Sign up',
+  },
+});
 
 /** Yalnızca site içi yollara yönlendir: açık yönlendirme (open redirect) açığını önler. */
 function safeRedirect(value: unknown): string {
@@ -11,6 +53,7 @@ function safeRedirect(value: unknown): string {
 }
 
 export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
+  const t = useMessages(messages);
   const isRegister = mode === 'register';
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,7 +85,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
 
   return (
     <div className="container-page flex min-h-[calc(100dvh-4rem)] items-center justify-center py-12">
-      <title>{isRegister ? 'Kayıt ol — Zirve' : 'Giriş yap — Zirve'}</title>
+      <title>{isRegister ? t.registerPageTitle : t.loginPageTitle}</title>
 
       <div className="w-full max-w-md">
         <div className="mb-6 flex justify-center">
@@ -50,18 +93,16 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
         </div>
 
         <Card className="p-6 sm:p-8">
-          <h1 className="text-2xl font-bold tracking-tight">{isRegister ? 'Hesap oluşturun' : 'Tekrar hoş geldiniz'}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{isRegister ? t.registerHeading : t.loginHeading}</h1>
           <p className="mt-1 text-sm text-muted">
-            {isRegister
-              ? 'İlerlemenizi kaydedin, kod çalıştırın ve testlerde kendinizi sınayın.'
-              : 'Kaldığınız yerden devam etmek için giriş yapın.'}
+            {isRegister ? t.registerIntro : t.loginIntro}
           </p>
 
           <form onSubmit={onSubmit} noValidate className="mt-6 space-y-4">
             {isRegister && (
               <Field
                 id="displayName"
-                label="Görünen ad"
+                label={t.displayName}
                 autoComplete="name"
                 required
                 minLength={2}
@@ -74,7 +115,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
 
             <Field
               id="email"
-              label="E-posta"
+              label={t.email}
               type="email"
               inputMode="email"
               autoComplete="email"
@@ -86,7 +127,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
 
             <Field
               id="password"
-              label="Parola"
+              label={t.password}
               type="password"
               autoComplete={isRegister ? 'new-password' : 'current-password'}
               required
@@ -94,7 +135,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               errors={fieldErrors.password}
-              hint={isRegister ? 'En az 8 karakter. Uzun bir parola cümlesi, karmaşık kısa bir paroladan daha güvenlidir.' : undefined}
+              hint={isRegister ? t.passwordHint : undefined}
             />
 
             {!isRegister && (
@@ -105,7 +146,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                   onChange={(event) => setRememberMe(event.target.checked)}
                   className="size-4 accent-(--primary)"
                 />
-                Bu cihazda oturumumu açık tut
+                {t.rememberMe}
               </label>
             )}
 
@@ -113,15 +154,15 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
             {mutation.isError && fieldErrors.general && <ErrorNotice error={new Error(fieldErrors.general.join(' '))} />}
 
             <Button type="submit" size="lg" className="w-full" loading={mutation.isPending}>
-              {isRegister ? 'Kayıt ol' : 'Giriş yap'}
+              {isRegister ? t.registerSubmit : t.loginSubmit}
             </Button>
           </form>
         </Card>
 
         <p className="mt-6 text-center text-sm text-muted">
-          {isRegister ? 'Zaten hesabınız var mı?' : 'Hesabınız yok mu?'}{' '}
+          {isRegister ? t.haveAccount : t.noAccount}{' '}
           <Link to={isRegister ? '/login' : '/register'} state={location.state} className="font-medium text-primary-text hover:underline">
-            {isRegister ? 'Giriş yapın' : 'Kayıt olun'}
+            {isRegister ? t.loginLink : t.registerLink}
           </Link>
         </p>
       </div>

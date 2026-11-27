@@ -13,6 +13,10 @@ import vm from 'node:vm';
 import { stripTypeScriptTypes } from 'node:module';
 
 const USER_FILE = 'solution.js';
+
+// İletilerin dili; Runner ZIRVE_LOCALE ortam değişkeniyle bildirir.
+const ENGLISH = process.env.ZIRVE_LOCALE === 'en';
+const t = (turkish, english) => (ENGLISH ? english : turkish);
 const IDENTIFIER = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 
 async function readStdin() {
@@ -88,7 +92,7 @@ const PRELUDE = String.raw`
     if (truncated) return;
     const line = args.map((arg) => inspect(arg, 0, new Set())).join(' ');
     if (size + line.length > LIMIT) {
-      logs.push(line.slice(0, Math.max(0, LIMIT - size)) + '\n… (çıktı kesildi)');
+      logs.push(line.slice(0, Math.max(0, LIMIT - size)) + ${JSON.stringify(t('\n… (çıktı kesildi)', '\n… (output truncated)'))});
       truncated = true;
       return;
     }
@@ -147,7 +151,7 @@ const PRELUDE = String.raw`
     const values = [];
     for (let node = head; node !== null && node !== undefined; node = node.next) {
       values.push(node.val);
-      if (values.length > MAX_NODES) throw new HarnessError('Döndürülen bağlı listede döngü var ya da liste çok uzun.');
+      if (values.length > MAX_NODES) throw new HarnessError(${JSON.stringify(t('Döndürülen bağlı listede döngü var ya da liste çok uzun.', 'The returned linked list has a cycle or is too long.'))});
     }
     return values;
   };
@@ -176,7 +180,7 @@ const PRELUDE = String.raw`
     while (head < queue.length) {
       const node = queue[head++];
       if (node === null || node === undefined) { values.push(null); continue; }
-      if (++visited > MAX_NODES) throw new HarnessError('Döndürülen ağaçta döngü var ya da ağaç çok büyük.');
+      if (++visited > MAX_NODES) throw new HarnessError(${JSON.stringify(t('Döndürülen ağaçta döngü var ya da ağaç çok büyük.', 'The returned tree has a cycle or is too large.'))});
       values.push(node.val);
       queue.push(node.left, node.right);
     }
@@ -228,7 +232,7 @@ const PRELUDE = String.raw`
       const match = /solution\.js:(\d+)/.exec(String(error.stack || ''));
       return { error: (error.name || 'Error') + ': ' + error.message, line: match ? Number(match[1]) : 0 };
     }
-    return { error: 'Fırlatılan değer: ' + inspect(error, 1, new Set()), line: 0 };
+    return { error: ${JSON.stringify(t('Fırlatılan değer: ', 'Thrown value: '))} + inspect(error, 1, new Set()), line: 0 };
   };
 
   const spec = typeof globalThis.__zSpec === 'string' ? JSON.parse(globalThis.__zSpec) : null;
@@ -242,7 +246,7 @@ const PRELUDE = String.raw`
     stringify,
     describe,
     drain: () => { const text = logs.join('\n'); logs.length = 0; size = 0; truncated = false; return text; },
-    fail: (error) => { const info = describe(error); failures.push(info.line ? info.error + ' (satır ' + info.line + ')' : info.error); },
+    fail: (error) => { const info = describe(error); failures.push(info.line ? info.error + ${JSON.stringify(t(' (satır ', ' (line '))} + info.line + ')' : info.error); },
     failures: () => { const text = failures.join('\n'); failures.length = 0; return text; },
   };
 
@@ -258,7 +262,7 @@ const TIMER_BRIDGE = String.raw`
   let sequence = 0;
   const guard = (callback, args) => { try { callback(...args); } catch (error) { __z.fail(error); } };
   const requireFunction = (callback, name) => {
-    if (typeof callback !== 'function') throw new TypeError(name + ': ilk argüman bir fonksiyon olmalı.');
+    if (typeof callback !== 'function') throw new TypeError(name + ${JSON.stringify(t(': ilk argüman bir fonksiyon olmalı.', ': the first argument must be a function.'))});
   };
   globalThis.setTimeout = (callback, delay, ...args) => {
     requireFunction(callback, 'setTimeout');
@@ -310,7 +314,10 @@ function describeBuiltinStripError(error) {
   const unsupported = error?.code === 'ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX';
   return {
     message: 'TypeScript: ' + String(error?.message ?? error)
-      + (unsupported ? ' (enum, namespace ve parametre özellikleri için Runner\'ın Node klasöründe "npm ci" çalıştırılmalı.)' : ''),
+      + (unsupported
+        ? t(' (enum, namespace ve parametre özellikleri için Runner\'ın Node klasöründe "npm ci" çalıştırılmalı.)',
+          ' (enums, namespaces and parameter properties require running "npm ci" in the Runner\'s Node folder.)')
+        : ''),
     line: location ? Number(location[1]) : 0,
     column: caret ? caret.indexOf('^') + 1 : 0,
   };
@@ -372,28 +379,36 @@ const isTimeout = (error) => error && error.code === 'ERR_SCRIPT_EXECUTION_TIMEO
 
 function buildInvoker(context) {
   const name = spec.name;
-  if (!IDENTIFIER.test(name)) throw new Error('Geçersiz fonksiyon/sınıf adı.');
+  if (!IDENTIFIER.test(name)) throw new Error(t('Geçersiz fonksiyon/sınıf adı.', 'Invalid function/class name.'));
+
+  const messages = {
+    noFunction: t(`"${name}" adında bir fonksiyon bulunamadı. Fonksiyon adını değiştirmeyin.`, `No function named "${name}" was found. Do not rename the function.`),
+    noAsync: t('Bu problemde Promise döndüren (async) fonksiyonlar desteklenmiyor.', 'Functions that return a Promise (async) are not supported in this problem.'),
+    noClass: t(`"${name}" adında bir sınıf bulunamadı. Sınıf adını değiştirmeyin.`, `No class named "${name}" was found. Do not rename the class.`),
+    noMethodPrefix: t('"', 'No method "'),
+    noMethodSuffix: t('" metodu bulunamadı. Metot adlarını değiştirmeyin.', '" was found. Do not rename the methods.'),
+  };
 
   const functionBody = `
     const fn = typeof ${name} === 'function' ? ${name} : null;
-    if (fn === null) throw new z.HarnessError('"${name}" adında bir fonksiyon bulunamadı. Fonksiyon adını değiştirmeyin.');
+    if (fn === null) throw new z.HarnessError('${messages.noFunction}');
     const args = input.args.map((value, index) => z.decode(value, spec.params[index] ? spec.params[index].type : ''));
     const output = fn(...args);
     if (output !== null && typeof output === 'object' && typeof output.then === 'function') {
-      throw new z.HarnessError('Bu problemde Promise döndüren (async) fonksiyonlar desteklenmiyor.');
+      throw new z.HarnessError('${messages.noAsync}');
     }
     return z.stringify({ actual: z.encode(output, spec.returns) });`;
 
   const classBody = `
     const Target = typeof ${name} === 'function' ? ${name} : null;
-    if (Target === null) throw new z.HarnessError('"${name}" adında bir sınıf bulunamadı. Sınıf adını değiştirmeyin.');
+    if (Target === null) throw new z.HarnessError('${messages.noClass}');
     const decodeAll = (values, params) => values.map((value, index) => z.decode(value, params[index] ? params[index].type : ''));
     const instance = new Target(...decodeAll(input.args[0], spec.params));
     const results = [null];
     for (let i = 1; i < input.ops.length; i++) {
       const operation = input.ops[i];
       const method = spec.methods.find((candidate) => candidate.name === operation);
-      if (typeof instance[operation] !== 'function') throw new z.HarnessError('"' + operation + '" metodu bulunamadı. Metot adlarını değiştirmeyin.');
+      if (typeof instance[operation] !== 'function') throw new z.HarnessError('${messages.noMethodPrefix}' + operation + '${messages.noMethodSuffix}');
       const output = instance[operation](...decodeAll(input.args[i], method ? method.params : []));
       results.push(method && method.returns !== 'void' ? z.encode(output, method.returns) : null);
     }
@@ -422,8 +437,8 @@ function buildInvoker(context) {
       result = JSON.parse(script.runInContext(context, { timeout: perTestTimeoutMs }));
     } catch (error) {
       result = isTimeout(error)
-        ? { timedOut: true, error: `Süre sınırı aşıldı (${perTestTimeoutMs} ms).` }
-        : { error: 'Beklenmeyen koşucu hatası: ' + String(error && error.message ? error.message : error) };
+        ? { timedOut: true, error: t(`Süre sınırı aşıldı (${perTestTimeoutMs} ms).`, `Time limit exceeded (${perTestTimeoutMs} ms).`) }
+        : { error: t('Beklenmeyen koşucu hatası: ', 'Unexpected runner error: ') + String(error && error.message ? error.message : error) };
     }
 
     const ms = Math.round((performance.now() - started) * 1000) / 1000;
@@ -459,7 +474,7 @@ function runTests(code) {
   } catch (error) {
     // Kod daha yüklenirken hata verdi: bütün testler aynı hatayla başarısız sayılır.
     const info = isTimeout(error)
-      ? { error: 'Kod yüklenirken süre sınırı aşıldı.', line: 0 }
+      ? { error: t('Kod yüklenirken süre sınırı aşıldı.', 'Time limit exceeded while loading the code.'), line: 0 }
       : JSON.parse(vm.runInContext('(e) => __z.stringify(__z.describe(e))', context)(error));
 
     for (const test of tests) {
@@ -513,7 +528,7 @@ function runScript(code) {
     script = new vm.Script(`(async () => { ${code}\n})().catch(__z.fail)`, { filename: USER_FILE });
   } catch (error) {
     const info = describeSyntaxError(error);
-    process.stderr.write(info.message + (info.line ? ` (satır ${info.line})` : '') + '\n');
+    process.stderr.write(info.message + (info.line ? t(` (satır ${info.line})`, ` (line ${info.line})`) : '') + '\n');
     process.exitCode = 1;
     return;
   }
@@ -522,7 +537,9 @@ function runScript(code) {
     script.runInContext(context, { timeout: scriptTimeoutMs });
   } catch (error) {
     flush();
-    process.stderr.write((isTimeout(error) ? `Süre sınırı aşıldı (${scriptTimeoutMs} ms).` : String(error)) + '\n');
+    process.stderr.write((isTimeout(error)
+    ? t(`Süre sınırı aşıldı (${scriptTimeoutMs} ms).`, `Time limit exceeded (${scriptTimeoutMs} ms).`)
+    : String(error)) + '\n');
     // Bekleyen zamanlayıcılar süreci açık tutmasın.
     process.exit(1);
   }
@@ -536,7 +553,8 @@ const converted = await toJavaScript(payload.code);
 
 if (converted.error) {
   if (mode === 'script') {
-    process.stderr.write(converted.error.message + (converted.error.line ? ` (satır ${converted.error.line})` : '') + '\n');
+    process.stderr.write(converted.error.message
+    + (converted.error.line ? t(` (satır ${converted.error.line})`, ` (line ${converted.error.line})`) : '') + '\n');
     process.exitCode = 1;
   } else {
     emit({ compileError: converted.error });

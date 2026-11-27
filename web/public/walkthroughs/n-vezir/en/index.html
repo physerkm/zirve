@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<base target="_blank">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>N-Queens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --ink: #141b26;
+  --muted: #5a6779;
+  --line: #d6dce6;
+  --accent: #3346c8;
+  --accent-ink: #ffffff;
+  --range: #e3e9fb;
+  --range-ink: #1d2a6b;
+  --probe: #c46f00;
+  --good: #17824a;
+  --good-soft: #dcf1e4;
+  --good-soft-ink: #145c36;
+  --bad: #b8402a;
+  --code-bg: #f7f8fb;
+  --code-hl: #dfe5fb;
+  --kw: #7a3aa8;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+    --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+    --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+    --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+  --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+  --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+  --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+  color-scheme: dark;
+}
+
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 40px;
+}
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; color: var(--muted); margin: 0; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 6vw, 54px); line-height: 1.05; letter-spacing: -.02em; margin: 8px 0 14px; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0; font-size: 17px; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: -.01em; margin: 0 0 18px; text-wrap: balance; }
+code { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+
+.idea { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; list-style: none; padding: 0; margin: 0; }
+.idea li { border-top: 2px solid var(--ink); padding-top: 12px; min-width: 0; }
+.idea .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.idea h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 2px 0 6px; text-wrap: balance; }
+.idea p { margin: 0; color: var(--muted); font-size: 15px; }
+@media (max-width: 760px) { .idea { grid-template-columns: 1fr; gap: 20px; } }
+
+.stepper { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+@media (max-width: 560px) { .stepper { padding: 16px; } }
+.stepper h2 { margin: 0; }
+.controls { display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+button { font: 500 14px var(--font-body); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.presets button { font-size: 13px; padding: 7px 10px; }
+.presets .mono { font-family: var(--font-mono); font-weight: 700; margin-right: 4px; }
+.presets button[aria-pressed="true"] { border-color: var(--accent); background: var(--range); color: var(--range-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; }
+#play { min-width: 7.5em; }
+
+.step { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+.step-meta { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--range); color: var(--range-ink); }
+.tag[data-kind="skip"] { background: var(--code-bg); color: var(--bad); border: 1px solid var(--bad); }
+.tag[data-kind="back"] { background: var(--code-bg); color: var(--probe); border: 1px solid var(--probe); }
+.tag[data-kind="ok"] { background: var(--good); color: var(--surface); }
+#step-text { margin: 8px 0 0; font-size: 16.5px; max-width: 78ch; min-height: 3.2em; }
+
+.panel-label { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+.panel-label .hint { font-weight: 400; }
+
+.viz-area { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 28px; align-items: start; }
+@media (max-width: 720px) { .viz-area { grid-template-columns: 1fr; } }
+
+.chess-grid { display: inline-grid; gap: 5px; padding: 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; }
+.cell {
+  width: 58px; height: 58px; border-radius: 9px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font: 700 22px var(--font-mono); position: relative;
+  transition: background-color .18s, border-color .18s, color .18s;
+}
+.cell.alt { background: var(--code-bg); }
+.cell .coord { position: absolute; top: 3px; left: 5px; font: 500 10px var(--font-mono); color: var(--muted); }
+.cell .diag-info { position: absolute; bottom: 2px; right: 4px; font: 500 9px var(--font-mono); color: var(--muted); }
+.cell.queen { background: var(--range); color: var(--range-ink); border-color: var(--accent); border-width: 2px; }
+.cell.queen.solved { background: var(--good-soft); color: var(--good-soft-ink); border-color: var(--good); }
+.cell.probe-ok { outline: 2px solid var(--good); outline-offset: 2px; }
+.cell.probe-bad { background: transparent; border: 2px dashed var(--bad); color: var(--bad); }
+.cell.threat-origin { outline: 2px solid var(--bad); outline-offset: 2px; }
+
+.sets-box { display: flex; flex-direction: column; gap: 12px; }
+.set-row { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+.set-row .lbl { font: 600 12px var(--font-mono); color: var(--muted); margin-bottom: 6px; }
+.mini-row { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; align-items: center; }
+.mini { min-width: 34px; height: 28px; padding: 0 8px; border-radius: 6px; display: inline-grid; place-items: center; font: 600 13px var(--font-mono); border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.mini.conflict { border-color: var(--bad); color: var(--bad); border-width: 2px; }
+.empty-note { color: var(--muted); font-size: 13px; margin: 0; font-family: var(--font-mono); }
+
+.sols-wrap { display: flex; flex-wrap: wrap; gap: 12px; }
+.sol-card { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); font: 600 13px/1.35 var(--font-mono); letter-spacing: 2px; }
+.sol-card.latest { border-color: var(--good); background: var(--good-soft); color: var(--good-soft-ink); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 8px; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--line); }
+.sw.queen { background: var(--range); border-color: var(--accent); }
+.sw.bad { background: transparent; border: 2px dashed var(--bad); }
+.sw.solved { background: var(--good-soft); border-color: var(--good); }
+
+.board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 28px; }
+@media (max-width: 880px) { .board { grid-template-columns: 1fr; } }
+.col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.vars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.var { border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; background: var(--bg); min-width: 0; }
+.var dt { font: 400 12px var(--font-mono); color: var(--muted); }
+.var dd { margin: 0; font: 600 17px var(--font-mono); font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; }
+.var.changed { border-color: var(--accent); background: var(--range); }
+.var.changed dd { color: var(--range-ink); }
+.code { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 0; overflow-x: auto; font: 13px/1.6 var(--font-mono); }
+@media (max-width: 560px) { .code { font-size: 12px; } }
+.ln { display: block; padding: 0 14px 0 11px; white-space: pre; border-left: 3px solid transparent; }
+.ln.hl { background: var(--code-hl); border-left-color: var(--accent); }
+.kw { color: var(--kw); }
+
+.why-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 40px; }
+.why-grid > div { border-top: 1px solid var(--line); padding-top: 12px; min-width: 0; }
+.why h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 0 0 6px; text-wrap: balance; }
+.why p { margin: 0; color: var(--muted); }
+.why b { color: var(--ink); }
+@media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; gap: 20px; } }
+.foot { display: flex; flex-wrap: wrap; gap: 6px 20px; border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; color: var(--muted); }
+.foot a { color: var(--accent); }
+
+code, .code, .cell, .mini, .var dd { font-variant-ligatures: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">LeetCode 51 · N-Queens · Hard</p>
+    <h1>N-Queens</h1>
+    <p class="lead">Step through how, as queens are placed row by row, the <code>cols</code>, <code>posDiag (r + c)</code>, and <code>negDiag (r - c)</code> sets catch conflicts instantly, and how the search backtracks out of dead ends.</p>
+  </header>
+
+  <section aria-labelledby="idea-h">
+    <h2 id="idea-h">The idea in three steps</h2>
+    <ol class="idea">
+      <li>
+        <span class="n">1</span>
+        <h3>Exactly one queen per row</h3>
+        <p>Two queens can't share a row. Running the search row by row from <code>r = 0</code> to <code>n - 1</code> rules out row conflicts from the start.</p>
+      </li>
+      <li>
+        <span class="n">2</span>
+        <h3>Encode the diagonals with math</h3>
+        <p>On a diagonal running from top-right to bottom-left, the sum <code>r + c</code> stays the same; on a diagonal running from top-left to bottom-right, the difference <code>r - c</code> stays the same. Three <code>HashSet</code>s give an O(1) check.</p>
+      </li>
+      <li>
+        <span class="n">3</span>
+        <h3>At a dead end, undo and continue</h3>
+        <p>When no valid column is left in the next row, we remove the queen from the board and the sets (backtrack) and try the next column in the current row.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="stepper" aria-labelledby="st-h">
+    <h2 id="st-h">Step through it</h2>
+
+    <div class="controls">
+      <div class="row">
+        <div class="presets" role="group" aria-label="Board size">
+          <button type="button" data-n="4"><span class="mono">n = 4</span> (2 solutions)</button>
+          <button type="button" data-n="1"><span class="mono">n = 1</span> (1 solution)</button>
+          <button type="button" data-n="3"><span class="mono">n = 3</span> (no solution)</button>
+        </div>
+        <div class="nav">
+          <button type="button" id="reset">Restart</button>
+          <button type="button" id="prev-btn">← Back</button>
+          <button type="button" id="next-btn" class="primary">Next →</button>
+          <button type="button" id="play">▶ Play</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="step" aria-live="polite">
+      <div class="step-meta"><span id="step-count"></span><span id="step-tag" class="tag"></span></div>
+      <p id="step-text"></p>
+    </div>
+
+    <div class="viz-area">
+      <div>
+        <p class="panel-label">Chessboard <span class="hint">(top left: (r,c), bottom right: r+c / r-c)</span></p>
+        <div id="board-grid" class="chess-grid"></div>
+        <div class="legend">
+          <span><i class="sw queen"></i>Placed queen (♛)</span>
+          <span><i class="sw bad"></i>Under attack (skipped)</span>
+          <span><i class="sw solved"></i>Valid solution found</span>
+        </div>
+      </div>
+
+      <div class="sets-box">
+        <div class="set-row">
+          <div class="lbl">cols (occupied columns: c)</div>
+          <div class="mini-row" id="cols-row"></div>
+        </div>
+        <div class="set-row">
+          <div class="lbl">posDiag (occupied positive diagonals: r + c)</div>
+          <div class="mini-row" id="pos-row"></div>
+        </div>
+        <div class="set-row">
+          <div class="lbl">negDiag (occupied negative diagonals: r - c)</div>
+          <div class="mini-row" id="neg-row"></div>
+        </div>
+        <div class="set-row">
+          <div class="lbl">Solutions found (result)</div>
+          <div class="sols-wrap" id="solutions-row"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="board">
+      <div class="col">
+        <p class="panel-label">Variables</p>
+        <dl class="vars" id="vars"></dl>
+      </div>
+      <div class="col">
+        <p class="panel-label">Code (SolveNQueens backtracking method)</p>
+        <div class="code" id="code" role="region" aria-label="C# code" tabindex="0"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="why" aria-labelledby="why-h">
+    <h2 id="why-h">Why is it so efficient?</h2>
+    <div class="why-grid">
+      <div>
+        <h3>Early pruning instead of brute force</h3>
+        <p>Placing <code>n</code> queens arbitrarily on an <code>n x n</code> board produces <code>C(n², n)</code> combinations. Going row by row and pruning the subtree at the first conflict eliminates millions of invalid branches without ever visiting them.</p>
+      </div>
+      <div>
+        <h3>O(1) conflict check</h3>
+        <p>Scanning the earlier queens on the board one by one for every square would take O(n). By keeping the <code>c</code>, <code>r + c</code>, and <code>r - c</code> values in sets, we learn whether a square is safe in a single step.</p>
+      </div>
+      <div>
+        <h3>Why do r + c and r - c work?</h3>
+        <p>When you move one step from top-right toward bottom-left, <code>r</code> goes up by 1 and <code>c</code> goes down by 1, so the sum <code>r + c</code> stays constant. When you move from top-left toward bottom-right, both go up by 1, so the difference <code>r - c</code> stays constant.</p>
+      </div>
+      <div>
+        <h3>In-place search on a single board</h3>
+        <p>Instead of copying a new <code>char[][]</code> at every step, we set <code>board[r][c] = 'Q'</code> on a single board and change it back to <code>'.'</code> on the way back. A copy of the board is taken only when <code>r == n</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <a href="https://leetcode.com/problems/n-queens/">Problem: LeetCode 51</a>
+  </footer>
+</div>
+
+<script src="walkthrough.js"></script>
+</body>
+</html>

@@ -31,14 +31,16 @@ public sealed record TrackContent(
     string Icon,
     string Accent,
     int Order,
-    IReadOnlyList<ModuleContent> Modules);
+    IReadOnlyList<ModuleContent> Modules,
+    TrackText? English = null);
 
 public sealed record ModuleContent(
     string Slug,
     string Title,
     string Description,
     int Order,
-    IReadOnlyList<LessonContent> Lessons);
+    IReadOnlyList<LessonContent> Lessons,
+    TrackText? English = null);
 
 public sealed record LessonContent(
     string Slug,
@@ -47,7 +49,8 @@ public sealed record LessonContent(
     int Minutes,
     ContentLevel Level,
     int Order,
-    string Markdown);
+    string Markdown,
+    LessonText? English = null);
 
 public sealed record QuizContent(
     string Slug,
@@ -57,13 +60,15 @@ public sealed record QuizContent(
     ContentLevel Level,
     int? TimeLimitMinutes,
     int Order,
-    IReadOnlyList<QuestionContent> Questions);
+    IReadOnlyList<QuestionContent> Questions,
+    TrackText? English = null);
 
 public sealed record QuestionContent(
     string Text,
     string Explanation,
     Difficulty Difficulty,
-    IReadOnlyList<OptionContent> Options)
+    IReadOnlyList<OptionContent> Options,
+    QuestionText? English = null)
 {
     public bool IsMultiple => Options.Count(option => option.IsCorrect) > 1;
 }
@@ -82,4 +87,24 @@ public sealed record ProblemContent(
     IReadOnlyList<string> Hints,
     string? Editorial,
     IReadOnlyDictionary<string, string> Solutions,
-    IReadOnlyList<StoredTest> Tests);
+    IReadOnlyList<StoredTest> Tests,
+    ProblemText? English = null);
+
+// ------------------------------------------------------------------ İngilizce çeviriler (content/en/)
+// Yalnızca çevrilen metinleri taşır; sıra, düzey, süre, cevaplar, imza ve testler Türkçe dosyadan gelir.
+// Bir içeriğin çevirisi yoksa English null'dır ve İngilizce sitede Türkçe metin gösterilir.
+
+/// <summary>Yol, bölüm ya da testin İngilizce başlığı ve açıklaması.</summary>
+public sealed record TrackText(string Title, string Description);
+
+public sealed record LessonText(string Title, string Summary, string Markdown);
+
+/// <summary>Şıklar Türkçe dosyadaki sırayla birebir eşleşir.</summary>
+public sealed record QuestionText(string Text, string Explanation, IReadOnlyList<string> Options);
+
+public sealed record ProblemText(
+    string Title,
+    string Statement,
+    IReadOnlyList<string> Hints,
+    string? Editorial,
+    IReadOnlyDictionary<string, string> Solutions);

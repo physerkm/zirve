@@ -1,0 +1,110 @@
+title: Data Layer, Consistency and Consensus
+description: Storage engines, replication and quorums, sharding and hot keys, distributed IDs, consistency models, Raft, distributed locks, outbox and saga.
+questions:
+  - q: "For an event store that receives hundreds of thousands of **inserts** per second and almost no updates, which storage engine structure fits better, and why?"
+    options:
+      - "A B-tree; because it updates pages in place, it makes writes sequential."
+      - "An LSM tree; because it collects writes in memory and flushes them to disk as sorted files."
+      - "A hash index; because it is the fastest for range queries."
+      - "It doesn't matter; the disk access pattern doesn't affect write speed."
+    why: |
+      LSM trees (Cassandra, RocksDB, ScyllaDB) first write to a commit log and an in-memory memtable; when the memtable fills up, they flush it to disk as an immutable, sorted SSTable. Sequential disk writes are much faster than random writes. The cost: reads may have to check several files (Bloom filters help), and compaction runs in the background. B-trees update pages in place, which means random I/O.
+
+  - q: "A leaderless (Dynamo-style) store has N = 3 replicas. Which of the following settings guarantees, through the quorum condition, that **a read sees the latest acknowledged write**?"
+    options:
+      - "W = 1, R = 1"
+      - "W = 1, R = 2"
+      - "W = 2, R = 2"
+      - "W = 2, R = 1"
+    why: |
+      The quorum condition is W + R > N. For N = 3, W = 2, R = 2 → 4 > 3: the two nodes that acknowledge the write and the two nodes that answer the read overlap in at least one node. In the other options W + R is 2 or 3, so an overlap isn't guaranteed. Note: there are still edge cases with sloppy quorums and concurrent operations; a quorum alone does not provide linearizability.
+
+  - q: "A user changes their profile photo and sees the **old** photo after refreshing the page. The system serves reads from asynchronous replicas. Which consistency guarantee is missing, and what is the typical fix?"
+    options:
+      - "Read-your-writes; read the user's own data from the leader for a short time"
+      - "Linearizability; perform all reads and writes with two-phase commit"
+      - "Causal consistency; add vector clocks"
+      - "Monotonic reads; turn off the cache entirely"
+    why: |
+      If users can't see their own changes, the missing guarantee is read-your-writes. You don't need to make the whole system strongly consistent: the user's own data (or the few seconds after their last write) is read from the leader, while other users' reads keep going to the replicas. An alternative: the client carries the position of its last write (LSN) and waits for the replica to catch up to that point.
+
+  - q: "A product went viral during a campaign; its like counter is overheating a single shard. What is the best solution?"
+    options:
+      - "Double the number of shards"
+      - "Split the counter into several subkeys (e.g. `likes:42:0..9`), spread writes randomly, and sum them on read"
+      - "Move the product to a separate database"
+      - "Disable likes"
+    why: |
+      Adding shards doesn't fix a hot key: a single key always lands on a single shard. Salting the key (splitting it into subkeys) spreads writes across multiple shards; a read sums the subcounters. Common complements are buffering increments in memory and writing them periodically in batches, and serving the displayed count from a cache.
+
+  - q: "Which of the following are true of Snowflake-style 64-bit IDs (timestamp + machine ID + sequence number)? (More than one answer is correct.)"
+    options:
+      - "IDs are roughly sorted by time; this makes cursor-based pagination easier."
+      - "Generating an ID requires a trip to a central database every time."
+      - "If the machine's clock goes backward, duplicate IDs can be generated; the generator must detect this and wait."
+      - "They take up more space than a 128-bit UUID v4."
+    why: |
+      The most significant bits of a Snowflake ID are the timestamp, so IDs are roughly sorted by time. Each machine generates IDs with its own machine ID and sequence number without coordination; no central database is needed (only the machine ID is assigned once). If the clock goes backward (an NTP correction), the same timestamp and sequence number can be produced again. 64 bits is half of a UUID's 128 bits.
+
+  - q: "Two replicas hold versions of the same key with these vector clocks: `[(A,2), (B,1)]` and `[(A,2), (C,1)]`. What is the correct interpretation?"
+    options:
+      - "The first is newer; B comes before C."
+      - "The second is newer, because C comes later in the alphabet."
+      - "They are the same version."
+      - "The versions are concurrent (a conflict); neither is an ancestor of the other, and they need to be merged."
+    why: |
+      A version is a descendant of another if each of its counters is greater than or equal to the other's. Here the first was updated at B and the second at C; neither covers the other. This means the same record was updated concurrently in two different places. In this case Dynamo keeps both versions and returns them to the client to merge; with "last write wins", one of the writes would be silently lost.
+
+  - q: "A 5-node Raft cluster can survive at most how many simultaneous node crashes and keep accepting writes?"
+    options:
+      - "1"
+      - "2"
+      - "3"
+      - "4"
+    why: |
+      In Raft, an entry is committed once it is replicated to a majority; the leader is also elected by a majority vote. The majority of 5 nodes is 3, so even if 2 nodes crash, the remaining 3 keep working. General rule: 2f + 1 nodes tolerate f crashes. That is why clusters use an odd number of nodes; 6 nodes tolerate no more crashes than 5, but wait for more acknowledgments to reach a majority.
+
+  - q: "A process holding a distributed lock enters a long garbage collection pause, the lock expires, and the lock is given to another process. Which mechanism prevents both processes from writing to the store?"
+    options:
+      - "Make the lock duration very long (e.g. 1 hour)"
+      - "Keep the lock in memory instead of in Redis"
+      - "A fencing token: every time the lock is granted it returns an increasing number, and the store rejects writes with an old token"
+      - "Check whether we still hold the lock before writing"
+    why: |
+      The paused process doesn't know its lock has expired; the "check, then write" approach isn't enough either, because a pause can happen between the check and the write. With a fencing token, the lock service returns an increasing number (33, 34, …) each time it grants the lock; the protected store rejects tokens smaller than the largest one it has seen. A long duration, on the other hand, locks the system for a long time when the lock holder really does crash.
+
+  - q: "The order service writes to the database first and then sends an `OrderCreated` event to Kafka. If the process crashes between the two steps, the event is never published. What is the standard solution?"
+    options:
+      - "Transactional outbox: write the event to an outbox table in the same transaction as the business data, and send it with a separate publisher (or with CDC)"
+      - "Send to Kafka first, then write to the database"
+      - "Retry the send to Kafka three times"
+      - "Use two-phase commit between the database and Kafka"
+    why: |
+      This is the "dual write" problem: you can't write atomically to two different systems. Reversing the order publishes an event for a record that doesn't exist instead. With an outbox, a single local transaction writes both the business data and the event; the publisher sends at least once, and consumers are idempotent using the event ID. 2PC between Kafka and a relational database isn't supported or used in practice.
+
+  - q: "Which of the following about the saga pattern is **false**?"
+    options:
+      - "Each step is its own local transaction; on failure, previous steps are undone with compensating actions."
+      - "In choreography, services react to events; in orchestration, a central coordinator manages the steps."
+      - "A saga provides full isolation by hiding the intermediate states between steps from other transactions."
+      - "Compensating actions must be idempotent too."
+    why: |
+      A saga does **not** provide isolation: while stock is reserved but payment hasn't been taken yet, that intermediate state is visible to other transactions. You manage this with intermediate states such as "pending", semantic locks and business rules. The other three statements are true.
+
+  - q: "According to PACELC, what do systems such as DynamoDB and Cassandra (with default settings) choose **when there is no partition**?"
+    options:
+      - "They choose consistency and accept latency."
+      - "They choose low latency and accept eventual consistency."
+      - "They replicate every write synchronously to all regions."
+      - "No choice is needed when there is no partition."
+    why: |
+      PACELC: during a partition (P), you choose between availability and consistency (A/C); else (E), between latency and consistency (L/C). The Dynamo family is PA/EL: it stays available during a partition and, normally, may read from a single replica for low latency. Spanner and CockroachDB are PC/EC: every write goes through consensus, and they accept the latency.
+
+  - q: "Instead of writing a record to the database, Elasticsearch and the cache **separately** from application code, what is the main benefit of using CDC (change data capture)?"
+    options:
+      - "The search index is always instantly identical to the database"
+      - "Elasticsearch is no longer needed at all"
+      - "Write latency drops to zero"
+      - "The primary database is the single source of truth; derived stores are fed from its change log in order and without loss, and can be rebuilt when needed"
+    why: |
+      With multiple writes from the application, if one succeeds and another fails, the stores silently diverge. CDC (e.g. Debezium) reads the database's WAL/binlog; changes flow through Kafka to the derived stores in commit order and without loss. The derived stores are still eventually consistent (they can lag by a few seconds); there is no "instantly identical" guarantee.

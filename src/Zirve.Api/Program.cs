@@ -84,6 +84,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseSecurityHeaders();
+app.UseZirveLocalization();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();

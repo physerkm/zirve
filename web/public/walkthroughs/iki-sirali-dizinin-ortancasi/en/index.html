@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<base target="_blank">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Median of Two Sorted Arrays</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --ink: #141b26;
+  --muted: #5a6779;
+  --line: #d6dce6;
+  --accent: #3346c8;
+  --accent-ink: #ffffff;
+  --range: #e3e9fb;
+  --range-ink: #1d2a6b;
+  --probe: #c46f00;
+  --good: #17824a;
+  --good-soft: #dcf1e4;
+  --good-soft-ink: #145c36;
+  --bad: #b8402a;
+  --code-bg: #f7f8fb;
+  --code-hl: #dfe5fb;
+  --kw: #7a3aa8;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+    --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+    --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+    --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+  --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+  --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+  --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+  color-scheme: dark;
+}
+
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 40px;
+}
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; color: var(--muted); margin: 0; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 6vw, 54px); line-height: 1.05; letter-spacing: -.02em; margin: 8px 0 14px; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0; font-size: 17px; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: -.01em; margin: 0 0 18px; text-wrap: balance; }
+code { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+
+.idea { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; list-style: none; padding: 0; margin: 0; }
+.idea li { border-top: 2px solid var(--ink); padding-top: 12px; min-width: 0; }
+.idea .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.idea h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 2px 0 6px; text-wrap: balance; }
+.idea p { margin: 0; color: var(--muted); font-size: 15px; }
+@media (max-width: 760px) { .idea { grid-template-columns: 1fr; gap: 20px; } }
+
+.stepper { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+@media (max-width: 560px) { .stepper { padding: 16px; } }
+.stepper h2 { margin: 0; }
+.controls { display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+.fields { display: flex; flex-wrap: wrap; gap: 12px; }
+.field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+input[type="text"] { width: 14em; max-width: 100%; box-sizing: border-box; font: 600 16px var(--font-mono); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.err { margin: 0; font-size: 13px; color: var(--bad); }
+button { font: 500 14px var(--font-body); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.presets button { font-size: 13px; padding: 7px 10px; }
+.presets .mono { font-family: var(--font-mono); font-weight: 700; margin-right: 4px; }
+.presets button[aria-pressed="true"] { border-color: var(--accent); background: var(--range); color: var(--range-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; }
+#play { min-width: 7.5em; }
+
+.step { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+.step-meta { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--range); color: var(--range-ink); }
+.tag[data-kind="skip"] { background: var(--code-bg); color: var(--muted); border: 1px solid var(--line); }
+.tag[data-kind="ok"] { background: var(--good); color: var(--surface); }
+#step-text { margin: 8px 0 0; font-size: 16.5px; max-width: 78ch; min-height: 3.2em; }
+
+.panel-label { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+.panel-label .hint { font-weight: 400; }
+
+.part-wrap { display: flex; flex-direction: column; gap: 14px; }
+.arr-row { display: flex; flex-direction: column; gap: 4px; }
+.arr-title { font: 600 12px var(--font-mono); color: var(--muted); }
+.line-scroll { overflow-x: auto; padding: 4px 6px 6px; }
+.nline { display: flex; align-items: flex-end; gap: 6px; width: max-content; min-height: 82px; }
+.item { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.tags { min-height: 26px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; font: 600 11px/1.3 var(--font-mono); white-space: nowrap; }
+.t-bound { color: var(--accent); }
+.t-right { color: var(--probe); }
+.chip {
+  min-width: 50px; height: 44px; padding: 0 8px; box-sizing: border-box; border-radius: 10px;
+  display: grid; place-items: center;
+  font: 700 17px var(--font-mono); font-variant-numeric: tabular-nums;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  transition: background-color .2s, color .2s, border-color .2s;
+}
+.chip[data-half="left"] { background: var(--range); color: var(--range-ink); border-color: transparent; }
+.chip[data-half="med"] { background: var(--good-soft); color: var(--good-soft-ink); border-color: var(--good); }
+.chip.inf { font-size: 14px; color: var(--muted); border-style: dashed; background: transparent; }
+.chip.b-left { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chip.b-right { outline: 2px solid var(--probe); outline-offset: 2px; }
+.cut { width: 8px; height: 50px; display: grid; place-items: center; font: 700 24px var(--font-mono); color: var(--accent); }
+
+.checks { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+.chk { font: 600 13px var(--font-mono); padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); }
+.chk.pass { border-color: var(--good); background: var(--good-soft); color: var(--good-soft-ink); }
+.chk.fail { border-color: var(--bad); color: var(--bad); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 6px; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--line); }
+.sw.lhalf { background: var(--range); border-color: transparent; }
+.sw.bleft { background: transparent; border: 2px solid var(--accent); }
+.sw.bright { background: transparent; border: 2px solid var(--probe); }
+.sw.med { background: var(--good-soft); border-color: var(--good); }
+
+.board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 28px; }
+@media (max-width: 880px) { .board { grid-template-columns: 1fr; } }
+.col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.vars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.var { border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; background: var(--bg); min-width: 0; }
+.var dt { font: 400 12px var(--font-mono); color: var(--muted); }
+.var dd { margin: 0; font: 600 16px var(--font-mono); font-variant-numeric: tabular-nums; }
+.var.changed { border-color: var(--accent); background: var(--range); }
+.var.changed dd { color: var(--range-ink); }
+.code { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 0; overflow-x: auto; font: 12.5px/1.55 var(--font-mono); }
+.ln { display: block; padding: 0 14px 0 11px; white-space: pre; border-left: 3px solid transparent; }
+.ln.hl { background: var(--code-hl); border-left-color: var(--accent); }
+.kw { color: var(--kw); }
+
+.why-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 40px; }
+.why-grid > div { border-top: 1px solid var(--line); padding-top: 12px; min-width: 0; }
+.why h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 0 0 6px; text-wrap: balance; }
+.why p { margin: 0; color: var(--muted); }
+.why b { color: var(--ink); }
+@media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; gap: 20px; } }
+.foot { display: flex; flex-wrap: wrap; gap: 6px 20px; border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; color: var(--muted); }
+.foot a { color: var(--accent); }
+
+code, .code, .chip, .var dd, input[type="text"] { font-variant-ligatures: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">LeetCode 4 · Median of Two Sorted Arrays · Hard</p>
+    <h1>Median of Two Sorted Arrays</h1>
+    <p class="lead">Step through how we find the right partition line (<code>i</code> and <code>j</code>) without merging the two sorted arrays, by running a binary search on the shorter array.</p>
+  </header>
+
+  <section aria-labelledby="idea-h">
+    <h2 id="idea-h">The idea in three steps</h2>
+    <ol class="idea">
+      <li>
+        <span class="n">1</span>
+        <h3>The median is a partition line</h3>
+        <p>The left half of the merged array must contain <code>half = (m + n + 1) / 2</code> elements in total. If we take <code>i</code> elements from the first array, we must take <code>j = half - i</code> elements from the second.</p>
+      </li>
+      <li>
+        <span class="n">2</span>
+        <h3>Compare the cross boundaries</h3>
+        <p>Since each array is sorted on its own, we only compare the largest values to the left of the cut with the smallest values to its right: <code>maxLeftA ≤ minRightB</code> and <code>maxLeftB ≤ minRightA</code>.</p>
+      </li>
+      <li>
+        <span class="n">3</span>
+        <h3>Binary search on the shorter array</h3>
+        <p>If <code>maxLeftA &gt; minRightB</code>, <code>i</code> is too large (move left); if <code>maxLeftB &gt; minRightA</code>, <code>i</code> is too small (move right). The search range halves at every step.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="stepper" aria-labelledby="st-h">
+    <h2 id="st-h">Step through it</h2>
+
+    <div class="controls">
+      <div class="row">
+        <div class="fields">
+          <div class="field">
+            <label for="nums1">nums1 (sorted)</label>
+            <input id="nums1" type="text" value="1, 3, 8, 9, 15" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="nums2">nums2 (sorted)</label>
+            <input id="nums2" type="text" value="7, 11, 18, 19, 21, 25" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+        <div class="nav">
+          <button type="button" id="reset">Restart</button>
+          <button type="button" id="prev-btn">← Back</button>
+          <button type="button" id="next-btn" class="primary">Next →</button>
+          <button type="button" id="play">▶ Play</button>
+        </div>
+      </div>
+      <div class="presets" role="group" aria-label="Preset examples">
+        <button type="button" data-a="1, 3, 8, 9, 15" data-b="7, 11, 18, 19, 21, 25"><span class="mono">[1,3,8,9,15] &amp; [7,11,18,19,21,25]</span></button>
+        <button type="button" data-a="1, 2" data-b="3, 4"><span class="mono">[1,2] &amp; [3,4]</span>even total</button>
+        <button type="button" data-a="1, 3" data-b="2"><span class="mono">[1,3] &amp; [2]</span>swap</button>
+        <button type="button" data-a="" data-b="5"><span class="mono">[] &amp; [5]</span>one empty</button>
+      </div>
+      <p class="err" id="list-err" hidden>Enter integers sorted in ascending order in both boxes (at least 1 in total, at most 8 numbers per array).</p>
+    </div>
+
+    <div class="step" aria-live="polite">
+      <div class="step-meta"><span id="step-count"></span><span id="step-tag" class="tag"></span></div>
+      <p id="step-text"></p>
+    </div>
+
+    <div class="part-wrap">
+      <p class="panel-label">Arrays and the Partition Line <span class="hint">(everything left of "|" belongs to the left half, everything right of it to the right half)</span></p>
+      <div class="arr-row">
+        <div class="arr-title" id="title-a">nums1 (shorter array A)</div>
+        <div class="line-scroll"><div class="nline" id="row-a"></div></div>
+      </div>
+      <div class="arr-row">
+        <div class="arr-title" id="title-b">nums2 (longer array B)</div>
+        <div class="line-scroll"><div class="nline" id="row-b"></div></div>
+      </div>
+      <div class="checks" id="checks"></div>
+      <div class="legend">
+        <span><i class="sw lhalf"></i>elements in the left half</span>
+        <span><i class="sw bleft"></i>left boundary (maxLeftA / maxLeftB)</span>
+        <span><i class="sw bright"></i>right boundary (minRightA / minRightB)</span>
+        <span><i class="sw med"></i>element(s) that determine the median</span>
+      </div>
+    </div>
+
+    <div class="board">
+      <div class="col">
+        <p class="panel-label">Variables</p>
+        <dl class="vars" id="vars"></dl>
+      </div>
+      <div class="col">
+        <p class="panel-label">Code (method in Solution.cs)</p>
+        <div class="code" id="code" role="region" aria-label="C# code" tabindex="0"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="why" aria-labelledby="why-h">
+    <h2 id="why-h">Why is it so efficient?</h2>
+    <div class="why-grid">
+      <div>
+        <h3>O(log(min(m, n))) time</h3>
+        <p>Merging the arrays would take <b>O(m + n)</b>. Instead, we only binary search for the cut point in the shorter array. Even with two arrays of 1000 elements, the median is found in at most <b>10 steps</b>.</p>
+      </div>
+      <div>
+        <h3>Why do we search the shorter array?</h3>
+        <p>If we searched the longer array, the computed <code>j = half - i</code> could fall outside the bounds of the shorter array (negative or greater than <code>m</code>). When <code>0 ≤ i ≤ m</code> is chosen in the shorter array, <code>0 ≤ j ≤ n</code> is always guaranteed.</p>
+      </div>
+      <div>
+        <h3>What are the -∞ and +∞ boundaries for?</h3>
+        <p>When the cut line lands at the very start (<code>i = 0</code>) or the very end (<code>i = m</code>) of an array, there are no elements left on that side. Treating the left boundary as <code>int.MinValue</code> and the right boundary as <code>int.MaxValue</code> removes extra <code>if</code> branches.</p>
+      </div>
+      <div>
+        <h3>O(1) extra space</h3>
+        <p>We don't create a new array; we only keep a few boundary indices (<code>left</code>, <code>right</code>, <code>i</code>, <code>j</code>), so memory usage is constant.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="walkthrough.js"></script>
+</body>
+</html>

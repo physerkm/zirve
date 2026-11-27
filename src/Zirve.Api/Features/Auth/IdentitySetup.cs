@@ -32,40 +32,50 @@ public sealed class AppUserClaimsPrincipalFactory(UserManager<AppUser> userManag
     }
 }
 
-public sealed class TurkishIdentityErrorDescriber : IdentityErrorDescriber
+/// <summary>Identity hata iletileri, isteğin diline göre Türkçe ya da İngilizce.</summary>
+public sealed class LocalizedIdentityErrorDescriber : IdentityErrorDescriber
 {
+    private static IdentityError Error(string code, string turkish, string english) =>
+        new() { Code = code, Description = Localization.Text(turkish, english) };
+
     public override IdentityError DuplicateEmail(string email) =>
-        new() { Code = nameof(DuplicateEmail), Description = "Bu e-posta adresiyle kayıtlı bir hesap zaten var." };
+        Error(nameof(DuplicateEmail), "Bu e-posta adresiyle kayıtlı bir hesap zaten var.", "An account with this email address already exists.");
 
     public override IdentityError DuplicateUserName(string userName) =>
-        new() { Code = nameof(DuplicateUserName), Description = "Bu e-posta adresiyle kayıtlı bir hesap zaten var." };
+        Error(nameof(DuplicateUserName), "Bu e-posta adresiyle kayıtlı bir hesap zaten var.", "An account with this email address already exists.");
 
     public override IdentityError InvalidEmail(string? email) =>
-        new() { Code = nameof(InvalidEmail), Description = "Geçerli bir e-posta adresi girin." };
+        Error(nameof(InvalidEmail), "Geçerli bir e-posta adresi girin.", "Enter a valid email address.");
 
     public override IdentityError InvalidUserName(string? userName) =>
-        new() { Code = nameof(InvalidUserName), Description = "Geçerli bir e-posta adresi girin." };
+        Error(nameof(InvalidUserName), "Geçerli bir e-posta adresi girin.", "Enter a valid email address.");
 
     public override IdentityError PasswordTooShort(int length) =>
-        new() { Code = nameof(PasswordTooShort), Description = $"Parola en az {length} karakter olmalı." };
+        Error(nameof(PasswordTooShort), $"Parola en az {length} karakter olmalı.", $"Password must be at least {length} characters.");
 
     public override IdentityError PasswordRequiresUniqueChars(int uniqueChars) =>
-        new() { Code = nameof(PasswordRequiresUniqueChars), Description = $"Parola en az {uniqueChars} farklı karakter içermeli." };
+        Error(
+            nameof(PasswordRequiresUniqueChars),
+            $"Parola en az {uniqueChars} farklı karakter içermeli.",
+            $"Password must contain at least {uniqueChars} different characters.");
 
     public override IdentityError PasswordRequiresDigit() =>
-        new() { Code = nameof(PasswordRequiresDigit), Description = "Parola en az bir rakam içermeli." };
+        Error(nameof(PasswordRequiresDigit), "Parola en az bir rakam içermeli.", "Password must contain at least one digit.");
 
     public override IdentityError PasswordRequiresLower() =>
-        new() { Code = nameof(PasswordRequiresLower), Description = "Parola en az bir küçük harf içermeli." };
+        Error(nameof(PasswordRequiresLower), "Parola en az bir küçük harf içermeli.", "Password must contain at least one lowercase letter.");
 
     public override IdentityError PasswordRequiresUpper() =>
-        new() { Code = nameof(PasswordRequiresUpper), Description = "Parola en az bir büyük harf içermeli." };
+        Error(nameof(PasswordRequiresUpper), "Parola en az bir büyük harf içermeli.", "Password must contain at least one uppercase letter.");
 
     public override IdentityError PasswordRequiresNonAlphanumeric() =>
-        new() { Code = nameof(PasswordRequiresNonAlphanumeric), Description = "Parola en az bir özel karakter içermeli." };
+        Error(
+            nameof(PasswordRequiresNonAlphanumeric),
+            "Parola en az bir özel karakter içermeli.",
+            "Password must contain at least one special character.");
 
     public override IdentityError DefaultError() =>
-        new() { Code = nameof(DefaultError), Description = "Bilinmeyen bir hata oluştu." };
+        Error(nameof(DefaultError), "Bilinmeyen bir hata oluştu.", "An unknown error occurred.");
 }
 
 public static class IdentitySetup
@@ -100,7 +110,7 @@ public static class IdentitySetup
             .AddEntityFrameworkStores<AppDbContext>()
             .AddSignInManager()
             .AddClaimsPrincipalFactory<AppUserClaimsPrincipalFactory>()
-            .AddErrorDescriber<TurkishIdentityErrorDescriber>()
+            .AddErrorDescriber<LocalizedIdentityErrorDescriber>()
             .AddDefaultTokenProviders();
 
         services.ConfigureApplicationCookie(cookie =>

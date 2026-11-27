@@ -19,14 +19,13 @@ namespace Zirve.Api.Content;
 ///   lessons/{yol}/{bölüm}/NN-slug.md     ön bilgi (YAML) + Markdown
 ///   quizzes/{yol}/NN-slug.yaml           test soruları
 ///   problems/NNN-slug.md                 ön bilgi + tanım + İpuçları + Çözüm + Testler
+///   en/                                  İngilizce çeviriler (bkz. ContentLoader.English.cs)
 /// </code>
 /// Hatalar tek tek fırlatılmaz; hepsi toplanıp <see cref="ContentException"/> ile birlikte bildirilir.
 /// </summary>
 public static partial class ContentLoader
 {
-    private const string HintsHeading = "İpuçları";
-    private const string EditorialHeading = "Çözüm";
-    private const string TestsHeading = "Testler";
+    private static readonly ProblemHeadings TurkishHeadings = new("İpuçları", "Çözüm", "Testler");
 
     private static readonly IDeserializer Yaml = new DeserializerBuilder()
         .WithNamingConvention(CamelCaseNamingConvention.Instance)
@@ -52,6 +51,7 @@ public static partial class ContentLoader
         var tracks = LoadTracks(root, errors);
         var quizzes = LoadQuizzes(root, tracks, errors);
         var problems = LoadProblems(root, errors);
+        (tracks, quizzes, problems) = ApplyEnglish(root, tracks, quizzes, problems, errors);
 
         if (errors.Count > 0)
         {
@@ -422,7 +422,7 @@ public static partial class ContentLoader
         }
 
         var spec = BuildSpec(meta, where, errors);
-        var sections = SplitSections(body);
+        var sections = SplitSections(body, TurkishHeadings);
 
         var statement = sections["statement"].Trim();
         if (statement.Length == 0)
@@ -438,7 +438,7 @@ public static partial class ContentLoader
         {
             if (!solutions.ContainsKey(required))
             {
-                errors.Add($"{where}: '## {EditorialHeading}' bölümünde ```{required} solution kod bloğu eksik.");
+                errors.Add($"{where}: '## {TurkishHeadings.Editorial}' bölümünde ```{required} solution kod bloğu eksik.");
             }
         }
 
@@ -553,8 +553,11 @@ public static partial class ContentLoader
         return errors.Count == before ? spec : null;
     }
 
+    /// <summary>Problem dosyasındaki ayrılmış "## Başlık" satırları; Tests null ise o dilde test bölümü yoktur.</summary>
+    private sealed record ProblemHeadings(string Hints, string Editorial, string? Tests);
+
     /// <summary>Gövdeyi, kod blokları dışındaki ayrılmış "## Başlık" satırlarından bölümlere ayırır.</summary>
-    private static Dictionary<string, string> SplitSections(string body)
+    private static Dictionary<string, string> SplitSections(string body, ProblemHeadings headings)
     {
         var sections = new Dictionary<string, StringBuilder>(StringComparer.Ordinal) { ["statement"] = new() };
         var current = "statement";
@@ -569,13 +572,11 @@ public static partial class ContentLoader
 
             if (!inFence && line.StartsWith("## ", StringComparison.Ordinal))
             {
-                var key = line[3..].Trim() switch
-                {
-                    HintsHeading => "hints",
-                    EditorialHeading => "editorial",
-                    TestsHeading => "tests",
-                    _ => null,
-                };
+                var heading = line[3..].Trim();
+                var key = heading == headings.Hints ? "hints"
+                    : heading == headings.Editorial ? "editorial"
+                    : heading == headings.Tests ? "tests"
+                    : null;
 
                 if (key is not null)
                 {
@@ -652,7 +653,7 @@ public static partial class ContentLoader
 
         if (start < 0 || end < 0)
         {
-            errors.Add($"{where}: '## {TestsHeading}' bölümünde ```json kod bloğu bulunamadı.");
+            errors.Add($"{where}: '## {TurkishHeadings.Tests}' bölümünde ```json kod bloğu bulunamadı.");
             return [];
         }
 

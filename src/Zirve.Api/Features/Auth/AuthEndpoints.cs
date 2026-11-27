@@ -14,27 +14,27 @@ public sealed record SessionResponse(UserDto? User, string CsrfToken);
 
 public sealed class RegisterRequest
 {
-    [Required(ErrorMessage = "E-posta zorunlu.")]
-    [EmailAddress(ErrorMessage = "Geçerli bir e-posta adresi girin.")]
-    [StringLength(254, ErrorMessage = "E-posta en fazla 254 karakter olabilir.")]
+    [Required(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.EmailRequired))]
+    [EmailAddress(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.InvalidEmail))]
+    [StringLength(254, ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.EmailTooLong))]
     public string Email { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Parola zorunlu.")]
-    [StringLength(128, MinimumLength = 8, ErrorMessage = "Parola 8 ile 128 karakter arasında olmalı.")]
+    [Required(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.PasswordRequired))]
+    [StringLength(128, MinimumLength = 8, ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.PasswordLength))]
     public string Password { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Görünen ad zorunlu.")]
-    [StringLength(40, MinimumLength = 2, ErrorMessage = "Görünen ad 2 ile 40 karakter arasında olmalı.")]
+    [Required(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.DisplayNameRequired))]
+    [StringLength(40, MinimumLength = 2, ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.DisplayNameLength))]
     public string DisplayName { get; set; } = string.Empty;
 }
 
 public sealed class LoginRequest
 {
-    [Required(ErrorMessage = "E-posta zorunlu.")]
+    [Required(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.EmailRequired))]
     [StringLength(254)]
     public string Email { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Parola zorunlu.")]
+    [Required(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.PasswordRequired))]
     [StringLength(128)]
     public string Password { get; set; } = string.Empty;
 
@@ -102,12 +102,12 @@ public static class AuthEndpoints
         HttpContext http)
     {
         // Hesabın var olup olmadığını sızdırmamak için her başarısızlıkta aynı yanıt verilir.
-        const string InvalidCredentials = "E-posta ya da parola hatalı.";
+        var invalidCredentials = Localization.Text("E-posta ya da parola hatalı.", "Incorrect email or password.");
 
         var user = await users.FindByEmailAsync(request.Email.Trim());
         if (user is null)
         {
-            return Results.Problem(statusCode: StatusCodes.Status401Unauthorized, title: InvalidCredentials);
+            return Results.Problem(statusCode: StatusCodes.Status401Unauthorized, title: invalidCredentials);
         }
 
         var result = await signIn.PasswordSignInAsync(user, request.Password, request.RememberMe, lockoutOnFailure: true);
@@ -116,12 +116,14 @@ public static class AuthEndpoints
         {
             return Results.Problem(
                 statusCode: StatusCodes.Status429TooManyRequests,
-                title: "Çok fazla hatalı deneme yapıldı. Lütfen birkaç dakika sonra tekrar deneyin.");
+                title: Localization.Text(
+                    "Çok fazla hatalı deneme yapıldı. Lütfen birkaç dakika sonra tekrar deneyin.",
+                    "Too many failed attempts. Please try again in a few minutes."));
         }
 
         if (!result.Succeeded)
         {
-            return Results.Problem(statusCode: StatusCodes.Status401Unauthorized, title: InvalidCredentials);
+            return Results.Problem(statusCode: StatusCodes.Status401Unauthorized, title: invalidCredentials);
         }
 
         http.User = await signIn.CreateUserPrincipalAsync(user);

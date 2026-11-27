@@ -297,4 +297,53 @@ public sealed class ApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.OK, live.StatusCode);
         Assert.Equal(HttpStatusCode.OK, ready.StatusCode);
     }
+
+    // ------------------------------------------------------------ dil
+
+    private static async Task<ApiSession> EnglishSessionAsync(ApiFactory factory)
+    {
+        var api = await factory.CreateSessionAsync();
+        api.Client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("en-US,en;q=0.9");
+        return api;
+    }
+
+    [Fact]
+    public async Task Content_is_served_in_english_when_the_client_asks_for_it()
+    {
+        var turkish = await factory.CreateSessionAsync();
+        var english = await EnglishSessionAsync(factory);
+
+        var trTrack = await turkish.GetAsync("/api/tracks/algoritmalar");
+        var enTrack = await english.GetAsync("/api/tracks/algoritmalar");
+        Assert.Equal("Algoritmalar ve Veri Yapıları", trTrack.GetProperty("title").GetString());
+        Assert.Equal("Algorithms and Data Structures", enTrack.GetProperty("title").GetString());
+
+        var enProblem = await english.GetAsync($"/api/problems/{ProblemSlug}");
+        Assert.Equal("Two Sum", enProblem.GetProperty("title").GetString());
+        var linkedList = await english.GetAsync("/api/problems/bagli-listeyi-ters-cevir");
+        Assert.Contains("// ListNode is already defined:", linkedList.GetProperty("starterCode").GetProperty("csharp").GetString());
+
+        var enQuizzes = await english.GetAsync("/api/quizzes");
+        var trQuizzes = await turkish.GetAsync("/api/quizzes");
+        Assert.NotEqual(trQuizzes[0].GetProperty("title").GetString(), enQuizzes[0].GetProperty("title").GetString());
+
+        var hits = await english.GetAsync("/api/search?q=" + Uri.EscapeDataString("two sum"));
+        Assert.Contains(hits.GetProperty("problems").EnumerateArray(), hit => hit.GetProperty("slug").GetString() == ProblemSlug);
+    }
+
+    [Fact]
+    public async Task Error_messages_follow_the_request_language()
+    {
+        var api = await EnglishSessionAsync(factory);
+
+        using var invalid = await api.SendAsync(HttpMethod.Post, "/api/auth/register", new { email = "invalid", password = "short", displayName = "A" });
+        var problem = await ApiSession.ReadAsync(invalid);
+        var messages = problem.GetProperty("errors").EnumerateObject().SelectMany(field => field.Value.EnumerateArray()).Select(m => m.GetString()!).ToList();
+
+        Assert.Contains("Enter a valid email address.", messages);
+        Assert.DoesNotContain(messages, message => message.Contains("Parola", StringComparison.Ordinal));
+
+        using var login = await api.SendAsync(HttpMethod.Post, "/api/auth/login", new { email = "nobody@example.com", password = "whatever-password" });
+        Assert.Equal("Incorrect email or password.", (await ApiSession.ReadAsync(login)).GetProperty("title").GetString());
+    }
 }
