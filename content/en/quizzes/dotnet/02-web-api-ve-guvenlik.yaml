@@ -1,0 +1,110 @@
+title: Web API Design and Security
+description: HTTP verbs and status codes, idempotency, pagination, versioning, JWT, OAuth and OIDC, authorization, OWASP risks, background jobs, gRPC and SignalR.
+questions:
+  - q: "A client sends the request `PUT /api/products/42` three times because of a network error. The body is the same each time. What is the result?"
+    options:
+      - "The product is updated three times, but the final state is the same as after a single update; PUT is idempotent."
+      - "Three separate products are created."
+      - "The second and third requests always return 409 Conflict."
+      - "Because PUT is a safe verb, the server state never changes."
+    why: |
+      Idempotent means that applying the same request once or several times produces the same final state. PUT is idempotent because it replaces the resource entirely with the body sent. POST, on the other hand, is not idempotent: sending the same request again can create new records. The only "safe" verbs are GET, HEAD and OPTIONS: they never change the server state.
+
+  - q: "A signed-in user tries to delete a record that only administrators can delete. Which status code should be returned?"
+    options:
+      - "400 Bad Request"
+      - "401 Unauthorized"
+      - "403 Forbidden"
+      - "404 Not Found is always required"
+    why: |
+      401 says the identity is not authenticated ("who are you?"). Here the user is signed in, so their identity is known, but they lack permission: 403. When you don't want to leak even the existence of the resource (e.g. orders belonging to another user), returning 404 can also be a deliberate choice, but it is not required.
+
+  - q: "At a payment endpoint, the client resends the request after a timeout and the customer is charged twice. What is the best solution?"
+    options:
+      - "Turning off retries on the client entirely"
+      - "Making the payment endpoint a GET"
+      - "Increasing the server timeout"
+      - "Having the client send a unique `Idempotency-Key` for each operation; the server stores the key with its result and returns the same response to a repeated request"
+    why: |
+      When the network drops, the client cannot know whether the request was processed. Turning off retries leads to lost payments. Increasing the timeout only makes the problem rarer. An idempotency key lets the server return the stored result without performing the same operation a second time. The key is kept in a table with a unique index or in Redis.
+
+  - q: "On an order list with millions of rows, requests like `?page=50000&pageSize=20` are very slow. Why, and what do you suggest?"
+    options:
+      - "JSON serialization is slow; the response needs to be compressed."
+      - "OFFSET forces the database to read every skipped row; you should use cursor (keyset) pagination with an indexed key such as (CreatedAt, Id)."
+      - "pageSize is too small; it should be 1000."
+      - "Instead of paginating, the entire list should be cached."
+    why: |
+      `OFFSET 1000000` means the database reads and discards a million rows, and the cost grows linearly with the page number. Cursor pagination asks for what comes after the last key seen and seeks directly to it via the index, so it runs at constant speed on every page. It also solves the problem of rows shifting when records are inserted between page loads.
+
+  - q: "Which statement about a JWT is **true**?"
+    options:
+      - "The signature proves the content has not been altered; the payload is Base64Url-encoded and anyone can read it."
+      - "The payload is encrypted, so the user's password can safely be put inside it."
+      - "Because the JWT is stored on the server, it can be revoked at any moment."
+      - "Audience validation is unnecessary; the signature is enough."
+    why: |
+      A standard JWT (JWS) is signed, not encrypted, so no secret data goes inside it. The token is self-contained and is not stored on the server, so it cannot be revoked directly before it expires. That is why short lifetimes and refresh token rotation are used. If the audience is not validated, a valid token issued for another service is also accepted by your API.
+
+  - q: "Which best describes the relationship between OAuth 2.0 and OpenID Connect?"
+    options:
+      - "They are two names for the same protocol."
+      - "OAuth is the authentication protocol and OIDC is the authorization protocol."
+      - "OIDC adds an identity layer on top of OAuth 2.0 and issues an ID token describing who the user is; OAuth on its own is for delegating access."
+      - "OIDC is used only for service-to-service calls."
+    why: |
+      OAuth 2.0 exists to grant an application access to a resource on behalf of a user, and it issues an access token. It does not say who the user is in a standard way. OpenID Connect builds on top of it and carries identity information in the ID token. "Sign in with Google" is OIDC.
+
+  - q: "Which OAuth flow should an SPA (browser application) use for user sign-in?"
+    options:
+      - "Implicit flow"
+      - "Resource Owner Password Credentials"
+      - "Authorization Code + PKCE"
+      - "Client Credentials"
+    why: |
+      The Implicit and Resource Owner Password flows are no longer recommended because of security problems, and OAuth 2.1 removes them. Client Credentials is for service-to-service calls with no user involved. For any client where a user signs in (web, SPA, mobile), the right flow is Authorization Code + PKCE. PKCE ensures that a stolen authorization code is useless without the `code_verifier`.
+
+  - q: "By changing the number in the request `GET /api/orders/123`, a user can see other users' orders. The endpoint is protected with `RequireAuthorization()`. What is the problem?"
+    options:
+      - "The JWT signature is not being validated."
+      - "CORS is misconfigured."
+      - "HTTPS is not being used."
+      - "Resource ownership is not checked (IDOR); the query should be filtered by user or resource-based authorization should be applied."
+    why: |
+      `RequireAuthorization()` only verifies that the user is signed in. It does not check whether the order belongs to that user. This is called IDOR (Insecure Direct Object Reference) and is part of Broken Access Control, OWASP's number-one risk. The fix is to filter the query by user from the start or to use a resource-based authorization handler.
+
+  - q: "An unhandled exception occurred inside a `BackgroundService`. What is the default behavior in .NET 6 and later?"
+    options:
+      - "The exception is silently swallowed and the service keeps running."
+      - "Only that background service stops; the application keeps running."
+      - "The entire application (the host) is stopped."
+      - "The service is restarted automatically."
+    why: |
+      Since .NET 6, `BackgroundServiceExceptionBehavior` defaults to `StopHost`: an exception escaping `ExecuteAsync` stops the whole application. That is why each iteration of the loop should be protected with `try/catch` and the error logged. The old behavior (only the service stops) can be restored with a setting, but it leads to silent failures.
+
+  - q: "An application that uses SignalR was scaled out to three server instances. A notification raised on one instance does not reach users connected to another instance. What is the fix?"
+    options:
+      - "Using a Redis backplane or Azure SignalR Service"
+      - "Using a separate hub name on each instance"
+      - "Forcing long polling instead of WebSocket"
+      - "Sending notifications in the HTTP response"
+    why: |
+      SignalR connections belong to the server process they connected to. An instance can send messages only to its own connections. Distributing messages across instances requires a backplane (Redis pub/sub) or Azure SignalR Service, which manages the connections itself.
+
+  - q: "Which of the following are true about gRPC? (Select more than one)"
+    options:
+      - "It runs over HTTP/2 and encodes messages with binary Protocol Buffers."
+      - "It can be called directly from browsers without an extra layer."
+      - "It has built-in support for server, client and bidirectional streaming."
+      - "If a field's number is changed in the `.proto` file, old clients are not affected."
+    why: |
+      gRPC uses HTTP/2 and Protobuf and supports streaming out of the box. Browsers do not directly expose the HTTP/2 features gRPC needs, so gRPC-Web or JSON transcoding is required. In Protobuf, field numbers are the on-the-wire contract. Changing a number makes old clients read the data into the wrong field. The numbers of deleted fields are locked with `reserved`.
+
+  - q: "Which statement about ASP.NET Core's built-in rate limiter (`AddRateLimiter`) is true?"
+    options:
+      - "It uses a single counter that is automatically shared across all instances."
+      - "It keeps its counters in-process; if more than one instance is running, the total limit is multiplied by the number of instances."
+      - "It can partition only by IP address."
+      - "By default it returns 500 to requests over the limit, and this cannot be changed."
+    why: |
+      The built-in limiter works in memory. In a deployment with three instances, each instance keeps its own counter, so a limit of 100 requests per minute is effectively 300. A distributed limit requires a Redis-based limiter or an API gateway. Partitioning can be by user, by IP or by any key. The rejection code is set to 429 with `RejectionStatusCode`.

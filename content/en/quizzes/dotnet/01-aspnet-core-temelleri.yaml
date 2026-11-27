@@ -1,0 +1,81 @@
+title: ASP.NET Core Fundamentals
+description: The middleware pipeline, dependency injection, service lifetimes and configuration.
+questions:
+  - q: |
+      What is the result of the following ordering?
+
+      ```csharp
+      app.UseAuthorization();
+      app.UseAuthentication();
+      app.MapGet("/orders", GetOrders).RequireAuthorization();
+      ```
+    options:
+      - "The order doesn't matter; ASP.NET Core arranges middleware in the right order on its own."
+      - "Authorization runs before the user is authenticated, so even signed-in users are rejected."
+      - "The application does not compile."
+      - "Authentication runs twice."
+    why: |
+      Middleware runs in the order it was added. `UseAuthentication` populates the request's identity (`HttpContext.User`); `UseAuthorization` makes its decision based on that identity. If the order is reversed, authorization sees an empty identity. Authentication must always come before authorization.
+
+  - q: "Within the same HTTP request, two different classes request a service registered with `AddScoped`. How many instances are created?"
+    options:
+      - "One; both get the same instance."
+      - "Two; each class gets its own instance."
+      - "A single instance created once for the whole application is used."
+      - "None; scoped services must be created manually."
+    why: |
+      The scoped lifetime means "one instance per scope", and ASP.NET Core opens a scope for each HTTP request. Within the same request, whoever asks for the service gets the same instance; the next request gets a new one. With transient, every resolution would create a new instance; with singleton, there would be a single instance for the whole application.
+
+  - q: "What is the problem with a service registered as a singleton taking a scoped `DbContext` in its constructor?"
+    options:
+      - "There is no problem; the container reconciles the lifetimes automatically."
+      - "The singleton holds on to the `DbContext` for the lifetime of the application: an object that is not thread-safe and should be disposed at the end of the request is shared across all requests."
+      - "The `DbContext` is recreated on every request and performance drops."
+      - "It causes problems only in unit tests."
+    why: |
+      This is called a **captive dependency**. The singleton is created once, and the scoped service it receives lives along with it. `DbContext` is not thread-safe and is designed for a single unit of work; it breaks under concurrent requests. In the development environment, ASP.NET Core catches this at startup through scope validation. The rule: a service may depend only on services with the same or a longer lifetime.
+
+  - q: "You need to use a `DbContext` regularly inside a `BackgroundService` (a singleton). What is the right approach?"
+    options:
+      - "Injecting the `DbContext` into the constructor"
+      - "Registering the `DbContext` as a singleton"
+      - "Injecting `IServiceScopeFactory`, opening a new scope for each job and resolving the `DbContext` from that scope"
+      - "Creating it manually with `new AppDbContext()`"
+    why: |
+      A background service has no HTTP request scope. You open a scope for each unit of work with `IServiceScopeFactory.CreateAsyncScope()`; scoped services resolved from that scope are cleaned up properly when the scope is disposed. Making the `DbContext` a singleton leads to concurrency bugs and an ever-growing change tracker.
+
+  - q: "What is the problem with creating a `new HttpClient()` and disposing it on every HTTP call?"
+    options:
+      - "An `HttpClient` can be used only once."
+      - "Under load it can lead to socket exhaustion; you should use `IHttpClientFactory` instead."
+      - "The requests are not encrypted."
+      - "There is no problem; this is the recommended usage."
+    why: |
+      Each `HttpClient` opens its own connection pool; even after it is disposed, the operating system does not release the underlying sockets for a while. Under heavy use, the available ports run out. `IHttpClientFactory` (`AddHttpClient`) pools and reuses handlers, and recycles them at intervals to pick up DNS changes.
+
+  - q: "What is the benefit of calling `ValidateOnStart()` in the options pattern?"
+    options:
+      - "It encrypts the settings."
+      - "It makes invalid or missing configuration surface when the application starts instead of at the moment of first use."
+      - "It prevents the settings from being changed at run time."
+      - "It saves the settings to the database."
+    why: |
+      By default, validation happens when the settings are first read; the error surfaces when the relevant code path runs, perhaps hours later. `ValidateOnStart()` moves validation to startup: an application deployed with bad settings never comes up, and the problem is noticed immediately (fail fast).
+
+  - q: "What happens if a middleware does not call `await next(context)`?"
+    options:
+      - "The pipeline short-circuits; the subsequent middleware and the endpoint do not run."
+      - "The request is automatically handed off to the next middleware."
+      - "The application throws an exception."
+      - "The request is restarted from the beginning."
+    why: |
+      Each middleware decides for itself whether to pass the request on to the next one. If `next` is not called, the pipeline ends there and that middleware produces the response. Cases such as returning 401 when authentication fails or serving a response from the cache rely on this behavior.
+
+  - q: "When configuration sources are loaded in the default order, which one **takes precedence** for the same key?"
+    options:
+      - "`appsettings.json`"
+      - "`appsettings.Production.json`"
+      - "Environment variables"
+      - "All have equal precedence; the first one found is used."
+    why: |
+      Sources are layered and a source added later overrides the earlier ones: `appsettings.json` → `appsettings.{Environment}.json` → user secrets (development only) → environment variables → command-line arguments. This way, secret and environment-specific values can be supplied by the deployment environment without ever entering the repository.

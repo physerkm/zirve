@@ -1,19 +1,69 @@
 import clsx, { type ClassValue } from 'clsx';
+import { getLocale, intlLocale } from '@/i18n/locale';
+import { currentMessages, defineMessages } from '@/i18n/messages';
 import type { Difficulty, Json, Language, Level, ParamSpec, TestStatus, Verdict } from './types';
 
 export const cn = (...inputs: ClassValue[]) => clsx(inputs);
 
-export const levelLabels: Record<Level, string> = {
-  beginner: 'Başlangıç',
-  intermediate: 'Orta',
-  advanced: 'İleri',
-};
+// Etiketler ve biçimlendirme geçerli dile göre yapılır (bkz. i18n/locale.ts). Bu fonksiyonları çağıran
+// bileşenler dil değişince yeniden çizilmek için useLocale ya da useMessages kullanır.
 
-export const difficultyLabels: Record<Difficulty, string> = {
-  easy: 'Kolay',
-  medium: 'Orta',
-  hard: 'Zor',
-};
+const labels = defineMessages({
+  tr: {
+    level: { beginner: 'Başlangıç', intermediate: 'Orta', advanced: 'İleri' } as Record<Level, string>,
+    difficulty: { easy: 'Kolay', medium: 'Orta', hard: 'Zor' } as Record<Difficulty, string>,
+    verdict: {
+      accepted: 'Kabul edildi',
+      wrongAnswer: 'Yanlış yanıt',
+      runtimeError: 'Çalışma zamanı hatası',
+      timeLimitExceeded: 'Süre sınırı aşıldı',
+      outputLimitExceeded: 'Çıktı sınırı aşıldı',
+      compileError: 'Derleme hatası',
+      internalError: 'Sistem hatası',
+    } as Record<Verdict, string>,
+    testStatus: {
+      passed: 'Geçti',
+      failed: 'Yanlış',
+      error: 'Hata',
+      timeout: 'Zaman aşımı',
+      skipped: 'Çalışmadı',
+    } as Record<TestStatus, string>,
+    minutes: (m: number) => `${m} dk`,
+    hours: (h: number) => `${h} sa`,
+    justNow: 'az önce',
+  },
+  en: {
+    level: { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced' },
+    difficulty: { easy: 'Easy', medium: 'Medium', hard: 'Hard' },
+    verdict: {
+      accepted: 'Accepted',
+      wrongAnswer: 'Wrong answer',
+      runtimeError: 'Runtime error',
+      timeLimitExceeded: 'Time limit exceeded',
+      outputLimitExceeded: 'Output limit exceeded',
+      compileError: 'Compile error',
+      internalError: 'System error',
+    },
+    testStatus: {
+      passed: 'Passed',
+      failed: 'Wrong',
+      error: 'Error',
+      timeout: 'Timed out',
+      skipped: 'Not run',
+    },
+    minutes: (m: number) => `${m} min`,
+    hours: (h: number) => `${h} h`,
+    justNow: 'just now',
+  },
+});
+
+export const levelLabel = (level: Level): string => currentMessages(labels).level[level];
+
+export const difficultyLabel = (difficulty: Difficulty): string => currentMessages(labels).difficulty[difficulty];
+
+export const verdictLabel = (verdict: Verdict): string => currentMessages(labels).verdict[verdict];
+
+export const testStatusLabel = (status: TestStatus): string => currentMessages(labels).testStatus[status];
 
 export const difficultyClasses: Record<Difficulty, string> = {
   easy: 'text-emerald-700 bg-emerald-500/10 dark:text-emerald-400',
@@ -27,67 +77,91 @@ export const languageLabels: Record<Language, string> = {
   typescript: 'TypeScript',
 };
 
-export const verdictLabels: Record<Verdict, string> = {
-  accepted: 'Kabul edildi',
-  wrongAnswer: 'Yanlış yanıt',
-  runtimeError: 'Çalışma zamanı hatası',
-  timeLimitExceeded: 'Süre sınırı aşıldı',
-  outputLimitExceeded: 'Çıktı sınırı aşıldı',
-  compileError: 'Derleme hatası',
-  internalError: 'Sistem hatası',
-};
-
-export const testStatusLabels: Record<TestStatus, string> = {
-  passed: 'Geçti',
-  failed: 'Yanlış',
-  error: 'Hata',
-  timeout: 'Zaman aşımı',
-  skipped: 'Çalışmadı',
-};
-
-/** Etiket slug'larının okunur karşılıkları; listede olmayanlar slug'dan türetilir. */
-const tagLabels: Record<string, string> = {
-  dizi: 'Dizi',
-  'hash-tablosu': 'Hash Tablosu',
-  'iki-isaretci': 'İki İşaretçi',
-  'kayan-pencere': 'Kayan Pencere',
-  yigin: 'Yığın',
-  kuyruk: 'Kuyruk',
-  'ikili-arama': 'İkili Arama',
-  'bagli-liste': 'Bağlı Liste',
-  agac: 'Ağaç',
-  'ikili-arama-agaci': 'İkili Arama Ağacı',
-  heap: 'Heap',
-  graf: 'Graf',
-  bfs: 'BFS',
-  dfs: 'DFS',
-  'dinamik-programlama': 'Dinamik Programlama',
-  'geri-izleme': 'Geri İzleme',
-  acgozlu: 'Açgözlü',
-  aralik: 'Aralık',
-  siralama: 'Sıralama',
-  dizgi: 'Dizgi',
-  matematik: 'Matematik',
-  tasarim: 'Tasarım',
-  trie: 'Trie',
-  ozyineleme: 'Özyineleme',
-  matris: 'Matris',
-  'on-ek-toplami': 'Ön Ek Toplamı',
-  javascript: 'JavaScript',
-  'topolojik-siralama': 'Topolojik Sıralama',
-  'bit-islemleri': 'Bit İşlemleri',
-  'birlik-bul': 'Birlik-Bul',
-};
+/** Etiket slug'larının (Türkçe) okunur karşılıkları; listede olmayanlar slug'dan türetilir. */
+const tagLabels = defineMessages<Record<string, string>>({
+  tr: {
+    dizi: 'Dizi',
+    'hash-tablosu': 'Hash Tablosu',
+    'iki-isaretci': 'İki İşaretçi',
+    'kayan-pencere': 'Kayan Pencere',
+    yigin: 'Yığın',
+    kuyruk: 'Kuyruk',
+    'ikili-arama': 'İkili Arama',
+    'bagli-liste': 'Bağlı Liste',
+    agac: 'Ağaç',
+    'ikili-arama-agaci': 'İkili Arama Ağacı',
+    heap: 'Heap',
+    graf: 'Graf',
+    bfs: 'BFS',
+    dfs: 'DFS',
+    'dinamik-programlama': 'Dinamik Programlama',
+    'geri-izleme': 'Geri İzleme',
+    acgozlu: 'Açgözlü',
+    aralik: 'Aralık',
+    siralama: 'Sıralama',
+    dizgi: 'Dizgi',
+    matematik: 'Matematik',
+    tasarim: 'Tasarım',
+    trie: 'Trie',
+    ozyineleme: 'Özyineleme',
+    matris: 'Matris',
+    'on-ek-toplami': 'Ön Ek Toplamı',
+    javascript: 'JavaScript',
+    'topolojik-siralama': 'Topolojik Sıralama',
+    'bit-islemleri': 'Bit İşlemleri',
+    'birlik-bul': 'Birlik-Bul',
+  },
+  en: {
+    dizi: 'Array',
+    'hash-tablosu': 'Hash Table',
+    'iki-isaretci': 'Two Pointers',
+    'kayan-pencere': 'Sliding Window',
+    yigin: 'Stack',
+    kuyruk: 'Queue',
+    'ikili-arama': 'Binary Search',
+    'bagli-liste': 'Linked List',
+    agac: 'Tree',
+    'ikili-arama-agaci': 'Binary Search Tree',
+    heap: 'Heap',
+    graf: 'Graph',
+    bfs: 'BFS',
+    dfs: 'DFS',
+    'dinamik-programlama': 'Dynamic Programming',
+    'geri-izleme': 'Backtracking',
+    acgozlu: 'Greedy',
+    aralik: 'Intervals',
+    siralama: 'Sorting',
+    dizgi: 'String',
+    matematik: 'Math',
+    tasarim: 'Design',
+    trie: 'Trie',
+    ozyineleme: 'Recursion',
+    matris: 'Matrix',
+    'on-ek-toplami': 'Prefix Sum',
+    javascript: 'JavaScript',
+    'topolojik-siralama': 'Topological Sort',
+    'bit-islemleri': 'Bit Manipulation',
+    'birlik-bul': 'Union-Find',
+  },
+});
 
 export function tagLabel(tag: string): string {
-  return tagLabels[tag] ?? tag.split('-').map((word) => word.charAt(0).toLocaleUpperCase('tr') + word.slice(1)).join(' ');
+  const locale = getLocale();
+  return (
+    tagLabels[locale][tag] ??
+    tag
+      .split('-')
+      .map((word) => word.charAt(0).toLocaleUpperCase(locale) + word.slice(1))
+      .join(' ')
+  );
 }
 
 export function formatMinutes(minutes: number): string {
-  if (minutes < 60) return `${minutes} dk`;
+  const t = currentMessages(labels);
+  if (minutes < 60) return t.minutes(minutes);
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  return rest === 0 ? `${hours} sa` : `${hours} sa ${rest} dk`;
+  return rest === 0 ? t.hours(hours) : `${t.hours(hours)} ${t.minutes(rest)}`;
 }
 
 export function formatDuration(totalSeconds: number): string {
@@ -96,15 +170,13 @@ export function formatDuration(totalSeconds: number): string {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-const dateTimeFormat = new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium', timeStyle: 'short' });
-const relativeFormat = new Intl.RelativeTimeFormat('tr', { numeric: 'auto' });
-
 export function formatDateTime(iso: string): string {
-  return dateTimeFormat.format(new Date(iso));
+  return new Intl.DateTimeFormat(intlLocale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
 }
 
 export function formatRelative(iso: string, now: Date = new Date()): string {
   const seconds = Math.round((new Date(iso).getTime() - now.getTime()) / 1000);
+  const relativeFormat = new Intl.RelativeTimeFormat(getLocale(), { numeric: 'auto' });
   const units: [Intl.RelativeTimeFormatUnit, number][] = [
     ['year', 31_536_000],
     ['month', 2_592_000],
@@ -117,7 +189,7 @@ export function formatRelative(iso: string, now: Date = new Date()): string {
     if (Math.abs(seconds) >= size) return relativeFormat.format(Math.round(seconds / size), unit);
   }
 
-  return 'az önce';
+  return currentMessages(labels).justNow;
 }
 
 export function percent(completed: number, total: number): number {

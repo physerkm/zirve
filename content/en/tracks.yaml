@@ -1,0 +1,177 @@
+# English titles and descriptions for tracks and modules. Slugs, order, icons and colours come from
+# content/tracks.yaml; this file only carries the translated text.
+
+- slug: mulakat
+  title: Interview Preparation
+  description: How the interview process works at big tech companies, how to plan your preparation, and what interviewers look for in coding and behavioral interviews.
+  modules:
+    - slug: surec
+      title: Process and Plan
+      description: Interview stages, the leveling system and a realistic study plan.
+    - slug: davranissal
+      title: Behavioral Interview
+      description: The STAR method and your résumé, for telling your experience effectively.
+
+- slug: algoritmalar
+  title: Algorithms and Data Structures
+  description: The backbone of coding interviews. Complexity analysis, core data structures and problem-solving patterns.
+  modules:
+    - slug: temeller
+      title: Fundamentals
+      description: Complexity analysis, arrays and hash tables.
+    - slug: kaliplar
+      title: Problem-Solving Patterns
+      description: Two pointers, sliding window, binary search, stack.
+    - slug: veri-yapilari
+      title: Data Structures
+      description: Linked lists, trees, heaps and graphs.
+    - slug: ileri
+      title: Advanced Techniques
+      description: Dynamic programming and backtracking.
+
+- slug: sistem-tasarimi
+  title: System Design
+  description: Designing scalable systems and explaining them in 45 minutes. Building blocks, trade-offs, classic questions solved end to end, and distributed-systems projects you build yourself.
+  modules:
+    - slug: temeller
+      title: Fundamentals
+      description: The interview framework, scaling, capacity estimation, networking and API design.
+    - slug: yapi-taslari
+      title: Building Blocks
+      description: Caching, queues, databases, consistency and consensus, resilience, search and location, stream processing and recurring patterns.
+    - slug: ornek-tasarimlar
+      title: Example Designs
+      description: The questions asked most often in interviews, solved end to end from requirements to deep dives.
+    - slug: projeler
+      title: Hands-On Projects and Resources
+      description: Learn by building, not just reading. Load testing, distributed rate limiting, outbox and saga, your own Redis, a Raft-replicated key–value store and curated resources.
+
+- slug: csharp
+  title: C#
+  description: The type system, memory management, LINQ, async/await and concurrency. The deep topics of the language that come up in interviews.
+  modules:
+    - slug: temeller
+      title: Type System and Memory
+      description: Value and reference types, the GC and object lifetime.
+    - slug: dil-ozellikleri
+      title: Language Features
+      description: Generics, delegates, LINQ and async/await.
+    - slug: ileri
+      title: Advanced Topics
+      description: Concurrency, performance and memory, modern C#.
+
+- slug: dotnet
+  title: .NET and ASP.NET Core
+  description: The backbone of job postings. The request pipeline, Web API design, security, EF Core, caching, testing, observability, architecture, messaging and LLM integration.
+  modules:
+    - slug: aspnet-core
+      title: ASP.NET Core
+      description: Middleware, DI, Web API design, authentication and security, background jobs, gRPC and SignalR.
+    - slug: veri-ve-uretim
+      title: Data Access and Production
+      description: EF Core in depth, caching and Redis, testing, observability and resilience.
+    - slug: mimari
+      title: Architecture and Messaging
+      description: Clean Architecture, CQRS, DDD, modular monoliths and microservices, RabbitMQ, Kafka and Azure Service Bus.
+    - slug: yapay-zeka
+      title: Building with AI
+      description: Integrating LLMs into .NET applications and working safely with coding agents.
+
+- slug: kutuphane-api
+  title: "Practice Project: Library Management API"
+  description: A .NET 10 Minimal API you build yourself from scratch, phase by phase. Clean Architecture, business rules, tests and a code review at the end of every phase.
+  modules:
+    - slug: hazirlik
+      title: Preparation
+      description: How to use the guide, the development environment, the project definition, architecture and packages.
+    - slug: fazlar
+      title: Phases
+      description: Step-by-step implementation, from the solution skeleton to integration tests and bonus tasks.
+    - slug: basvuru
+      title: Reference
+      description: Clean Code checklist, the review process, a glossary and resources.
+
+- slug: javascript
+  title: JavaScript
+  description: How the language really works. Types, closures, prototypes, the event loop and asynchronous programming.
+  modules:
+    - slug: temeller
+      title: Core Language
+      description: Types, scope, closures, this and prototypes.
+    - slug: asenkron
+      title: Asynchronous JavaScript
+      description: The event loop, Promises and async/await.
+
+- slug: typescript
+  title: TypeScript
+  description: The structural type system, narrowing, generics and advanced type-level programming.
+  modules:
+    - slug: temeller
+      title: Type System
+      description: Structural typing, unions, narrowing and generics.
+    - slug: ileri
+      title: Advanced Types
+      description: Conditional, mapped and utility types.
+
+- slug: react
+  title: React
+  description: The rendering model, hooks, state management and performance. The depth expected in frontend interviews.
+  modules:
+    - slug: temeller
+      title: Fundamentals
+      description: The rendering model, hooks and state.
+    - slug: ileri
+      title: Advanced Topics
+      description: State management, data fetching, testing and performance.
+
+- slug: veritabanlari
+  title: Databases
+  description: SQL, indexes, transactions and data modeling, with PostgreSQL examples.
+  modules:
+    - slug: sql
+      title: SQL and Performance
+      description: Queries, joins, indexes, SQL Server and T-SQL.
+    - slug: kavramlar
+      title: Concepts
+      description: Transactions, isolation, modeling, NoSQL and search.
+
+- slug: devops-bulut
+  title: DevOps and Cloud
+  description: How code reaches production. Docker, Kubernetes, CI/CD pipelines, Azure and AWS services, and Linux for backend developers.
+  modules:
+    - slug: konteynerler
+      title: Containers
+      description: Packaging with Docker and running with Kubernetes.
+    - slug: teslimat
+      title: Delivery and Infrastructure
+      description: CI/CD, cloud services and Linux.
+
+- slug: cs-temelleri
+  title: Computer Science Fundamentals
+  description: Operating systems, networking and object-oriented design. The foundation every engineer is expected to know.
+  modules:
+    - slug: sistemler
+      title: Systems and Networking
+      description: Processes, threads, memory, HTTP and TCP.
+    - slug: tasarim
+      title: Object-Oriented Design
+      description: SOLID and design patterns.
+
+- slug: muhendislik-pratikleri
+  title: Engineering Practices
+  description: The tools of working on a team and running live systems. Git, Agile and Scrum, code review, ADRs, technical leadership, incident management.
+  modules:
+    - slug: ekip
+      title: Teamwork
+      description: Git, Agile and Scrum, code review and technical leadership.
+    - slug: canli-sistem
+      title: Live Systems
+      description: On-call, incident management and postmortems.
+
+- slug: sirketler
+  title: Company Guides
+  description: What Google, Meta, Amazon, Microsoft, Apple, IBM, Oracle and Tesla interviews focus on.
+  modules:
+    - slug: rehberler
+      title: Companies
+      description: Company-by-company process and preparation advice.

@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<base target="_blank">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sort Colors</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: one reading column; the stepper is a single tool panel (controls, step card, the array track, then variables + nums | code) that stacks on phones. */
+:root {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --ink: #141b26;
+  --muted: #5a6779;
+  --line: #d6dce6;
+  --accent: #3346c8;
+  --accent-ink: #ffffff;
+  --range: #e3e9fb;
+  --range-ink: #1d2a6b;
+  --good: #17824a;
+  --good-soft: #dcf1e4;
+  --good-soft-ink: #145c36;
+  --bad: #b8402a;
+  --code-bg: #f7f8fb;
+  --code-hl: #dfe5fb;
+  --kw: #7a3aa8;
+  /* The three colors of the problem: 0 red, 1 white, 2 blue. */
+  --c0: #d23f31; --c0-ink: #ffffff;
+  --c1: #ffffff; --c1-ink: #141b26; --c1-line: #aab4c3;
+  --c2: #1f5fbf; --c2-ink: #ffffff;
+  /* Region bands and pointer labels, tinted to match. */
+  --r0: #f8dfdb; --r0-ink: #8f2a1f;
+  --r1: #e9edf3; --r1-ink: #3d4757;
+  --r2: #dbe6f8; --r2-ink: #1b4a94;
+  --t0: #b03526; --t2: #1f5fbf;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+    --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff;
+    --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+    --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+    --c0: #e5675a; --c0-ink: #1a0c0a;
+    --c1: #e8edf4; --c1-ink: #141b26; --c1-line: #e8edf4;
+    --c2: #4f7fe8; --c2-ink: #0b1020;
+    --r0: #3a1c17; --r0-ink: #ffb4a5;
+    --r1: #222b38; --r1-ink: #c3cbd8;
+    --r2: #1a2a4d; --r2-ink: #b5c8ff;
+    --t0: #ff9d8f; --t2: #8fb0ff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+  --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff;
+  --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+  --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+  --c0: #e5675a; --c0-ink: #1a0c0a;
+  --c1: #e8edf4; --c1-ink: #141b26; --c1-line: #e8edf4;
+  --c2: #4f7fe8; --c2-ink: #0b1020;
+  --r0: #3a1c17; --r0-ink: #ffb4a5;
+  --r1: #222b38; --r1-ink: #c3cbd8;
+  --r2: #1a2a4d; --r2-ink: #b5c8ff;
+  --t0: #ff9d8f; --t2: #8fb0ff;
+  color-scheme: dark;
+}
+
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 40px;
+}
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; color: var(--muted); margin: 0; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 6vw, 54px); line-height: 1.05; letter-spacing: -.02em; margin: 8px 0 14px; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0; font-size: 17px; }
+.lead + .lead { margin-top: 10px; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: -.01em; margin: 0 0 18px; text-wrap: balance; }
+code { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+
+/* Idea */
+.idea { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; list-style: none; padding: 0; margin: 0; }
+.idea li { border-top: 2px solid var(--ink); padding-top: 12px; min-width: 0; }
+.idea .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.idea h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 2px 0 6px; text-wrap: balance; }
+.idea p { margin: 0; color: var(--muted); font-size: 15px; }
+@media (max-width: 760px) { .idea { grid-template-columns: 1fr; gap: 20px; } }
+
+/* Stepper panel */
+.stepper { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+@media (max-width: 560px) { .stepper { padding: 16px; } }
+.stepper h2 { margin: 0; }
+.controls { display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+.field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+input[type="text"] { width: 16em; max-width: 100%; box-sizing: border-box; font: 600 18px var(--font-mono); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.err { margin: 0; font-size: 13px; color: var(--bad); }
+button { font: 500 14px var(--font-body); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.presets button { font-size: 13px; padding: 7px 10px; }
+.presets .mono { font-family: var(--font-mono); font-weight: 700; margin-right: 4px; }
+.presets button[aria-pressed="true"] { border-color: var(--accent); background: var(--range); color: var(--range-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; }
+#play { min-width: 7.5em; }
+
+.step { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+.step-meta { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--range); color: var(--range-ink); }
+.tag[data-kind="ok"] { background: var(--good); color: var(--surface); }
+#step-text { margin: 8px 0 0; font-size: 16.5px; max-width: 78ch; min-height: 4.8em; }
+
+.panel-label { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+
+/* Track: a spare column on each side for pointers that step off the array (high = -1, mid = n),
+   then one column per box. Rows: pointer labels, boxes, the swap bracket, region bands, indexes. */
+.track-scroll { overflow-x: auto; padding: 4px 6px 6px; }
+.track { display: grid; column-gap: 8px; row-gap: 0; grid-template-rows: auto 46px 18px auto auto; width: max-content; }
+.lbl { grid-row: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-height: 52px; padding-bottom: 6px; font: 600 11px/1.35 var(--font-mono); white-space: nowrap; }
+.lbl .t-low { color: var(--t0); }
+.lbl .t-mid { color: var(--ink); }
+.lbl .t-high { color: var(--t2); }
+.box {
+  grid-row: 2; width: 56px; height: 46px; box-sizing: border-box; border-radius: 10px;
+  display: grid; place-items: center;
+  font: 700 18px var(--font-mono); font-variant-numeric: tabular-nums;
+  border: 1px solid transparent;
+  transition: background-color .25s, color .25s, border-color .25s;
+}
+.box[data-c="0"] { background: var(--c0); color: var(--c0-ink); }
+.box[data-c="1"] { background: var(--c1); color: var(--c1-ink); border-color: var(--c1-line); }
+.box[data-c="2"] { background: var(--c2); color: var(--c2-ink); }
+.box.cur { outline: 2px solid var(--ink); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .box { transition: none; } }
+/* Bracket from the center of one swapped box to the center of the other; dashed = about to swap. */
+.swap { grid-row: 3; height: 12px; margin: 0 27px; box-sizing: border-box; border: 2px solid var(--accent); border-top: 0; border-radius: 0 0 8px 8px; }
+.swap.planned { border-style: dashed; }
+.swap-self { grid-row: 3; text-align: center; font: 700 14px/18px var(--font-mono); color: var(--accent); }
+.reg { grid-row: 4; margin-top: 4px; padding: 4px 2px; border-radius: 6px; text-align: center; font: 600 11px/1.2 var(--font-body); white-space: nowrap; }
+.reg[data-r="0"] { background: var(--r0); color: var(--r0-ink); }
+.reg[data-r="1"] { background: var(--r1); color: var(--r1-ink); }
+.reg[data-r="2"] { background: var(--r2); color: var(--r2-ink); }
+.reg[data-r="u"] { border: 1.5px dashed var(--muted); padding: 2.5px 2px; color: var(--muted); }
+.idx { grid-row: 5; padding-top: 4px; text-align: center; font: 500 12px var(--font-mono); color: var(--muted); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 6px; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1px solid transparent; box-sizing: border-box; }
+.sw.c0 { background: var(--c0); }
+.sw.c1 { background: var(--c1); border-color: var(--c1-line); }
+.sw.c2 { background: var(--c2); }
+.sw.cur { background: transparent; border: 2px solid var(--ink); }
+.sw.swp { width: 18px; height: 8px; border: 2px solid var(--accent); border-top: 0; border-radius: 0 0 5px 5px; vertical-align: 1px; }
+.sw.ru { width: 18px; border: 1.5px dashed var(--muted); }
+
+/* Variables + nums | code */
+.board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 28px; }
+@media (max-width: 880px) { .board { grid-template-columns: 1fr; } }
+.col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.vars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0; }
+@media (max-width: 560px) { .vars { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.var { border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; background: var(--bg); min-width: 0; }
+.var dt { font: 400 12px var(--font-mono); color: var(--muted); }
+.var dd { margin: 0; font: 600 18px var(--font-mono); font-variant-numeric: tabular-nums; }
+.var.changed { border-color: var(--accent); background: var(--range); }
+.var.changed dd { color: var(--range-ink); }
+.out { margin-top: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; background: var(--bg); min-width: 0; }
+.out span { display: block; font-size: 12px; color: var(--muted); }
+.out b { font: 700 17px var(--font-mono); overflow-wrap: anywhere; }
+.out[data-kind="done"] { border: 2px solid var(--good); background: var(--good-soft); }
+.out[data-kind="done"] b { color: var(--good-soft-ink); }
+.code { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 0; overflow-x: auto; font: 13px/1.6 var(--font-mono); }
+@media (max-width: 560px) { .code { font-size: 12px; } }
+.ln { display: block; padding: 0 14px 0 11px; white-space: pre; border-left: 3px solid transparent; }
+.ln.hl { background: var(--code-hl); border-left-color: var(--accent); }
+.kw { color: var(--kw); }
+
+/* Two columns keep lines short enough to read while still using the page width. */
+.why-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 40px; }
+.why-grid > div { border-top: 1px solid var(--line); padding-top: 12px; min-width: 0; }
+.why h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 0 0 6px; text-wrap: balance; }
+.why p { margin: 0; color: var(--muted); }
+.why b { color: var(--ink); }
+@media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; gap: 20px; } }
+.foot { display: flex; flex-wrap: wrap; gap: 6px 20px; border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; color: var(--muted); }
+.foot a { color: var(--accent); }
+
+/* No ligatures: `<=` and `--` should look the way they are typed.
+   Kept last because the `font` shorthand above would reset it. */
+code, .code, .box, .var dd, .out b, .lbl, input[type="text"] { font-variant-ligatures: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">LeetCode 75 · Sort Colors · Medium</p>
+    <h1>Sort Colors</h1>
+    <p class="lead">You can follow every step of the solution here. Pick an array, press <b>Next</b> or click <b>Play</b>, and watch how the 0s are sent to the left, the 2s to the right, and how the 1s gather in the middle on their own.</p>
+    <p class="lead">This method is called the <b>Dutch national flag</b> algorithm. It is named after the red, white and blue striped Dutch flag that Edsger Dijkstra used when he described the problem.</p>
+  </header>
+
+  <section aria-labelledby="idea-h">
+    <h2 id="idea-h">The idea in three steps</h2>
+    <ol class="idea">
+      <li>
+        <span class="n">1</span>
+        <h3>Think of the array as four regions</h3>
+        <p>From left to right: 0s, 1s, boxes not yet examined, 2s. Three variables hold the boundaries: <code>low</code> is the first box after the 0s, <code>mid</code> is the box being examined now, <code>high</code> is the last unexamined box.</p>
+      </li>
+      <li>
+        <span class="n">2</span>
+        <h3>Send 0 left, 2 right</h3>
+        <p>If <code>nums[mid]</code> is 0, it swaps with the box at <code>low</code>; if it is 2, it swaps with the box at <code>high</code>. If it is 1, it already sits at the end of the 1s, so only <code>mid</code> moves forward by one.</p>
+      </li>
+      <li>
+        <span class="n">3</span>
+        <h3>Recheck what comes from the right</h3>
+        <p>When you send a 2 to the right, you haven't examined the box that comes back yet, so <code>mid</code> stays put. Once no unexamined boxes are left (<code>mid &gt; high</code>), the array is sorted.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="stepper" aria-labelledby="st-h">
+    <h2 id="st-h">Step through it</h2>
+
+    <div class="controls">
+      <div class="row">
+        <div class="field">
+          <label for="list">Array (comma-separated, at most 10 numbers)</label>
+          <input id="list" type="text" value="2, 0, 2, 1, 1, 0" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="nav">
+          <button type="button" id="reset">Restart</button>
+          <button type="button" id="prev-btn">← Back</button>
+          <button type="button" id="next-btn" class="primary">Next →</button>
+          <button type="button" id="play">▶ Play</button>
+        </div>
+      </div>
+      <div class="presets" role="group" aria-label="Preset examples">
+        <button type="button" data-l="2, 0, 2, 1, 1, 0"><span class="mono">[2,0,2,1,1,0]</span></button>
+        <button type="button" data-l="1, 2, 0"><span class="mono">[1,2,0]</span>a 0 comes from the right</button>
+        <button type="button" data-l="2, 0, 2"><span class="mono">[2,0,2]</span>a 2 comes from the right</button>
+        <button type="button" data-l="2, 2, 1, 1, 0, 0"><span class="mono">[2,2,1,1,0,0]</span>reverse sorted</button>
+      </div>
+      <p class="err" id="list-err" hidden>Enter at least 1 and at most 10 comma-separated numbers. Each number must be 0, 1 or 2.</p>
+    </div>
+
+    <div class="step" aria-live="polite">
+      <div class="step-meta"><span id="step-count"></span><span id="step-tag" class="tag"></span></div>
+      <p id="step-text"></p>
+    </div>
+
+    <div>
+      <p class="panel-label">nums</p>
+      <div class="track-scroll"><div class="track" id="track"></div></div>
+      <div class="legend">
+        <span><i class="sw c0"></i>0 · red</span>
+        <span><i class="sw c1"></i>1 · white</span>
+        <span><i class="sw c2"></i>2 · blue</span>
+        <span><i class="sw cur"></i>box being examined (mid)</span>
+        <span><i class="sw swp"></i>boxes being swapped (dashed: about to swap)</span>
+        <span><i class="sw ru"></i>unexamined region (between mid and high)</span>
+      </div>
+    </div>
+
+    <div class="board">
+      <div class="col">
+        <p class="panel-label">Variables</p>
+        <dl class="vars" id="vars"></dl>
+        <div class="out" id="out"><span>nums (the method returns nothing; the array itself changes)</span><b id="result"></b></div>
+      </div>
+      <div class="col">
+        <p class="panel-label">Code (method in Solution.cs)</p>
+        <div class="code" id="code" role="region" aria-label="C# code" tabindex="0"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="why" aria-labelledby="why-h">
+    <h2 id="why-h">Why O(n) time and O(1) memory?</h2>
+    <div class="why-grid">
+      <div>
+        <h3>O(n) time</h3>
+        <p>In every iteration either <code>mid</code> moves one to the right or <code>high</code> moves one to the left. So the unexamined region shrinks by exactly one box per iteration. Since it starts with n boxes, the loop runs exactly n times, with a few operations each time: <b>O(n) time</b>. We traverse the array only once; that is the "one pass" LeetCode asks for in the follow-up.</p>
+      </div>
+      <div>
+        <h3>O(1) memory</h3>
+        <p>No matter how large the array is, we keep only three variables: <code>low</code>, <code>mid</code> and <code>high</code>. We don't copy the boxes into a new array; we swap them inside <code>nums</code>: <b>O(1) memory</b>.</p>
+      </div>
+      <div>
+        <h3>Why doesn't <code>mid</code> advance after a 2?</h3>
+        <p>The box that comes from <code>high</code> comes from the unexamined region; it could be a 0 or a 2. In <code>[1, 2, 0]</code>, the 2 swaps with the last 0 and the array becomes <code>[1, 0, 2]</code>. If <code>mid</code> advanced at this point, the loop would end and the 0 would stay in the wrong place. If it stays put, it sees the 0 in the next iteration and sends it to the left.</p>
+      </div>
+      <div>
+        <h3>Why can <code>mid</code> advance after a 0?</h3>
+        <p>There are only 1s between <code>low</code> and <code>mid</code>, because we have already examined those boxes. When you send the 0 to <code>low</code>, the box that comes back is a 1 and lands at the end of the 1s. If <code>low</code> and <code>mid</code> point to the same box, the 0 swaps with itself. Either way, no new box needs examining, so both can advance.</p>
+      </div>
+      <div>
+        <h3>How is it different from the counting solution?</h3>
+        <p>Counting how many of each color there are and then rewriting the array is also a correct solution; it also uses <b>O(n) time</b> and <b>O(1) memory</b>. The difference is that it traverses the array twice. Also, counting writes new values into the boxes, while this solution moves the existing boxes around. If the boxes held numbered balls instead of plain numbers, counting and rewriting would lose the balls; swapping would still work.</p>
+      </div>
+      <div>
+        <h3>What does <code>(a, b) = (b, a)</code> do?</h3>
+        <p>It swaps the values of two boxes. C# first reads the two values on the right, then writes them into the two boxes on the left. So both change at once and no value is lost. You can do the same thing in three lines with a temporary variable: first copy one into <code>temp</code>, then write the other in its place, and finally put <code>temp</code> in the other's place.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <a href="https://leetcode.com/problems/sort-colors/">Problem: LeetCode 75</a>
+    <a href="https://github.com/physerkm/leetcode-solutions/blob/main/src/LeetCode/Problems/P0075_SortColors/Solution.cs">Code: Solution.cs</a>
+    <a href="https://github.com/physerkm/leetcode-solutions">Repo: physerkm/leetcode-solutions</a>
+  </footer>
+</div>
+
+<script src="walkthrough.js"></script>
+</body>
+</html>

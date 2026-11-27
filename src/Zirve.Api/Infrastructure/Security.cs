@@ -73,7 +73,9 @@ public static class SecurityMiddlewareExtensions
                 var problem = new ProblemDetails
                 {
                     Status = StatusCodes.Status400BadRequest,
-                    Title = "Güvenlik belirteci geçersiz ya da eksik. Sayfayı yenileyip tekrar deneyin.",
+                    Title = Localization.Text(
+                        "Güvenlik belirteci geçersiz ya da eksik. Sayfayı yenileyip tekrar deneyin.",
+                        "The security token is invalid or missing. Refresh the page and try again."),
                     Extensions = { ["code"] = "csrf_invalid" },
                 };
 

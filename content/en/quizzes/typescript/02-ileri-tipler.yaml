@@ -1,0 +1,102 @@
+title: Advanced TypeScript Types
+description: keyof, typeof and indexed access, conditional types and infer, distribution, mapped types, template literal types, satisfies, as const and exhaustiveness checking with never.
+questions:
+  - q: |
+      What is the `Role` type below?
+
+      ```ts
+      const ROLES = ['admin', 'editor', 'viewer'] as const;
+      type Role = (typeof ROLES)[number];
+      ```
+    options:
+      - "`string`"
+      - "`string[]`"
+      - "`\"admin\" | \"editor\" | \"viewer\"`"
+      - "`readonly string[]`"
+    why: |
+      `as const` fixes the array as a read-only tuple and its elements as literal types. `typeof ROLES` gives the type of that tuple, and the `[number]` indexed access gives the type of any element, i.e. the union of the literals. Without `as const`, the result would be `string`.
+
+  - q: |
+      What is the result of `ToArray<string | number>`?
+
+      ```ts
+      type ToArray<T> = T extends unknown ? T[] : never;
+      ```
+    options:
+      - "`string[] | number[]`"
+      - "`(string | number)[]`"
+      - "`never`"
+      - "`unknown[]`"
+    why: |
+      Because the condition is on a naked type parameter (`T`), it is applied to each member of the union separately (a distributive conditional type): `ToArray<string> | ToArray<number>`. To prevent distribution, wrap the condition in square brackets: `[T] extends [unknown] ? T[] : never` gives `(string | number)[]`.
+
+  - q: "Which of the following is a correct implementation of `Partial<T>`?"
+    options:
+      - "`type MyPartial<T> = { [K in T]?: K }`"
+      - "`type MyPartial<T> = T | undefined`"
+      - "`type MyPartial<T> = { [K in keyof T]-?: T[K] }`"
+      - "`type MyPartial<T> = { [K in keyof T]?: T[K] }`"
+    why: |
+      A mapped type iterates over each key with `keyof T` and makes it optional with `?`. The value type is preserved with `T[K]`. `-?` does the opposite, i.e. it is `Required`. `T | undefined` makes the whole object optional, not its fields.
+
+  - q: "What is the `infer` keyword for?"
+    options:
+      - "It detects a variable's type at runtime."
+      - "Inside a conditional type, it captures and names a part of the matched type (e.g. a Promise's value type, an array's element type)."
+      - "It turns off type checking."
+      - "It gives a generic parameter a default value."
+    why: |
+      `infer` is used only in the `extends` clause of conditional types: `T extends Promise<infer V> ? V : T` captures the inner type as `V` if `T` is a Promise. Built-in utilities such as `ReturnType`, `Parameters` and `Awaited` are written this way. It has nothing to do with runtime.
+
+  - q: |
+      What is the difference between `satisfies` and a type annotation (`: Type`)?
+
+      ```ts
+      const routes = { home: '/', orders: '/orders' } satisfies Record<string, string>;
+      ```
+    options:
+      - "There is no difference."
+      - "`satisfies` turns off type checking."
+      - "`satisfies` checks that the value conforms to the type but keeps the value's narrow inferred type; `routes.orders` is valid, `routes.foo` is an error."
+      - "`satisfies` only validates at runtime."
+    why: |
+      If you wrote `const routes: Record<string, string> = ...`, the variable's type would widen and any string key would be considered valid. The key information would be lost. `satisfies` checks conformance but leaves the value's own inferred type as the variable's type. You get both the error checking and the autocompletion.
+
+  - q: |
+      When a new member is added to a discriminated union, what do you put in the `default` branch to find forgotten `switch` statements at compile time?
+
+      ```ts
+      type Shape = { kind: 'circle'; r: number } | { kind: 'square'; a: number };
+      ```
+    options:
+      - "`default: return 0;`"
+      - "`default: { const unreachable: never = shape; throw new Error(); }`"
+      - "`default: console.log(shape);`"
+      - "Don't write a `default` branch."
+    why: |
+      If every case is handled, the type of `shape` in the `default` branch narrows to `never` and the assignment is valid. If `{ kind: 'triangle' }` is added to the union and the `switch` isn't updated, `shape` has the type `{ kind: 'triangle' }` in that branch, can't be assigned to `never`, and you get a compile error.
+
+  - q: |
+      The `Endpoint` type is a union of how many distinct string literals?
+
+      ```ts
+      type Method = 'GET' | 'POST' | 'DELETE';
+      type Path = '/orders' | '/users';
+      type Endpoint = `${Method} ${Path}`;
+      ```
+    options:
+      - "2"
+      - "3"
+      - "5"
+      - "6"
+    why: |
+      In template literal types, unions are cross-multiplied: 3 methods × 2 paths = 6 combinations. `"GET /orders" | "GET /users" | "POST /orders" | ...`.
+
+  - q: "What is the purpose of branded types?"
+    options:
+      - "To keep type information at runtime"
+      - "To make two structurally identical types (e.g. OrderId and CustomerId, both strings) non-interchangeable at compile time"
+      - "To compile types faster"
+      - "To provide inheritance between classes"
+    why: |
+      TypeScript uses structural typing: two `string`s are always interchangeable. An intersection such as `string & { __brand: 'OrderId' }` makes the value compatible only with values that carry this brand. This prevents, at compile time, passing a customer ID to a function that expects an order ID. It has no runtime cost.

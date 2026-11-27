@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<base target="_blank">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lowest Common Ancestor of a Binary Search Tree</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --ink: #141b26;
+  --muted: #5a6779;
+  --line: #d6dce6;
+  --accent: #3346c8;
+  --accent-ink: #ffffff;
+  --range: #e3e9fb;
+  --range-ink: #1d2a6b;
+  --probe: #c46f00;
+  --good: #17824a;
+  --good-soft: #dcf1e4;
+  --good-soft-ink: #145c36;
+  --bad: #b8402a;
+  --code-bg: #f7f8fb;
+  --code-hl: #dfe5fb;
+  --kw: #7a3aa8;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+    --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+    --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+    --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+  --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+  --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+  --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+  color-scheme: dark;
+}
+
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 40px;
+}
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; color: var(--muted); margin: 0; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 6vw, 54px); line-height: 1.05; letter-spacing: -.02em; margin: 8px 0 14px; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0; font-size: 17px; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: -.01em; margin: 0 0 18px; text-wrap: balance; }
+code { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+
+.idea { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; list-style: none; padding: 0; margin: 0; }
+.idea li { border-top: 2px solid var(--ink); padding-top: 12px; min-width: 0; }
+.idea .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.idea h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 2px 0 6px; text-wrap: balance; }
+.idea p { margin: 0; color: var(--muted); font-size: 15px; }
+@media (max-width: 760px) { .idea { grid-template-columns: 1fr; gap: 20px; } }
+
+.stepper { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+@media (max-width: 560px) { .stepper { padding: 16px; } }
+.stepper h2 { margin: 0; }
+.controls { display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+button { font: 500 14px var(--font-body); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.presets button { font-size: 13px; padding: 7px 10px; }
+.presets .mono { font-family: var(--font-mono); font-weight: 700; margin-right: 4px; }
+.presets button[aria-pressed="true"] { border-color: var(--accent); background: var(--range); color: var(--range-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; }
+#play { min-width: 7.5em; }
+
+.step { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+.step-meta { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--range); color: var(--range-ink); }
+.tag[data-kind="skip"] { background: var(--code-bg); color: var(--muted); border: 1px solid var(--line); }
+.tag[data-kind="ok"] { background: var(--good); color: var(--surface); }
+#step-text { margin: 8px 0 0; font-size: 16.5px; max-width: 78ch; min-height: 3.2em; }
+
+.panel-label { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+.panel-label .hint { font-weight: 400; }
+
+.tree-card { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; overflow-x: auto; }
+.tree-svg { display: block; width: 100%; max-width: 680px; margin: 0 auto; height: auto; min-width: 420px; }
+.edge { stroke: var(--line); stroke-width: 2; fill: none; }
+.edge.path { stroke: var(--accent); stroke-width: 3; }
+.nd-box { fill: var(--surface); stroke: var(--line); stroke-width: 2; rx: 10; transition: fill .2s, stroke .2s; }
+.nd-box.visited { fill: var(--range); stroke: var(--accent); }
+.nd-box.cur { stroke: var(--accent); stroke-width: 3; }
+.nd-box.target { stroke: var(--probe); stroke-width: 2.5; stroke-dasharray: 5 3; }
+.nd-box.lca { fill: var(--good-soft); stroke: var(--good); stroke-width: 3; stroke-dasharray: none; }
+.nd-txt { font: 700 16px var(--font-mono); fill: var(--ink); text-anchor: middle; dominant-baseline: central; }
+.nd-tag { font: 600 11px var(--font-mono); fill: var(--accent); text-anchor: middle; }
+.nd-tag.pq { fill: var(--probe); }
+.nd-tag.lca { fill: var(--good); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 8px; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--line); }
+.sw.cur { background: var(--range); border: 2px solid var(--accent); }
+.sw.probe { background: transparent; border: 2px dashed var(--probe); }
+.sw.best { background: var(--good-soft); border: 2px solid var(--good); }
+
+.board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 28px; }
+@media (max-width: 880px) { .board { grid-template-columns: 1fr; } }
+.col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.vars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.var { border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; background: var(--bg); min-width: 0; }
+.var dt { font: 400 12px var(--font-mono); color: var(--muted); }
+.var dd { margin: 0; font: 600 18px var(--font-mono); font-variant-numeric: tabular-nums; }
+.var.changed { border-color: var(--accent); background: var(--range); }
+.var.changed dd { color: var(--range-ink); }
+.code { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 0; overflow-x: auto; font: 13px/1.6 var(--font-mono); }
+@media (max-width: 560px) { .code { font-size: 12px; } }
+.ln { display: block; padding: 0 14px 0 11px; white-space: pre; border-left: 3px solid transparent; }
+.ln.hl { background: var(--code-hl); border-left-color: var(--accent); }
+.kw { color: var(--kw); }
+
+.why-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 40px; }
+.why-grid > div { border-top: 1px solid var(--line); padding-top: 12px; min-width: 0; }
+.why h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 0 0 6px; text-wrap: balance; }
+.why p { margin: 0; color: var(--muted); }
+.why b { color: var(--ink); }
+@media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; gap: 20px; } }
+
+code, .code, .var dd { font-variant-ligatures: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">LeetCode 235 · Lowest Common Ancestor of a Binary Search Tree · Medium</p>
+    <h1>Lowest Common Ancestor of a Binary Search Tree</h1>
+    <p class="lead">Use the BST property to find the first node where the paths to <code>p</code> and <code>q</code> split, following a single path down from the root instead of scanning the whole tree.</p>
+  </header>
+
+  <section aria-labelledby="idea-h">
+    <h2 id="idea-h">The idea in three steps</h2>
+    <ol class="idea">
+      <li>
+        <span class="n">1</span>
+        <h3>Both smaller: go left</h3>
+        <p>If both <code>p</code> and <code>q</code> are smaller than the current node's <code>curr.val</code>, both are in the left subtree; we rule out the right branch entirely.</p>
+      </li>
+      <li>
+        <span class="n">2</span>
+        <h3>Both larger: go right</h3>
+        <p>If both <code>p</code> and <code>q</code> are larger than the current node's <code>curr.val</code>, both are in the right subtree; we rule out the left branch entirely.</p>
+      </li>
+      <li>
+        <span class="n">3</span>
+        <h3>The first split point is the LCA</h3>
+        <p>If one is on the left and the other on the right (or one of them equals <code>curr</code>), the paths split right here; the lowest common ancestor we want is <code>curr.val</code>.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="stepper" aria-labelledby="st-h">
+    <h2 id="st-h">Step through it</h2>
+
+    <div class="controls">
+      <div class="row">
+        <div class="presets" role="group" aria-label="Preset examples">
+          <button type="button" data-p="0"><span class="mono">p = 2, q = 8</span>split at the root</button>
+          <button type="button" data-p="1"><span class="mono">p = 2, q = 4</span>one is the other's ancestor</button>
+          <button type="button" data-p="2"><span class="mono">p = 3, q = 5</span>split in a lower branch</button>
+          <button type="button" data-p="3"><span class="mono">p = 7, q = 9</span>right subtree</button>
+        </div>
+        <div class="nav">
+          <button type="button" id="reset">Restart</button>
+          <button type="button" id="prev-btn">← Back</button>
+          <button type="button" id="next-btn" class="primary">Next →</button>
+          <button type="button" id="play">▶ Play</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="step" aria-live="polite">
+      <div class="step-meta"><span id="step-count"></span><span id="step-tag" class="tag"></span></div>
+      <p id="step-text"></p>
+    </div>
+
+    <div>
+      <p class="panel-label">Binary Search Tree (BST) <span class="hint">(left subtree &lt; node &lt; right subtree)</span></p>
+      <div class="tree-card">
+        <svg class="tree-svg" id="bst-svg" viewBox="0 0 600 285" aria-label="Binary search tree"></svg>
+      </div>
+      <div class="legend">
+        <span><i class="sw cur"></i><code>curr</code> (path followed)</span>
+        <span><i class="sw probe"></i>target nodes (<code>p</code> and <code>q</code>)</span>
+        <span><i class="sw best"></i>lowest common ancestor found (LCA)</span>
+      </div>
+    </div>
+
+    <div class="board">
+      <div class="col">
+        <p class="panel-label">Variables</p>
+        <dl class="vars" id="vars"></dl>
+      </div>
+      <div class="col">
+        <p class="panel-label">Code (Solution.cs)</p>
+        <div class="code" id="code" role="region" aria-label="C# code" tabindex="0"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="why" aria-labelledby="why-h">
+    <h2 id="why-h">Why is it so efficient?</h2>
+    <div class="why-grid">
+      <div>
+        <h3>Each step rules out a subtree</h3>
+        <p>In an ordinary binary tree, finding the common ancestor means recursively scanning both the left and right subtrees (<b>O(n)</b>). In a BST, comparing with <code>curr.val</code> tells us exactly which way to go, and we leave one level behind at each step: <b>O(h)</b> time.</p>
+      </div>
+      <div>
+        <h3>O(1) extra space</h3>
+        <p>There's never a need to go back and try another branch, so no call stack (recursion stack) is needed. Walking down from the root with a single <code>curr</code> reference runs in <b>O(1)</b> space.</p>
+      </div>
+      <div>
+        <h3>When a node is its own ancestor</h3>
+        <p>In Example 2 with <code>p = 2, q = 4</code>, when we reach node <code>curr = 2</code>, the condition <code>p &lt; 2</code> fails, so we go straight into the <code>else</code> branch and return <code>2</code>. No extra equality check is needed.</p>
+      </div>
+      <div>
+        <h3>Why can't there be a deeper common ancestor?</h3>
+        <p>Once <code>p</code> and <code>q</code> fall on two different sides of a node, going left loses <code>q</code> and going right loses <code>p</code>. So the first node where they split is a common ancestor, and also the deepest one possible.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="walkthrough.js"></script>
+</body>
+</html>

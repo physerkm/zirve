@@ -3,10 +3,120 @@ import type { ReactNode } from 'react';
 import { Link, Navigate, useLocation } from 'react-router';
 import { TrackIcon } from '@/components/TrackIcon';
 import { ButtonLink, Card, PageError, PageLoading, ProgressBar } from '@/components/ui';
+import { intlLocale, useLocale } from '@/i18n/locale';
+import { defineMessages, useMessages } from '@/i18n/messages';
 import { accentBarClass } from '@/lib/accents';
-import { cn, formatRelative, languageLabels, percent, verdictLabels } from '@/lib/format';
+import { cn, difficultyLabel, formatRelative, languageLabels, percent, verdictLabel } from '@/lib/format';
 import { useDashboard, useUser } from '@/lib/queries';
 import type { Dashboard, ProgressCount } from '@/lib/types';
+
+const messages = defineMessages({
+  tr: {
+    pageTitle: 'Panelim — Zirve',
+    eyebrow: 'Panelim',
+    greeting: (name: string) => `Merhaba, ${name}`,
+    continueLesson: (lesson: string) => `Devam et: ${lesson}`,
+    startFirstLesson: 'İlk dersinize başlayın',
+    pickTrack: 'Yeni bir yol seçin',
+    welcome: 'Hoş geldiniz!',
+    welcomeText: (link: (text: string) => ReactNode) => (
+      <>
+        Nereden başlayacağınızı bilmiyorsanız {link('Mülakat Hazırlığı')} yolundaki çalışma planı iyi bir ilk adımdır.
+      </>
+    ),
+    stats: {
+      streak: 'Çalışma serisi',
+      days: (_n: number) => 'gün',
+      streakActive: 'Seriyi sürdürmek için bugün de çalışın.',
+      streakNone: 'Bugün bir ders ya da problemle başlayın.',
+      lessons: 'Tamamlanan ders',
+      lessonsLabel: 'Tamamlanan ders oranı',
+      problems: 'Çözülen problem',
+      problemsLabel: 'Çözülen problem oranı',
+      quizAverage: 'Test ortalaması',
+      score: (n: number) => `%${n}`,
+      quizzesTaken: (done: number, total: number) => `${done} / ${total} test çözüldü`,
+    },
+    activity: {
+      title: 'Etkinlik',
+      gridLabel: 'Son 16 haftanın günlük etkinliği',
+      day: (date: string, count: number) => `${date}: ${count} etkinlik`,
+      summary: (days: number, total: number, strong: (n: number) => ReactNode) => (
+        <>
+          Son 16 haftada {strong(days)} gün çalıştınız, toplam {strong(total)} etkinlik (ders, test, gönderim).
+        </>
+      ),
+    },
+    difficulty: {
+      title: 'Zorluğa göre problemler',
+      rowLabel: (difficulty: string) => `${difficulty} problemler`,
+      unsolved: 'Çözülmemiş problemler',
+    },
+    tracks: {
+      title: 'Yollardaki ilerleme',
+      empty: 'Henüz bir derse başlamadınız.',
+      browse: 'Öğrenme yollarına göz atın.',
+      progressLabel: (track: string) => `${track} ilerlemesi`,
+    },
+    submissions: {
+      title: 'Son gönderimler',
+      empty: 'Henüz gönderim yok.',
+      solveFirst: 'İlk probleminizi çözün.',
+    },
+  },
+  en: {
+    pageTitle: 'My dashboard — Zirve',
+    eyebrow: 'My dashboard',
+    greeting: (name: string) => `Hi, ${name}`,
+    continueLesson: (lesson: string) => `Continue: ${lesson}`,
+    startFirstLesson: 'Start your first lesson',
+    pickTrack: 'Pick a new track',
+    welcome: 'Welcome!',
+    welcomeText: (link: (text: string) => ReactNode) => (
+      <>Not sure where to start? The study plan in the {link('Interview Preparation')} track is a good first step.</>
+    ),
+    stats: {
+      streak: 'Study streak',
+      days: (n: number) => (n === 1 ? 'day' : 'days'),
+      streakActive: 'Study today to keep your streak going.',
+      streakNone: 'Start today with a lesson or a problem.',
+      lessons: 'Lessons completed',
+      lessonsLabel: 'Share of lessons completed',
+      problems: 'Problems solved',
+      problemsLabel: 'Share of problems solved',
+      quizAverage: 'Quiz average',
+      score: (n: number) => `${n}%`,
+      quizzesTaken: (done: number, total: number) => `${done} / ${total} quizzes taken`,
+    },
+    activity: {
+      title: 'Activity',
+      gridLabel: 'Daily activity over the last 16 weeks',
+      day: (date: string, count: number) => `${date}: ${count} ${count === 1 ? 'activity' : 'activities'}`,
+      summary: (days: number, total: number, strong: (n: number) => ReactNode) => (
+        <>
+          In the last 16 weeks you studied on {strong(days)} {days === 1 ? 'day' : 'days'}, with {strong(total)}{' '}
+          {total === 1 ? 'activity' : 'activities'} in total (lessons, quizzes, submissions).
+        </>
+      ),
+    },
+    difficulty: {
+      title: 'Problems by difficulty',
+      rowLabel: (difficulty: string) => `${difficulty} problems`,
+      unsolved: 'Unsolved problems',
+    },
+    tracks: {
+      title: 'Track progress',
+      empty: "You haven't started a lesson yet.",
+      browse: 'Browse the learning tracks.',
+      progressLabel: (track: string) => `${track} progress`,
+    },
+    submissions: {
+      title: 'Recent submissions',
+      empty: 'No submissions yet.',
+      solveFirst: 'Solve your first problem.',
+    },
+  },
+});
 
 function StatCard({ icon, label, value, detail }: { icon: ReactNode; label: string; value: ReactNode; detail?: ReactNode }) {
   return (
@@ -22,6 +132,8 @@ function StatCard({ icon, label, value, detail }: { icon: ReactNode; label: stri
 }
 
 function DifficultyRow({ label, count, barClassName }: { label: string; count: ProgressCount; barClassName: string }) {
+  const t = useMessages(messages);
+
   return (
     <div>
       <div className="mb-1 flex justify-between text-sm">
@@ -30,17 +142,21 @@ function DifficultyRow({ label, count, barClassName }: { label: string; count: P
           {count.completed} / {count.total}
         </span>
       </div>
-      <ProgressBar value={percent(count.completed, count.total)} barClassName={barClassName} label={`${label} problemler`} />
+      <ProgressBar value={percent(count.completed, count.total)} barClassName={barClassName} label={t.difficulty.rowLabel(label)} />
     </div>
   );
 }
 
 const heatLevels = ['bg-surface-2', 'bg-emerald-500/30', 'bg-emerald-500/55', 'bg-emerald-500/80', 'bg-emerald-500'];
-const dayFormat = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
 
 /** Son 16 haftanın etkinlik ısı haritası: her sütun bir hafta, her hücre bir gün. */
 function ActivityHeatmap({ activity }: { activity: Dashboard['activity'] }) {
+  const locale = useLocale();
+  const t = useMessages(messages).activity;
+
   if (activity.length === 0) return null;
+
+  const dayFormat = new Intl.DateTimeFormat(intlLocale(locale), { day: 'numeric', month: 'long', year: 'numeric' });
 
   // Sütunlar pazartesiyle başlasın diye ilk haftanın başına boş hücre eklenir.
   const firstWeekday = (new Date(`${activity[0].date}T00:00:00Z`).getUTCDay() + 6) % 7;
@@ -51,33 +167,29 @@ function ActivityHeatmap({ activity }: { activity: Dashboard['activity'] }) {
   return (
     <div>
       <div className="scrollbar-thin overflow-x-auto pb-1">
-        <ul className="grid w-max grid-flow-col grid-rows-7 gap-1" aria-label="Son 16 haftanın günlük etkinliği">
+        <ul className="grid w-max grid-flow-col grid-rows-7 gap-1" aria-label={t.gridLabel}>
           {cells.map((day, index) =>
             day === null ? (
               <li key={`empty-${index}`} aria-hidden className="size-3.5" />
             ) : (
               <li
                 key={day.date}
-                title={`${dayFormat.format(new Date(`${day.date}T00:00:00Z`))}: ${day.count} etkinlik`}
+                title={t.day(dayFormat.format(new Date(`${day.date}T00:00:00Z`)), day.count)}
                 className={cn('size-3.5 rounded-[3px]', heatLevels[Math.min(4, day.count === 0 ? 0 : Math.ceil(day.count / 2))])}
               >
-                <span className="sr-only">
-                  {dayFormat.format(new Date(`${day.date}T00:00:00Z`))}: {day.count} etkinlik
-                </span>
+                <span className="sr-only">{t.day(dayFormat.format(new Date(`${day.date}T00:00:00Z`)), day.count)}</span>
               </li>
             ),
           )}
         </ul>
       </div>
-      <p className="mt-3 text-sm text-muted">
-        Son 16 haftada <strong className="text-fg">{activeDays}</strong> gün çalıştınız, toplam{' '}
-        <strong className="text-fg">{total}</strong> etkinlik (ders, test, gönderim).
-      </p>
+      <p className="mt-3 text-sm text-muted">{t.summary(activeDays, total, (n) => <strong className="text-fg">{n}</strong>)}</p>
     </div>
   );
 }
 
 export default function DashboardPage() {
+  const t = useMessages(messages);
   const { user, isLoading } = useUser();
   const location = useLocation();
   const dashboard = useDashboard(Boolean(user));
@@ -93,21 +205,21 @@ export default function DashboardPage() {
 
   return (
     <div className="container-page py-10">
-      <title>Panelim — Zirve</title>
+      <title>{t.pageTitle}</title>
 
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm text-muted">Panelim</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight">Merhaba, {user.displayName.split(' ')[0]}</h1>
+          <p className="text-sm text-muted">{t.eyebrow}</p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">{t.greeting(user.displayName.split(' ')[0])}</h1>
         </div>
         {data.continue ? (
           <ButtonLink to={`/tracks/${data.continue.trackSlug}/${data.continue.lessonSlug}`}>
-            Devam et: {data.continue.lessonTitle}
+            {t.continueLesson(data.continue.lessonTitle)}
             <ArrowRight className="size-4" aria-hidden />
           </ButtonLink>
         ) : (
           <ButtonLink to="/tracks">
-            {isNew ? 'İlk dersinize başlayın' : 'Yeni bir yol seçin'}
+            {isNew ? t.startFirstLesson : t.pickTrack}
             <ArrowRight className="size-4" aria-hidden />
           </ButtonLink>
         )}
@@ -115,13 +227,13 @@ export default function DashboardPage() {
 
       {isNew && (
         <Card className="mt-6 border-primary/40 bg-primary-soft p-5">
-          <p className="font-medium">Hoş geldiniz!</p>
+          <p className="font-medium">{t.welcome}</p>
           <p className="mt-1 text-sm text-muted">
-            Nereden başlayacağınızı bilmiyorsanız{' '}
-            <Link to="/tracks/mulakat" className="font-medium text-primary-text underline underline-offset-2">
-              Mülakat Hazırlığı
-            </Link>{' '}
-            yolundaki çalışma planı iyi bir ilk adımdır.
+            {t.welcomeText((text) => (
+              <Link to="/tracks/mulakat" className="font-medium text-primary-text underline underline-offset-2">
+                {text}
+              </Link>
+            ))}
           </p>
         </Card>
       )}
@@ -129,71 +241,71 @@ export default function DashboardPage() {
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={<Flame className={cn('size-4', data.streakDays > 0 && 'text-amber-500')} aria-hidden />}
-          label="Çalışma serisi"
+          label={t.stats.streak}
           value={
             <>
-              {data.streakDays} <span className="text-base font-medium text-muted">gün</span>
+              {data.streakDays} <span className="text-base font-medium text-muted">{t.stats.days(data.streakDays)}</span>
             </>
           }
-          detail={data.streakDays > 0 ? 'Seriyi sürdürmek için bugün de çalışın.' : 'Bugün bir ders ya da problemle başlayın.'}
+          detail={data.streakDays > 0 ? t.stats.streakActive : t.stats.streakNone}
         />
         <StatCard
           icon={<BookOpen className="size-4" aria-hidden />}
-          label="Tamamlanan ders"
+          label={t.stats.lessons}
           value={
             <>
               {data.lessons.completed} <span className="text-base font-medium text-muted">/ {data.lessons.total}</span>
             </>
           }
-          detail={<ProgressBar value={percent(data.lessons.completed, data.lessons.total)} label="Tamamlanan ders oranı" />}
+          detail={<ProgressBar value={percent(data.lessons.completed, data.lessons.total)} label={t.stats.lessonsLabel} />}
         />
         <StatCard
           icon={<Code2 className="size-4" aria-hidden />}
-          label="Çözülen problem"
+          label={t.stats.problems}
           value={
             <>
               {data.problems.solved} <span className="text-base font-medium text-muted">/ {data.problems.total}</span>
             </>
           }
-          detail={<ProgressBar value={percent(data.problems.solved, data.problems.total)} barClassName="bg-emerald-500" label="Çözülen problem oranı" />}
+          detail={<ProgressBar value={percent(data.problems.solved, data.problems.total)} barClassName="bg-emerald-500" label={t.stats.problemsLabel} />}
         />
         <StatCard
           icon={<ListChecks className="size-4" aria-hidden />}
-          label="Test ortalaması"
-          value={data.quizzes.averageScore === undefined ? '—' : `%${data.quizzes.averageScore}`}
-          detail={`${data.quizzes.distinctQuizzes} / ${data.quizzes.totalQuizzes} test çözüldü`}
+          label={t.stats.quizAverage}
+          value={data.quizzes.averageScore === undefined ? '—' : t.stats.score(data.quizzes.averageScore)}
+          detail={t.stats.quizzesTaken(data.quizzes.distinctQuizzes, data.quizzes.totalQuizzes)}
         />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <Card className="p-6 lg:col-span-2">
-          <h2 className="font-semibold">Etkinlik</h2>
+          <h2 className="font-semibold">{t.activity.title}</h2>
           <div className="mt-4">
             <ActivityHeatmap activity={data.activity} />
           </div>
         </Card>
 
         <Card className="p-6">
-          <h2 className="font-semibold">Zorluğa göre problemler</h2>
+          <h2 className="font-semibold">{t.difficulty.title}</h2>
           <div className="mt-4 space-y-4">
-            <DifficultyRow label="Kolay" count={data.problems.easy} barClassName="bg-emerald-500" />
-            <DifficultyRow label="Orta" count={data.problems.medium} barClassName="bg-amber-500" />
-            <DifficultyRow label="Zor" count={data.problems.hard} barClassName="bg-rose-500" />
+            <DifficultyRow label={difficultyLabel('easy')} count={data.problems.easy} barClassName="bg-emerald-500" />
+            <DifficultyRow label={difficultyLabel('medium')} count={data.problems.medium} barClassName="bg-amber-500" />
+            <DifficultyRow label={difficultyLabel('hard')} count={data.problems.hard} barClassName="bg-rose-500" />
           </div>
           <ButtonLink to="/problems?status=todo" variant="secondary" size="sm" className="mt-5 w-full">
-            Çözülmemiş problemler
+            {t.difficulty.unsolved}
           </ButtonLink>
         </Card>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card className="p-6">
-          <h2 className="font-semibold">Yollardaki ilerleme</h2>
+          <h2 className="font-semibold">{t.tracks.title}</h2>
           {startedTracks.length === 0 ? (
             <p className="mt-4 text-sm text-muted">
-              Henüz bir derse başlamadınız.{' '}
+              {t.tracks.empty}{' '}
               <Link to="/tracks" className="font-medium text-primary-text hover:underline">
-                Öğrenme yollarına göz atın.
+                {t.tracks.browse}
               </Link>
             </p>
           ) : (
@@ -209,7 +321,7 @@ export default function DashboardPage() {
                           {track.completed} / {track.total}
                         </span>
                       </div>
-                      <ProgressBar value={percent(track.completed, track.total)} barClassName={accentBarClass(track.accent)} label={`${track.title} ilerlemesi`} />
+                      <ProgressBar value={percent(track.completed, track.total)} barClassName={accentBarClass(track.accent)} label={t.tracks.progressLabel(track.title)} />
                     </div>
                   </Link>
                 </li>
@@ -219,12 +331,12 @@ export default function DashboardPage() {
         </Card>
 
         <Card className="p-6">
-          <h2 className="font-semibold">Son gönderimler</h2>
+          <h2 className="font-semibold">{t.submissions.title}</h2>
           {data.recentSubmissions.length === 0 ? (
             <p className="mt-4 text-sm text-muted">
-              Henüz gönderim yok.{' '}
+              {t.submissions.empty}{' '}
               <Link to="/problems" className="font-medium text-primary-text hover:underline">
-                İlk probleminizi çözün.
+                {t.submissions.solveFirst}
               </Link>
             </p>
           ) : (
@@ -245,7 +357,7 @@ export default function DashboardPage() {
                       submission.verdict === 'accepted' ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400',
                     )}
                   >
-                    {verdictLabels[submission.verdict]}
+                    {verdictLabel(submission.verdict)}
                   </span>
                   <span className="w-20 shrink-0 text-right text-xs text-muted">{formatRelative(submission.createdAt)}</span>
                 </li>

@@ -30,6 +30,7 @@ flowchart LR
 - **Yalıtılmış kod çalıştırma.** Kullanıcı kodu API sürecinde değil, ayrı bir serviste, her çalıştırma için ayrı bir alt süreçte, süre/bellek/çıktı sınırlarıyla çalışır. Ayrıntılar: [Güvenlik](#güvenlik).
 - **Çerez tabanlı oturum.** `HttpOnly`, `SameSite=Strict` çerez ve ek olarak CSRF belirteci. Tarayıcıda JavaScript'in okuyabildiği bir erişim belirteci (token) yoktur.
 - **Tek köken.** SPA ve API aynı adresten sunulur (geliştirmede Vite vekili, üretimde nginx); CORS gerekmez.
+- **İki dil.** Site Türkçe (varsayılan) ve İngilizcedir. Dil, sağ üstteki düğmeyle seçilir ve tarayıcıda saklanır; ilk ziyarette tarayıcının dili Türkçe değilse İngilizce açılır. İstemci dili `Accept-Language` başlığıyla bildirir; API içeriği, arama sonuçlarını ve hata iletilerini o dilde döndürür. Ayrıntılar: [İki dilli içerik](#iki-dilli-içerik).
 
 ## Hızlı başlangıç (yerel geliştirme)
 
@@ -101,10 +102,28 @@ Desteklenen tipler: `int`, `long`, `double`, `bool`, `string`, `char`, `T[]`, `L
 
 **Adım adım anlatım** (isteğe bağlı): bir problemin çözümünü satır satır izleten etkileşimli, kendi başına duran statik sayfa. `web/public/walkthroughs/{problem-slug}/` altına `index.html` ve `walkthrough.js` olarak konur (satır içi betik kullanılmaz; içerik güvenlik politikası `script-src 'self'` kalır) ve slug `web/src/lib/walkthroughs.ts` listesine eklenir. Problem sayfasında çözüm "Cevabı göster" düğmesinin arkasındadır; anlatımı olan problemlerde cevap açılınca "Adım adım göster" düğmesi `/problems/{slug}/adim-adim` sayfasına götürür.
 
+## İki dilli içerik
+
+Türkçe içerik asıldır; İngilizce çeviriler `content/en/` altında, Türkçe dosyalarla **aynı yollarda** durur ve yalnızca metin taşır. Sıra, düzey, süre, doğru şıklar, problem imzası ve testler her zaman Türkçe dosyadan gelir; böylece ikisi birbirinden kopamaz.
+
+```text
+content/en/
+  tracks.yaml                        yolların ve bölümlerin İngilizce başlık ve açıklamaları (slug ile eşleşir)
+  lessons/{yol}/{bölüm}/NN-slug.md    ön bilgide yalnızca title ve summary + Markdown
+  quizzes/{yol}/NN-slug.yaml          title, description, questions: [{ q, options, why }] (sıra ve şık sayısı aynı)
+  problems/NNN-slug.md                ön bilgide yalnızca title + tanım + "## Hints" + "## Solution" (Testler yok)
+```
+
+- Problem çevirisindeki ` ```csharp solution ` ve ` ```typescript solution ` bloklarında yalnızca yorumlar çevrilir; testler kodun yorumlar dışında Türkçe çözümle aynı kaldığını doğrular.
+- Karşılığı olmayan ya da yapısı tutmayan (soru/şık/ipucu sayısı farklı) bir çeviri dosyası içerik hatasıdır. Çevirisi olmayan içerik İngilizce sitede Türkçe görünür; ancak test paketi her içeriğin çevrilmiş olmasını bekler, bu yüzden yeni bir ders, test ya da problem eklerken İngilizcesini de ekleyin.
+- Adım adım anlatımların İngilizce kopyası `web/public/walkthroughs/{slug}/en/` altındadır (`index.html` + `walkthrough.js`, `<html lang="en">`).
+- Arayüz metinleri her bileşenin yanında `defineMessages({ tr, en })` ile tanımlanır (`web/src/i18n/`); İngilizce sözlük Türkçeyle aynı biçimde olmazsa TypeScript derlemesi hata verir.
+- Kod çalıştırma servisinin iletileri (süre sınırı, derleme ve test koşucusu hataları) de isteğin dilindedir.
+
 ## Testler
 
 - **Runner testleri:** gerçek derleyici ve gerçek alt süreçlerle üç dilde çalıştırma, derleme/çalışma zamanı hataları, zaman aşımı, yasaklı API'ler, sandbox kaçış denemeleri.
-- **İçerik doğrulama:** bütün içerik yüklenir; her referans çözüm bütün testlerden geçirilir.
+- **İçerik doğrulama:** bütün içerik yüklenir; her referans çözüm bütün testlerden geçirilir. Her içeriğin İngilizce çevirisi vardır ve çevrilen çözümler kodda Türkçeyle aynıdır.
 - **API entegrasyon testleri:** uygulama bellekte, gerçek PostgreSQL'e karşı ayağa kalkar (her test sınıfı için tek kullanımlık veritabanı). Sunucu adresi `ZIRVE_TEST_DB` ortam değişkeniyle verilir; yoksa yerel geliştirme veritabanı kullanılır, ona da ulaşılamazsa bu testler atlanır.
 - **Frontend:** Vitest ile API istemcisi (CSRF akışı) ve yardımcılar.
 

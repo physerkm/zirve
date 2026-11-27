@@ -116,6 +116,7 @@ public sealed class CSharpExecutor
             environment["SystemRoot"] = systemRoot;
         }
 
+        environment[RunnerText.EnvironmentVariable] = RunnerText.Locale;
         environment["TEMP"] = directory;
         environment["TMP"] = directory;
         environment["TMPDIR"] = directory;
@@ -167,27 +168,31 @@ public sealed class CSharpExecutor
     {
         if (outcome.OutputLimitExceeded)
         {
-            return "Çıktı sınırı aşıldı.";
+            return RunnerText.T("Çıktı sınırı aşıldı.", "Output limit exceeded.");
         }
 
         if (outcome.TimedOut)
         {
-            return "Süre sınırı aşıldı.";
+            return RunnerText.T("Süre sınırı aşıldı.", "Time limit exceeded.");
         }
 
         if (outcome.Stderr.Contains("Stack overflow", StringComparison.OrdinalIgnoreCase))
         {
-            return "Yığın taşması (stack overflow): büyük olasılıkla sonlanmayan bir özyineleme var.";
+            return RunnerText.T(
+                "Yığın taşması (stack overflow): büyük olasılıkla sonlanmayan bir özyineleme var.",
+                "Stack overflow: most likely a recursion that never ends.");
         }
 
         if (outcome.Stderr.Contains("OutOfMemory", StringComparison.OrdinalIgnoreCase))
         {
-            return "Bellek sınırı aşıldı.";
+            return RunnerText.T("Bellek sınırı aşıldı.", "Memory limit exceeded.");
         }
 
         var firstLine = outcome.Stderr.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault();
         return firstLine is null
-            ? $"Program beklenmedik biçimde sonlandı (çıkış kodu {outcome.ExitCode})."
+            ? RunnerText.T(
+                $"Program beklenmedik biçimde sonlandı (çıkış kodu {outcome.ExitCode}).",
+                $"The program exited unexpectedly (exit code {outcome.ExitCode}).")
             : Truncate(firstLine, 500)!;
     }
 

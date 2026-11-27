@@ -1,0 +1,92 @@
+title: SQL Server and NoSQL
+description: Clustered and nonclustered indexes, key lookups, RCSI and NOLOCK, parameter sniffing, SARGable queries, MongoDB modeling, text vs. keyword in Elasticsearch, query types and synchronization.
+questions:
+  - q: "Which of the following is true about a clustered index in SQL Server?"
+    options:
+      - "A table can have as many clustered indexes as you like."
+      - "The clustered index is the table itself; rows are stored in a B-tree sorted by this key, and there can be only one per table."
+      - "A clustered index is a separate structure that holds heap addresses pointing to the rows."
+      - "A primary key can never be clustered."
+    why: |
+      The leaf nodes of a clustered index are the rows themselves, which is why there can be only one per table. By default, the primary key is clustered. Nonclustered indexes are separate structures and carry the clustered key to reach the row.
+
+  - q: "A query's execution plan shows a large number of Key Lookups. The query filters by `CustomerId` and selects the `Total` and `Status` columns. What is the best fix?"
+    options:
+      - "Add `INCLUDE (Total, Status)` to the nonclustered index on `CustomerId` (a covering index)"
+      - "Add `WITH (NOLOCK)` to the table"
+      - "Drop the clustered index"
+      - "Write `SELECT *` in the query"
+    why: |
+      A key lookup means going back to the clustered index to fetch the missing columns for every row found in the nonclustered index. It is expensive across many rows and can push the optimizer toward a table scan. `INCLUDE` stores the columns at the leaf level of the index. Everything the query needs is in the index, and the lookup disappears.
+
+  - q: "What is the drawback of using a random GUID (`NEWID()`) as the clustered primary key?"
+    options:
+      - "GUIDs aren't unique, so collisions occur."
+      - "SQL Server can't index GUIDs."
+      - "Every insert goes to a random page of the B-tree; this causes page splits, fragmentation and, because of the wide key, growth of every nonclustered index."
+      - "There is no drawback; this is the best practice."
+    why: |
+      A good clustered key should be narrow, unique, unchanging and ever-increasing. A random GUID breaks the last condition: new rows are inserted at random places instead of at the end. On top of that, the 16-byte key is repeated in every nonclustered index. A sequential GUID (`NEWSEQUENTIALID()`, `Guid.CreateVersion7()`) or `BIGINT IDENTITY` are better options.
+
+  - q: "In a busy SQL Server database, read queries are slow because they wait on locks held by write transactions. What is the most correct fix?"
+    options:
+      - "Add `WITH (NOLOCK)` to every query"
+      - "Turn on Read Committed Snapshot Isolation (RCSI); readers read the last committed version without waiting for locks"
+      - "Set the isolation level to Serializable"
+      - "Drop all indexes"
+    why: |
+      NOLOCK reads uncommitted data (which may be rolled back) and leads to inconsistencies such as reading the same row twice or not at all. RCSI uses row versioning so that readers don't wait for writers, and it returns consistent data. Serializable increases blocking.
+
+  - q: "A stored procedure takes milliseconds with some parameters and minutes with others. Its contents haven't changed. What is the most likely cause?"
+    options:
+      - "Network latency"
+      - "Parameter sniffing: the plan was compiled and cached based on the parameter value of the first execution, and it doesn't suit other values with a very different data distribution"
+      - "Stored procedures are always slow."
+      - "The database has run out of free space."
+    why: |
+      SQL Server picks the plan based on the first parameter value and caches it. An index seek plan chosen for a value that returns few rows can turn into a disaster for a value that returns millions of rows. Fixes: `OPTION (RECOMPILE)`, `OPTIMIZE FOR`, or forcing the good plan with Query Store.
+
+  - q: "Which `WHERE` condition can use the index on the `CreatedAt` column (is SARGable)?"
+    options:
+      - "`WHERE YEAR(CreatedAt) = 2026`"
+      - "`WHERE CONVERT(varchar(10), CreatedAt, 120) LIKE '2026%'`"
+      - "`WHERE DATEADD(day, 1, CreatedAt) > GETDATE()`"
+      - "`WHERE CreatedAt >= '2026-01-01' AND CreatedAt < '2027-01-01'`"
+    why: |
+      Wrapping the column in a function prevents a direct comparison with the sorted values in the index, and a scan usually happens. Leaving the column bare and writing a range condition against constant values makes an index seek possible. This rule applies to PostgreSQL as well.
+
+  - q: "In MongoDB, a product's reviews can grow without limit, and reviews are read with pagination independently of the product page. How should they be modeled?"
+    options:
+      - "Embed the reviews in the product document as an array"
+      - "Keep the reviews in a separate collection that references the product via `productId`, with an index on `productId` + date"
+      - "Create a separate database for each review"
+      - "Append the reviews as text to the product name"
+    why: |
+      Arrays that grow without limit run into the document size limit (16 MB) and cause large documents to be rewritten constantly. Data that is read independently and grows without limit is kept in a separate collection with a reference. Embedding fits data that is read together and grows within limits (order items, addresses).
+
+  - q: "In Elasticsearch, the `category` field is mapped as `text`. A `term` query for `\"Keyboard\"` returns no results. Why?"
+    options:
+      - "`text` fields go through an analyzer and are indexed lowercased and split into terms; the `term` query isn't analyzed, so the term \"Keyboard\" doesn't exist in the index. For filtering, the field should be mapped as `keyword`."
+      - "Elasticsearch doesn't support uppercase letters."
+      - "The `term` query works only on numeric fields."
+      - "The index hasn't been created yet."
+    why: |
+      `text` fields are for full-text search. The value goes through an analyzer and is stored as normalized terms such as "keyboard". The `term` query doesn't analyze its input and looks for the exact term "Keyboard". Fields that need exact matching, filtering, sorting and aggregation, such as category, brand and status, are mapped as `keyword`.
+
+  - q: "What is the difference between `must` and `filter` in an Elasticsearch `bool` query?"
+    options:
+      - "There is no difference."
+      - "`filter` sorts the results, `must` doesn't."
+      - "`filter` works only on numeric fields."
+      - "`must` contributes to the relevance score; `filter` only excludes, computes no score and can be cached. Yes/no conditions go in `filter`."
+    why: |
+      Full-text search conditions (`match`) belong in `must` because they determine how relevant a document is. Yes/no conditions such as category, price range and stock status shouldn't affect the score. When they go in `filter`, they run faster and can also be cached.
+
+  - q: "Product data lives in SQL Server and search in Elasticsearch. Which approach to keeping them consistent should you **avoid**?"
+    options:
+      - "An outbox table, a message queue and an indexer service"
+      - "Change data capture (CDC, e.g. Debezium)"
+      - "Having the application write separately to both the database and Elasticsearch in the same request (dual write)"
+      - "Putting a version number on the document and rejecting stale updates"
+    why: |
+      With a dual write, if one of the two writes fails (a network error, a process crash), the systems silently diverge, and there is no mechanism to notice it. An outbox or CDC takes the change from a reliable source and delivers it in a retryable way. A version number protects against ordering problems.

@@ -37,7 +37,25 @@ public sealed class Problem
     /// <summary>Dil -> referans çözüm (jsonb).</summary>
     public string SolutionsJson { get; set; } = "{}";
 
+    /// <summary><see cref="Title"/> alanının İngilizce karşılığı; çevirisi yoksa Türkçe metin yazılır.</summary>
+    public string TitleEn { get; set; } = string.Empty;
+
+    /// <summary><see cref="Statement"/> alanının İngilizce karşılığı; çevirisi yoksa Türkçe metin yazılır.</summary>
+    public string StatementEn { get; set; } = string.Empty;
+
+    /// <summary>İpuçlarının İngilizce karşılıkları; çevirisi yoksa Türkçe ipuçları yazılır.</summary>
+    public List<string> HintsEn { get; set; } = [];
+
+    /// <summary><see cref="Editorial"/> alanının İngilizce karşılığı.</summary>
+    public string? EditorialEn { get; set; }
+
+    /// <summary>Referans çözümlerin İngilizce açıklamalı hâli (jsonb).</summary>
+    public string SolutionsJsonEn { get; set; } = "{}";
+
     public NpgsqlTsVector SearchVector { get; set; } = null!;
+
+    /// <summary>İngilizce metinlerden üretilen arama vektörü.</summary>
+    public NpgsqlTsVector SearchVectorEn { get; set; } = null!;
 }
 
 /// <summary>Bir problemin veritabanında saklanan test senaryosu.</summary>

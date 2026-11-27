@@ -1,8 +1,52 @@
 import { CircleAlert, CircleCheck, CircleX, Clock } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { cn, formatArguments, formatOperations, formatValue, testStatusLabels, verdictLabels } from '@/lib/format';
+import { defineMessages, useMessages } from '@/i18n/messages';
+import { cn, formatArguments, formatOperations, formatValue, testStatusLabel, verdictLabel } from '@/lib/format';
 import type { JudgedTest, JudgeResponse, ProblemSpec } from '@/lib/types';
 import { ErrorNotice, Spinner } from './ui';
+
+const messages = defineMessages({
+  tr: {
+    input: 'Girdi',
+    skipped: 'Önceki bir test programı durdurduğu için bu test çalıştırılmadı.',
+    errorAtLine: (line: number) => `Hata (satır ${line})`,
+    error: 'Hata',
+    yourOutput: 'Çıktınız',
+    expected: 'Beklenen',
+    consoleOutput: 'Konsol çıktısı',
+    judgingAll: 'Bütün testlerle değerlendiriliyor…',
+    runningSamples: 'Örnek testlerle çalıştırılıyor…',
+    emptyTitle: 'Sonuçlar burada görünecek.',
+    shortcutBefore: '',
+    shortcutAfter: ' ile örnek testleri çalıştırın.',
+    samplesPassed: 'Örnek testler geçti',
+    passedCount: (passed: number, total: number) => `${passed} / ${total} test geçti`,
+    samplesPassedNote: 'Örnek testler geçti. Çözümünüzü gizli testlerle de değerlendirmek için gönderin.',
+    line: 'Satır',
+    tests: 'Testler',
+    testTab: (sample: boolean, n: number) => `${sample ? 'Örnek' : 'Test'} ${n}`,
+  },
+  en: {
+    input: 'Input',
+    skipped: 'This test was not run because an earlier test stopped the program.',
+    errorAtLine: (line: number) => `Error (line ${line})`,
+    error: 'Error',
+    yourOutput: 'Your output',
+    expected: 'Expected',
+    consoleOutput: 'Console output',
+    judgingAll: 'Judging against all tests…',
+    runningSamples: 'Running the sample tests…',
+    emptyTitle: 'Results will appear here.',
+    shortcutBefore: 'Press ',
+    shortcutAfter: ' to run the sample tests.',
+    samplesPassed: 'Sample tests passed',
+    passedCount: (passed: number, total: number) => `${passed} / ${total} ${total === 1 ? 'test' : 'tests'} passed`,
+    samplesPassedNote: 'The sample tests passed. Submit your solution to also judge it against the hidden tests.',
+    line: 'Line',
+    tests: 'Tests',
+    testTab: (sample: boolean, n: number) => `${sample ? 'Sample' : 'Test'} ${n}`,
+  },
+});
 
 interface JudgeResultPanelProps {
   spec: ProblemSpec;
@@ -31,37 +75,40 @@ function Block({ label, children, tone }: { label: string; children: ReactNode; 
 }
 
 function TestDetail({ test, spec }: { test: JudgedTest; spec: ProblemSpec }) {
+  const t = useMessages(messages);
   const input = spec.kind === 'class' && test.ops ? formatOperations(test.ops, test.args) : formatArguments(test.args, spec.params);
 
   return (
     <div className="space-y-3">
-      <Block label="Girdi">{input}</Block>
+      <Block label={t.input}>{input}</Block>
       {test.status === 'skipped' ? (
-        <p className="text-sm text-muted">Önceki bir test programı durdurduğu için bu test çalıştırılmadı.</p>
+        <p className="text-sm text-muted">{t.skipped}</p>
       ) : (
         <>
           {test.error ? (
-            <Block label={test.errorLine ? `Hata (satır ${test.errorLine})` : 'Hata'} tone="error">
+            <Block label={test.errorLine ? t.errorAtLine(test.errorLine) : t.error} tone="error">
               {test.error}
             </Block>
           ) : (
-            <Block label="Çıktınız">{formatValue(test.actual)}</Block>
+            <Block label={t.yourOutput}>{formatValue(test.actual)}</Block>
           )}
-          <Block label="Beklenen">{formatValue(test.expected)}</Block>
+          <Block label={t.expected}>{formatValue(test.expected)}</Block>
         </>
       )}
-      {test.stdout && <Block label="Konsol çıktısı">{test.stdout}</Block>}
+      {test.stdout && <Block label={t.consoleOutput}>{test.stdout}</Block>}
     </div>
   );
 }
 
 /** "Çalıştır" ve "Gönder" sonuçlarını gösterir: hüküm, test listesi ve seçili testin ayrıntıları. */
 export function JudgeResultPanel({ spec, mode, result, error, pending, selectedTestId, onSelectTest }: JudgeResultPanelProps) {
+  const t = useMessages(messages);
+
   if (pending) {
     return (
       <div className="flex h-full items-center justify-center gap-3 text-sm text-muted" role="status">
         <Spinner label="" />
-        {mode === 'submit' ? 'Bütün testlerle değerlendiriliyor…' : 'Örnek testlerle çalıştırılıyor…'}
+        {mode === 'submit' ? t.judgingAll : t.runningSamples}
       </div>
     );
   }
@@ -77,10 +124,12 @@ export function JudgeResultPanel({ spec, mode, result, error, pending, selectedT
   if (!result) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-1 px-6 text-center text-sm text-muted">
-        <p>Sonuçlar burada görünecek.</p>
+        <p>{t.emptyTitle}</p>
         <p>
+          {t.shortcutBefore}
           <kbd className="rounded border border-border px-1.5 font-mono text-xs">Ctrl</kbd> +{' '}
-          <kbd className="rounded border border-border px-1.5 font-mono text-xs">Enter</kbd> ile örnek testleri çalıştırın.
+          <kbd className="rounded border border-border px-1.5 font-mono text-xs">Enter</kbd>
+          {t.shortcutAfter}
         </p>
       </div>
     );
@@ -100,12 +149,10 @@ export function JudgeResultPanel({ spec, mode, result, error, pending, selectedT
       >
         <span className={cn('inline-flex items-center gap-2 font-semibold', accepted ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400')}>
           {accepted ? <CircleCheck className="size-5" aria-hidden /> : <CircleX className="size-5" aria-hidden />}
-          {accepted && mode === 'run' ? 'Örnek testler geçti' : verdictLabels[result.verdict]}
+          {accepted && mode === 'run' ? t.samplesPassed : verdictLabel(result.verdict)}
         </span>
         {result.totalCount > 0 && result.verdict !== 'compileError' && (
-          <span className="text-sm text-muted tabular-nums">
-            {result.passedCount} / {result.totalCount} test geçti
-          </span>
+          <span className="text-sm text-muted tabular-nums">{t.passedCount(result.passedCount, result.totalCount)}</span>
         )}
         <span className="ml-auto inline-flex items-center gap-1 text-xs text-muted tabular-nums">
           <Clock className="size-3.5" aria-hidden />
@@ -115,7 +162,7 @@ export function JudgeResultPanel({ spec, mode, result, error, pending, selectedT
 
       <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-4">
         {accepted && mode === 'run' && (
-          <p className="mb-4 text-sm text-muted">Örnek testler geçti. Çözümünüzü gizli testlerle de değerlendirmek için gönderin.</p>
+          <p className="mb-4 text-sm text-muted">{t.samplesPassedNote}</p>
         )}
 
         {result.message && !accepted && result.verdict !== 'compileError' && (
@@ -131,7 +178,7 @@ export function JudgeResultPanel({ spec, mode, result, error, pending, selectedT
               <li key={index} className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 font-mono text-[13px] text-rose-800 dark:text-rose-300">
                 {diagnostic.line > 0 && (
                   <span className="mr-2 font-semibold">
-                    Satır {diagnostic.line}
+                    {t.line} {diagnostic.line}
                     {diagnostic.column > 0 && `:${diagnostic.column}`}
                   </span>
                 )}
@@ -143,7 +190,7 @@ export function JudgeResultPanel({ spec, mode, result, error, pending, selectedT
 
         {result.tests.length > 0 && selected && (
           <>
-            <div role="tablist" aria-label="Testler" className="scrollbar-thin mb-4 flex gap-1.5 overflow-x-auto pb-1">
+            <div role="tablist" aria-label={t.tests} className="scrollbar-thin mb-4 flex gap-1.5 overflow-x-auto pb-1">
               {result.tests.map((test, index) => (
                 <button
                   key={test.id}
@@ -151,7 +198,7 @@ export function JudgeResultPanel({ spec, mode, result, error, pending, selectedT
                   role="tab"
                   aria-selected={test.id === selected.id}
                   onClick={() => onSelectTest(test.id)}
-                  title={testStatusLabels[test.status]}
+                  title={testStatusLabel(test.status)}
                   className={cn(
                     'inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors',
                     test.id === selected.id ? 'border-border-strong bg-surface-2 text-fg' : 'border-transparent text-muted hover:bg-surface-2',
@@ -164,8 +211,8 @@ export function JudgeResultPanel({ spec, mode, result, error, pending, selectedT
                     )}
                     aria-hidden
                   />
-                  {test.sample ? 'Örnek' : 'Test'} {index + 1}
-                  <span className="sr-only">: {testStatusLabels[test.status]}</span>
+                  {t.testTab(test.sample, index + 1)}
+                  <span className="sr-only">: {testStatusLabel(test.status)}</span>
                 </button>
               ))}
             </div>

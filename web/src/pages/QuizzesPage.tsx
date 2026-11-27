@@ -1,10 +1,35 @@
 import { ListChecks, Timer } from 'lucide-react';
 import { Link } from 'react-router';
 import { EmptyState, LevelBadge, PageError, PageHeader, PageLoading } from '@/components/ui';
+import { defineMessages, useMessages } from '@/i18n/messages';
 import { useQuizzes } from '@/lib/queries';
 import type { QuizSummary } from '@/lib/types';
 
+const messages = defineMessages({
+  tr: {
+    pageTitle: 'Testler — Zirve',
+    title: 'Testler',
+    description:
+      'Çoktan seçmeli, açıklamalı testler. Yanıtlar sunucuda değerlendirilir; her sorunun neden doğru ya da yanlış olduğu anlatılır.',
+    empty: 'Henüz test yok',
+    questions: (n: number) => `${n} soru`,
+    minutes: (n: number) => `${n} dk`,
+    best: (score: number) => `En iyi: %${score}`,
+  },
+  en: {
+    pageTitle: 'Quizzes — Zirve',
+    title: 'Quizzes',
+    description:
+      'Multiple-choice quizzes with explanations. Answers are graded on the server, and each question explains why an answer is right or wrong.',
+    empty: 'No quizzes yet',
+    questions: (n: number) => (n === 1 ? '1 question' : `${n} questions`),
+    minutes: (n: number) => `${n} min`,
+    best: (score: number) => `Best: ${score}%`,
+  },
+});
+
 export default function QuizzesPage() {
+  const t = useMessages(messages);
   const quizzes = useQuizzes();
 
   if (quizzes.isPending) return <PageLoading />;
@@ -20,13 +45,10 @@ export default function QuizzesPage() {
 
   return (
     <div className="container-page py-10">
-      <title>Testler — Zirve</title>
-      <PageHeader
-        title="Testler"
-        description="Çoktan seçmeli, açıklamalı testler. Yanıtlar sunucuda değerlendirilir; her sorunun neden doğru ya da yanlış olduğu anlatılır."
-      />
+      <title>{t.pageTitle}</title>
+      <PageHeader title={t.title} description={t.description} />
 
-      {groups.size === 0 && <EmptyState title="Henüz test yok" icon={<ListChecks className="size-8" />} />}
+      {groups.size === 0 && <EmptyState title={t.empty} icon={<ListChecks className="size-8" />} />}
 
       <div className="mt-8 space-y-10">
         {[...groups.entries()].map(([slug, group]) => (
@@ -51,16 +73,16 @@ export default function QuizzesPage() {
                     <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
                       <span className="inline-flex items-center gap-1">
                         <ListChecks className="size-3.5" aria-hidden />
-                        {quiz.questionCount} soru
+                        {t.questions(quiz.questionCount)}
                       </span>
                       {quiz.timeLimitMinutes && (
                         <span className="inline-flex items-center gap-1">
                           <Timer className="size-3.5" aria-hidden />
-                          {quiz.timeLimitMinutes} dk
+                          {t.minutes(quiz.timeLimitMinutes)}
                         </span>
                       )}
                       {quiz.bestScore !== undefined && (
-                        <span className="ml-auto font-medium text-emerald-700 dark:text-emerald-400">En iyi: %{quiz.bestScore}</span>
+                        <span className="ml-auto font-medium text-emerald-700 dark:text-emerald-400">{t.best(quiz.bestScore)}</span>
                       )}
                     </div>
                   </Link>

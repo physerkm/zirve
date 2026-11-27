@@ -1,0 +1,108 @@
+title: Advanced C#
+description: Race conditions, lock, Interlocked and SemaphoreSlim, concurrent collections, thread pool starvation, Span and ArrayPool, GC generations and the LOH, records, pattern matching, nullable reference types and primary constructors.
+questions:
+  - q: |
+      Why doesn't the following code always print 100000 at the end?
+
+      ```csharp
+      var counter = 0;
+      Parallel.For(0, 100_000, _ => counter++);
+      Console.WriteLine(counter);
+      ```
+    options:
+      - "`Parallel.For` skips some iterations."
+      - "`counter++` is three steps: read, modify, write; when two threads read the same value and write the same result, increments are lost."
+      - "The `int` overflows."
+      - "The compiler optimizes the loop away."
+    why: |
+      This is a race condition. `counter++` is not atomic. If two threads read the old value at the same time, both write the same new value and one increment is lost. The fix is `Interlocked.Increment(ref counter)` or a `lock`. Better still, have each thread keep its own local total and combine them at the end.
+
+  - q: "In an asynchronous method, you need to serialize access to a shared resource, and there is an `await` inside the critical section. Which do you use?"
+    options:
+      - "The `lock` statement"
+      - "`Monitor.Enter` / `Monitor.Exit`"
+      - "`Interlocked.CompareExchange`"
+      - "`SemaphoreSlim(1, 1)` with `WaitAsync`, and `Release` inside `finally`"
+    why: |
+      `lock` is tied to a thread, and because code after an `await` may continue on a different thread, using `await` inside a `lock` is a compile error. `SemaphoreSlim.WaitAsync` waits without blocking the thread and is suitable for async code. `Release` must be inside `finally` so that it runs in every case.
+
+  - q: "Which statement about `ConcurrentDictionary.GetOrAdd(key, factory)` is true?"
+    options:
+      - "The factory function is guaranteed to run exactly once per key."
+      - "GetOrAdd is not thread-safe."
+      - "Adding to the dictionary is atomic, but under a race the factory can run more than once; if it must run only once, the value is wrapped in `Lazy<T>`."
+      - "The factory never runs; the value is always added as `default`."
+    why: |
+      `ConcurrentDictionary` runs the factory outside the lock so that a long-running factory does not lock the whole dictionary. As a result, if two threads request the same key at the same time, the factory can run twice. Only one result is stored. If the factory is expensive or has side effects, wrapping it in `Lazy<T>` guarantees a single run.
+
+  - q: "In an ASP.NET Core API, CPU usage is low but response times are very high and the thread count keeps growing. `dotnet-counters` shows the ThreadPool queue growing. What is the most likely cause?"
+    options:
+      - "Thread pool starvation caused by waiting synchronously on asynchronous methods with `.Result` or `.Wait()` (sync-over-async)"
+      - "The GC running too often"
+      - "A faulty network card"
+      - "Using `async` too much"
+    why: |
+      A synchronous wait blocks a thread, doing nothing, until the work finishes. Under load, every thread in the pool ends up waiting like this. The pool adds new threads slowly and requests pile up in the queue. Low CPU shows that the threads are waiting, not working. The fix is async all the way.
+
+  - q: "Why can't `Span<T>` be used across an `await` in an `async` method?"
+    options:
+      - "`Span<T>` works only with arrays."
+      - "`Span<T>` is a `ref struct` and can live only on the stack; the async state machine moves local variables to the heap, so the compiler does not allow it. In async code you use `Memory<T>`."
+      - "Because `Span<T>` is not thread-safe"
+      - "`Span<T>` is not supported in .NET Core."
+    why: |
+      `Span<T>` can even point to stack memory (`stackalloc`). If it could be stored inside a heap object, a view pointing to invalid memory could remain after that stack frame is gone. At an `await` point, async methods move local variables into a state machine on the heap. That is why `ref struct`s cannot live there. `Memory<T>` is the counterpart that can be stored on the heap.
+
+  - q: "Which of the following are true about `ArrayPool<byte>.Shared.Rent(1000)`? (Select more than one)"
+    options:
+      - "The returned array may be longer than 1000."
+      - "The returned array is always filled with zeros."
+      - "The array must not be used after it has been returned (`Return`)."
+      - "Returning it is optional; the GC puts it back in the pool anyway."
+    why: |
+      The pool works with size buckets and can return an array larger than requested, so the length actually in use is tracked separately. The array is not cleared and may contain the previous user's data. For sensitive data, use `Return(buffer, clearArray: true)`. An array that is not returned never goes back to the pool, and the benefit of the pool is lost. Using an array after returning it leads to data corruption when other code rents the same array.
+
+  - q: "A service that creates a new 200 KB `byte[]` buffer on every request is seeing high GC times. What is the cause and the fix?"
+    options:
+      - "Gen 0 is too small; it should be enlarged in the GC settings."
+      - "The array is small enough that it should be kept on the stack."
+      - "`GC.Collect()` should be called after each request."
+      - "Objects over 85,000 bytes go to the Large Object Heap and are cleaned up only by expensive Gen 2 collections; the buffers should be reused with `ArrayPool`."
+    why: |
+      Objects of 85,000 bytes or more are allocated on the LOH. The LOH is collected together with Gen 2 and is not compacted by default. Frequently created large arrays both trigger full collections and cause fragmentation. Pooling eliminates these allocations. Calling `GC.Collect()` disrupts the GC's own heuristics and makes things worse.
+
+  - q: |
+      What is the output of the following code?
+
+      ```csharp
+      public record Point(int X, int Y);
+      var a = new Point(1, 2);
+      var b = a with { Y = 5 };
+      var c = new Point(1, 2);
+      Console.WriteLine($"{a == c} {ReferenceEquals(a, c)} {b.X}");
+      ```
+    options:
+      - "False False 1"
+      - "True True 1"
+      - "True False 1"
+      - "True False 0"
+    why: |
+      Records provide value equality: `a` and `c` have the same values, so `==` returns true. But they are separate objects, so `ReferenceEquals` returns false. The `with` expression creates a copy of `a` and changes only `Y`. `X` stays 1.
+
+  - q: "Which statement about nullable reference types (`<Nullable>enable</Nullable>`) is true?"
+    options:
+      - "They are a compile-time analysis; they do not prevent `null` from being assigned at run time. Data coming from outside must still be validated."
+      - "They throw an exception if `null` is assigned to a `string` at run time."
+      - "They apply only to value types."
+      - "The `!` operator protects the value from being null at run time."
+    why: |
+      Nullable reference types rely on the compiler's flow analysis and produce warnings. Run-time behavior does not change. Values coming from JSON, the database or libraries that are not annotated can still be `null`. The `!` (null-forgiving) operator only silences the warning; it provides no protection.
+
+  - q: "Which statement about C# 12 primary constructors is true?"
+    options:
+      - "The parameters automatically become `public` properties."
+      - "The parameters are `readonly` fields and cannot be reassigned."
+      - "The parameters are captured variables accessible throughout the class and are not `readonly`; they can be reassigned inside the class."
+      - "Primary constructors can be used only in records."
+    why: |
+      Unlike positional parameters in records, primary constructor parameters in classes do not generate public properties. They are captured by the class's members and are not `readonly`. Teams that want to prevent accidental reassignment explicitly copy the value into a `private readonly` field or use an analyzer rule.

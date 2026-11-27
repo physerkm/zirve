@@ -1,9 +1,30 @@
 import { CircleAlert, LoaderCircle } from 'lucide-react';
 import type { ButtonHTMLAttributes, ComponentProps, ReactNode } from 'react';
 import { Link } from 'react-router';
+import { useLocale } from '@/i18n/locale';
+import { defineMessages, useMessages } from '@/i18n/messages';
 import { ApiError } from '@/lib/api';
-import { cn, difficultyClasses, difficultyLabels, levelLabels } from '@/lib/format';
+import { cn, difficultyClasses, difficultyLabel, levelLabel } from '@/lib/format';
 import type { Difficulty, Level } from '@/lib/types';
+
+const messages = defineMessages({
+  tr: {
+    loading: 'Yükleniyor',
+    unexpected: 'Beklenmeyen bir hata oluştu.',
+    retry: 'Tekrar dene',
+    notFoundTitle: 'İçerik bulunamadı',
+    notFoundDescription: 'Aradığınız sayfa taşınmış ya da kaldırılmış olabilir.',
+    backHome: 'Ana sayfaya dön',
+  },
+  en: {
+    loading: 'Loading',
+    unexpected: 'An unexpected error occurred.',
+    retry: 'Try again',
+    notFoundTitle: 'Content not found',
+    notFoundDescription: 'The page you are looking for may have been moved or removed.',
+    backHome: 'Back to home',
+  },
+});
 
 // ------------------------------------------------------------------ düğme
 
@@ -68,11 +89,13 @@ export function Badge({ className, ...rest }: ComponentProps<'span'>) {
 }
 
 export function DifficultyBadge({ difficulty }: { difficulty: Difficulty }) {
-  return <Badge className={difficultyClasses[difficulty]}>{difficultyLabels[difficulty]}</Badge>;
+  useLocale(); // dil değişince etiket yeniden çizilsin
+  return <Badge className={difficultyClasses[difficulty]}>{difficultyLabel(difficulty)}</Badge>;
 }
 
 export function LevelBadge({ level }: { level: Level }) {
-  return <Badge className="bg-surface-2 text-muted">{levelLabels[level]}</Badge>;
+  useLocale();
+  return <Badge className="bg-surface-2 text-muted">{levelLabel(level)}</Badge>;
 }
 
 export function ProgressBar({ value, className, barClassName, label }: { value: number; className?: string; barClassName?: string; label: string }) {
@@ -94,11 +117,13 @@ export function ProgressBar({ value, className, barClassName, label }: { value: 
 
 // ------------------------------------------------------------------ durumlar
 
-export function Spinner({ className, label = 'Yükleniyor' }: { className?: string; label?: string }) {
+export function Spinner({ className, label }: { className?: string; label?: string }) {
+  const t = useMessages(messages);
+
   return (
     <span role="status" className="inline-flex items-center">
       <LoaderCircle className={cn('size-5 animate-spin text-muted', className)} aria-hidden />
-      <span className="sr-only">{label}</span>
+      <span className="sr-only">{label ?? t.loading}</span>
     </span>
   );
 }
@@ -112,7 +137,8 @@ export function PageLoading() {
 }
 
 export function ErrorNotice({ error, onRetry, className }: { error: unknown; onRetry?: () => void; className?: string }) {
-  const message = error instanceof Error ? error.message : 'Beklenmeyen bir hata oluştu.';
+  const t = useMessages(messages);
+  const message = error instanceof Error ? error.message : t.unexpected;
 
   return (
     <div
@@ -127,7 +153,7 @@ export function ErrorNotice({ error, onRetry, className }: { error: unknown; onR
         <p>{message}</p>
         {onRetry && (
           <button type="button" onClick={onRetry} className="mt-1 font-medium underline underline-offset-2">
-            Tekrar dene
+            {t.retry}
           </button>
         )}
       </div>
@@ -137,12 +163,14 @@ export function ErrorNotice({ error, onRetry, className }: { error: unknown; onR
 
 /** Sayfa düzeyinde hata: 404 için özel, diğerleri için yeniden deneme önerir. */
 export function PageError({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
+  const t = useMessages(messages);
+
   if (error instanceof ApiError && error.status === 404) {
     return (
       <EmptyState
-        title="İçerik bulunamadı"
-        description="Aradığınız sayfa taşınmış ya da kaldırılmış olabilir."
-        action={<ButtonLink to="/">Ana sayfaya dön</ButtonLink>}
+        title={t.notFoundTitle}
+        description={t.notFoundDescription}
+        action={<ButtonLink to="/">{t.backHome}</ButtonLink>}
       />
     );
   }

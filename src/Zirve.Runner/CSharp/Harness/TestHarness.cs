@@ -38,6 +38,14 @@ public class TreeNode
 
 namespace ZirveHarness
 {
+    /// <summary>İletilerin dili; Runner ZIRVE_LOCALE ortam değişkeniyle bildirir.</summary>
+    internal static class Text
+    {
+        private static readonly bool English = System.Environment.GetEnvironmentVariable("ZIRVE_LOCALE") == "en";
+
+        public static string T(string turkish, string english) => English ? english : turkish;
+    }
+
     internal sealed class HarnessException : Exception
     {
         public HarnessException(string message) : base(message)
@@ -104,7 +112,7 @@ namespace ZirveHarness
 
             if (_truncated)
             {
-                text += "\n… (çıktı kesildi)";
+                text += Text.T("\n… (çıktı kesildi)", "\n… (output truncated)");
                 _truncated = false;
             }
 
@@ -188,7 +196,8 @@ namespace ZirveHarness
                 var constructor = type.GetConstructor(Type.EmptyTypes);
                 if (constructor == null)
                 {
-                    throw new HarnessException("Solution sınıfının parametresiz bir kurucusu olmalı.");
+                    throw new HarnessException(Text.T(
+                        "Solution sınıfının parametresiz bir kurucusu olmalı.", "The Solution class must have a parameterless constructor."));
                 }
 
                 instance = constructor.Invoke(null);
@@ -208,7 +217,9 @@ namespace ZirveHarness
             var constructor = type.GetConstructors().FirstOrDefault(c => c.GetParameters().Length == constructorArguments.GetArrayLength());
             if (constructor == null)
             {
-                throw new HarnessException("'" + name + "' sınıfında " + constructorArguments.GetArrayLength() + " parametreli bir kurucu bulunamadı.");
+                throw new HarnessException(Text.T(
+                    "'" + name + "' sınıfında " + constructorArguments.GetArrayLength() + " parametreli bir kurucu bulunamadı.",
+                    "No constructor with " + constructorArguments.GetArrayLength() + " parameter(s) was found in class '" + name + "'."));
             }
 
             var instance = constructor.Invoke(ConvertArguments(constructorArguments, constructor.GetParameters()));
@@ -234,7 +245,9 @@ namespace ZirveHarness
 
             if (type == null)
             {
-                throw new HarnessException("'" + name + "' adında bir sınıf bulunamadı. Sınıf adını değiştirmeyin.");
+                throw new HarnessException(Text.T(
+                    "'" + name + "' adında bir sınıf bulunamadı. Sınıf adını değiştirmeyin.",
+                    "No class named '" + name + "' was found. Don't rename the class."));
             }
 
             return type;
@@ -251,7 +264,9 @@ namespace ZirveHarness
 
             if (method == null)
             {
-                throw new HarnessException("'" + type.Name + "' sınıfında " + argumentCount + " parametreli '" + name + "' metodu bulunamadı. Metot imzasını değiştirmeyin.");
+                throw new HarnessException(Text.T(
+                    "'" + type.Name + "' sınıfında " + argumentCount + " parametreli '" + name + "' metodu bulunamadı. Metot imzasını değiştirmeyin.",
+                    "No method '" + name + "' with " + argumentCount + " parameter(s) was found in class '" + type.Name + "'. Don't change the method signature."));
             }
 
             return method;
@@ -429,7 +444,8 @@ namespace ZirveHarness
                 values.Add(node.val);
                 if (values.Count > MaxNodes)
                 {
-                    throw new HarnessException("Döndürülen bağlı listede döngü var ya da liste çok uzun.");
+                    throw new HarnessException(Text.T(
+                        "Döndürülen bağlı listede döngü var ya da liste çok uzun.", "The returned linked list has a cycle or is too long."));
                 }
             }
 
@@ -496,7 +512,8 @@ namespace ZirveHarness
 
                 if (++visited > MaxNodes)
                 {
-                    throw new HarnessException("Döndürülen ağaçta döngü var ya da ağaç çok büyük.");
+                    throw new HarnessException(Text.T(
+                        "Döndürülen ağaçta döngü var ya da ağaç çok büyük.", "The returned tree has a cycle or is too large."));
                 }
 
                 values.Add(node.val);

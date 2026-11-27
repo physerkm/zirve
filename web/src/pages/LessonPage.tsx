@@ -3,11 +3,60 @@ import { useMemo } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
 import { Markdown } from '@/components/Markdown';
 import { Button, ButtonLink, ErrorNotice, LevelBadge, PageError, PageLoading, ProgressBar } from '@/components/ui';
+import { defineMessages, useMessages } from '@/i18n/messages';
 import { cn, percent } from '@/lib/format';
 import { useLesson, useSetLessonProgress, useUser } from '@/lib/queries';
 import { buildToc } from '@/lib/toc';
 
+const messages = defineMessages({
+  tr: {
+    breadcrumb: 'Konum',
+    tracks: 'Öğrenme Yolları',
+    readingTime: (minutes: number) => `${minutes} dk okuma`,
+    lessonPosition: (position: number, total: number) => `Ders ${position} / ${total}`,
+    completed: 'Tamamlandı',
+    youCompleted: 'Bu dersi tamamladınız.',
+    didYouFinish: 'Bu dersi bitirdiniz mi?',
+    progressNote: 'İlerlemeniz panelinize ve yol sayfasına yansır.',
+    markIncomplete: 'Tamamlanmadı olarak işaretle',
+    markComplete: 'Tamamlandı olarak işaretle',
+    signInToSave: 'İlerlemenizi kaydetmek için giriş yapın.',
+    signIn: 'Giriş yap',
+    lessonNav: 'Dersler arası gezinme',
+    previousLesson: 'Önceki ders',
+    nextLesson: 'Sonraki ders',
+    endOfTrack: 'Yolun sonu',
+    backToTrack: (track: string) => `${track} yoluna dön`,
+    percent: (value: number) => `%${value}`,
+    trackPosition: 'Yol içindeki konum',
+    inThisLesson: 'Bu derste',
+  },
+  en: {
+    breadcrumb: 'Breadcrumb',
+    tracks: 'Learning Tracks',
+    readingTime: (minutes: number) => `${minutes} min read`,
+    lessonPosition: (position: number, total: number) => `Lesson ${position} of ${total}`,
+    completed: 'Completed',
+    youCompleted: 'You have completed this lesson.',
+    didYouFinish: 'Have you finished this lesson?',
+    progressNote: 'Your progress shows up on your dashboard and the track page.',
+    markIncomplete: 'Mark as not completed',
+    markComplete: 'Mark as completed',
+    signInToSave: 'Sign in to save your progress.',
+    signIn: 'Sign in',
+    lessonNav: 'Lesson navigation',
+    previousLesson: 'Previous lesson',
+    nextLesson: 'Next lesson',
+    endOfTrack: 'End of track',
+    backToTrack: (track: string) => `Back to ${track}`,
+    percent: (value: number) => `${value}%`,
+    trackPosition: 'Position in track',
+    inThisLesson: 'In this lesson',
+  },
+});
+
 export default function LessonPage() {
+  const t = useMessages(messages);
   const { trackSlug = '', lessonSlug = '' } = useParams();
   const location = useLocation();
   const lesson = useLesson(trackSlug, lessonSlug);
@@ -25,9 +74,9 @@ export default function LessonPage() {
     <div className="container-page py-8">
       <title>{`${data.title} — ${data.track.title} — Zirve`}</title>
 
-      <nav aria-label="Konum" className="flex flex-wrap items-center gap-1 text-sm text-muted">
+      <nav aria-label={t.breadcrumb} className="flex flex-wrap items-center gap-1 text-sm text-muted">
         <Link to="/tracks" className="hover:text-fg">
-          Öğrenme Yolları
+          {t.tracks}
         </Link>
         <ChevronRight className="size-3.5" aria-hidden />
         <Link to={trackPath} className="hover:text-fg">
@@ -44,15 +93,13 @@ export default function LessonPage() {
               <LevelBadge level={data.level} />
               <span className="inline-flex items-center gap-1">
                 <Clock className="size-3.5" aria-hidden />
-                {data.minutes} dk okuma
+                {t.readingTime(data.minutes)}
               </span>
-              <span>
-                Ders {data.position} / {data.total}
-              </span>
+              <span>{t.lessonPosition(data.position, data.total)}</span>
               {data.completed && (
                 <span className="inline-flex items-center gap-1 font-medium text-emerald-700 dark:text-emerald-400">
                   <CircleCheck className="size-4" aria-hidden />
-                  Tamamlandı
+                  {t.completed}
                 </span>
               )}
             </div>
@@ -69,8 +116,8 @@ export default function LessonPage() {
               {user ? (
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="font-medium">{data.completed ? 'Bu dersi tamamladınız.' : 'Bu dersi bitirdiniz mi?'}</p>
-                    <p className="text-sm text-muted">İlerlemeniz panelinize ve yol sayfasına yansır.</p>
+                    <p className="font-medium">{data.completed ? t.youCompleted : t.didYouFinish}</p>
+                    <p className="text-sm text-muted">{t.progressNote}</p>
                   </div>
                   <Button
                     variant={data.completed ? 'secondary' : 'success'}
@@ -79,21 +126,21 @@ export default function LessonPage() {
                     className="shrink-0"
                   >
                     {!progress.isPending && <CircleCheck className="size-4" aria-hidden />}
-                    {data.completed ? 'Tamamlanmadı olarak işaretle' : 'Tamamlandı olarak işaretle'}
+                    {data.completed ? t.markIncomplete : t.markComplete}
                   </Button>
                 </div>
               ) : (
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm text-muted">İlerlemenizi kaydetmek için giriş yapın.</p>
+                  <p className="text-sm text-muted">{t.signInToSave}</p>
                   <ButtonLink to="/login" state={{ from: location.pathname }} variant="secondary" className="shrink-0">
-                    Giriş yap
+                    {t.signIn}
                   </ButtonLink>
                 </div>
               )}
               {progress.isError && <ErrorNotice error={progress.error} className="mt-4" />}
             </div>
 
-            <nav aria-label="Dersler arası gezinme" className="mt-6 grid gap-3 sm:grid-cols-2">
+            <nav aria-label={t.lessonNav} className="mt-6 grid gap-3 sm:grid-cols-2">
               {data.previous ? (
                 <Link
                   to={`${trackPath}/${data.previous.slug}`}
@@ -101,7 +148,7 @@ export default function LessonPage() {
                 >
                   <span className="flex items-center gap-1 text-xs text-muted">
                     <ArrowLeft className="size-3.5" aria-hidden />
-                    Önceki ders
+                    {t.previousLesson}
                   </span>
                   <span className="mt-1 block font-medium">{data.previous.title}</span>
                 </Link>
@@ -114,7 +161,7 @@ export default function LessonPage() {
                   className="group rounded-xl border border-border p-4 text-right transition-colors hover:border-border-strong hover:bg-surface"
                 >
                   <span className="flex items-center justify-end gap-1 text-xs text-muted">
-                    Sonraki ders
+                    {t.nextLesson}
                     <ArrowRight className="size-3.5" aria-hidden />
                   </span>
                   <span className="mt-1 block font-medium">{data.next.title}</span>
@@ -124,8 +171,8 @@ export default function LessonPage() {
                   to={trackPath}
                   className="rounded-xl border border-border p-4 text-right transition-colors hover:border-border-strong hover:bg-surface"
                 >
-                  <span className="text-xs text-muted">Yolun sonu</span>
-                  <span className="mt-1 block font-medium">{data.track.title} yoluna dön</span>
+                  <span className="text-xs text-muted">{t.endOfTrack}</span>
+                  <span className="mt-1 block font-medium">{t.backToTrack(data.track.title)}</span>
                 </Link>
               )}
             </nav>
@@ -137,14 +184,14 @@ export default function LessonPage() {
             <div>
               <div className="mb-2 flex justify-between text-xs text-muted">
                 <span>{data.track.title}</span>
-                <span className="tabular-nums">%{percent(data.position, data.total)}</span>
+                <span className="tabular-nums">{t.percent(percent(data.position, data.total))}</span>
               </div>
-              <ProgressBar value={percent(data.position, data.total)} label="Yol içindeki konum" />
+              <ProgressBar value={percent(data.position, data.total)} label={t.trackPosition} />
             </div>
 
             {toc.length > 1 && (
-              <nav aria-label="Bu derste">
-                <h2 className="text-xs font-semibold tracking-wide text-subtle uppercase">Bu derste</h2>
+              <nav aria-label={t.inThisLesson}>
+                <h2 className="text-xs font-semibold tracking-wide text-subtle uppercase">{t.inThisLesson}</h2>
                 <ul className="mt-3 space-y-2 border-l border-border text-sm">
                   {toc.map((entry) => (
                     <li key={entry.id}>

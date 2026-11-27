@@ -49,6 +49,7 @@ public static class DashboardEndpoints
         AppDbContext db, TimeProvider timeProvider, HttpContext http, CancellationToken cancellationToken)
     {
         var userId = http.User.RequireUserId();
+        var en = Localization.IsEnglish;
         var now = timeProvider.GetUtcNow();
         var since = now.AddDays(-StreakLookbackDays);
 
@@ -60,7 +61,7 @@ public static class DashboardEndpoints
             {
                 track.Id,
                 track.Slug,
-                track.Title,
+                Title = en ? track.TitleEn : track.Title,
                 track.Icon,
                 track.Accent,
                 Total = db.Lessons.Count(lesson => lesson.TrackId == track.Id),
@@ -108,7 +109,12 @@ public static class DashboardEndpoints
             .OrderByDescending(submission => submission.CreatedAt)
             .Take(8)
             .Select(submission => new RecentSubmission(
-                submission.Id, submission.Problem.Slug, submission.Problem.Title, submission.Language, submission.Verdict, submission.CreatedAt))
+                submission.Id,
+                submission.Problem.Slug,
+                en ? submission.Problem.TitleEn : submission.Problem.Title,
+                submission.Language,
+                submission.Verdict,
+                submission.CreatedAt))
             .ToListAsync(cancellationToken);
 
         var submissionTimes = await db.Submissions
@@ -178,7 +184,14 @@ public static class DashboardEndpoints
             .Where(lesson => lesson.TrackId == trackId)
             .OrderBy(lesson => lesson.Module.Order)
             .ThenBy(lesson => lesson.Order)
-            .Select(lesson => new { lesson.Id, lesson.Slug, lesson.Title, TrackSlug = lesson.Track.Slug, TrackTitle = lesson.Track.Title })
+            .Select(lesson => new
+            {
+                lesson.Id,
+                lesson.Slug,
+                Title = Localization.IsEnglish ? lesson.TitleEn : lesson.Title,
+                TrackSlug = lesson.Track.Slug,
+                TrackTitle = Localization.IsEnglish ? lesson.Track.TitleEn : lesson.Track.Title,
+            })
             .ToListAsync(cancellationToken);
 
         var next = outline.FirstOrDefault(lesson => !completedLessonIds.Contains(lesson.Id));

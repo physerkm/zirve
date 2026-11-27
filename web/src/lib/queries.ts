@@ -1,4 +1,5 @@
-import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { hashKey, QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getLocale } from '@/i18n/locale';
 import { api, ApiError, loadSession } from './api';
 import type {
   Dashboard,
@@ -29,6 +30,10 @@ export const queryClient = new QueryClient({
       // 4xx yanıtları yeniden denemek anlamsızdır; yalnızca ağ ve sunucu hatalarında tekrar dene.
       retry: (failureCount, error) =>
         !(error instanceof ApiError && error.status >= 400 && error.status < 500) && failureCount < 2,
+      // Sunucu yanıtları dile göre değişir; her dilin önbelleği ayrıdır. Dil değişince bileşenler aynı
+      // anahtarla yeni (o dilin) sorgusuna bağlanır, geri dönüldüğünde önceki dilin verisi hazırdır.
+      // Oturum dilden bağımsızdır ve tek kopya tutulur.
+      queryKeyHashFn: (queryKey) => (queryKey[0] === 'session' ? hashKey(queryKey) : hashKey([...queryKey, getLocale()])),
     },
     mutations: { retry: false },
   },

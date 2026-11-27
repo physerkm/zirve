@@ -1,0 +1,119 @@
+title: DevOps and Cloud
+description: Docker images and layers, Compose, Kubernetes objects and probes, resource limits, CI/CD principles and deployment strategies, cloud service models, passwordless identity and Linux diagnostic commands.
+questions:
+  - q: "What is the key difference between a container and a virtual machine?"
+    options:
+      - "Containers carry their own operating system kernel, while virtual machines share the host's kernel."
+      - "Containers share the host's kernel and are isolated at the process level; virtual machines virtualize the hardware and carry their own kernels."
+      - "There is no difference between the two; only the names differ."
+      - "Virtual machines are lighter and boot faster."
+    why: |
+      Containers are processes isolated with namespaces (visibility) and cgroups (resource limits), and they share the host's kernel. That is why they are megabytes in size and start within seconds. Virtual machines carry their own kernels, so they provide stronger isolation but are heavier.
+
+  - q: |
+      With the following Dockerfile, every code change downloads all the NuGet packages again. Why?
+
+      ```dockerfile
+      FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+      WORKDIR /src
+      COPY . .
+      RUN dotnet restore
+      RUN dotnet publish -c Release -o /app
+      ```
+    options:
+      - "`WORKDIR` points to the wrong directory."
+      - "The SDK image does not support caching."
+      - "Because `COPY . .` also copies the source code, every code change invalidates this layer and everything after it (including restore); you should copy only the project files and restore first, then copy the source code."
+      - "`dotnet publish` always downloads the packages again."
+    why: |
+      Docker caches layers in order. If a layer's input changes, that layer and everything after it run again. Copying the project files first and running `restore` lets the restore layer come from the cache as long as the dependencies don't change. Source code changes then affect only the last layers.
+
+  - q: "An API container running under docker compose cannot connect to the PostgreSQL container because its connection string uses `Host=localhost`. Why?"
+    options:
+      - "Inside a container, `localhost` is the container itself; services on the same compose network are reached by service name (`Host=db`)."
+      - "PostgreSQL containers do not accept external connections."
+      - "Because no port mapping (`ports:`) is defined, no container can reach the database."
+      - "Compose can run only a single service."
+    why: |
+      Each container has its own network namespace. The `localhost` inside it refers to the container itself, not the host. Compose attaches the services to a shared network and resolves service names through DNS. `ports:` is only for access from the host; it is not needed for communication between containers.
+
+  - q: "What is the downside of defining a password in a Dockerfile with `ENV DB_PASSWORD=...`?"
+    options:
+      - "There is no downside; environment variables are encrypted."
+      - "The password stays in the image layers and metadata; anyone who pulls the image can read it. Secrets should be provided at run time through a secret or a vault service."
+      - "It only increases the image size."
+      - "Docker rejects this line at build time."
+    why: |
+      Everything baked into an image (ENV, copied files) is accessible to anyone who pulls the image, and it stays in the earlier layer even if a later layer deletes it. Secrets should be supplied at run time through an environment variable, a Kubernetes secret, Key Vault or a similar vault.
+
+  - q: "In Kubernetes, a pod keeps restarting with status `OOMKilled` and the container exits with code 137. What is the most likely cause?"
+    options:
+      - "The CPU limit was exceeded."
+      - "The readiness probe failed."
+      - "The image could not be pulled from the registry."
+      - "The container exceeded its memory limit and was killed with SIGKILL (128 + 9 = 137)."
+    why: |
+      A container that exceeds its memory limit is killed by the kernel and its exit code is 137. A container that exceeds its CPU limit is not killed, only slowed down (throttling). A readiness failure leads to traffic being cut off, not to a restart. A registry error shows up as `ImagePullBackOff`.
+
+  - q: "Pod IP addresses change all the time. Which Kubernetes object lets other services reach an application by a stable name?"
+    options:
+      - "ConfigMap"
+      - "Service"
+      - "Deployment"
+      - "Namespace"
+    why: |
+      A Service provides a stable DNS name and virtual IP in front of the pods matching its label selector, and distributes traffic among them. A Deployment manages the number of pods and their updates. A ConfigMap carries configuration. A Namespace groups resources logically.
+
+  - q: "What do the settings `maxUnavailable: 0` and `maxSurge: 1` achieve in a deployment?"
+    options:
+      - "Capacity never drops during the update; first a new pod starts, and once it is ready an old pod is shut down."
+      - "All old pods are shut down at the same time."
+      - "The update is applied to only one pod and the others stay on the old version."
+      - "The new version is never deployed."
+    why: |
+      In a rolling update, `maxUnavailable` sets how many pods the count may drop below the desired number during the update, and `maxSurge` sets how many extra pods may run above the desired number. With `0` and `1`, each step first starts a new pod and shuts down an old one once the new one passes readiness. Capacity is preserved; the cost is one pod's worth of extra resources.
+
+  - q: "What is the goal of the principle \"build once, deploy the same artifact to every environment\"?"
+    options:
+      - "To shorten build time"
+      - "To ensure that what goes to production is exactly what was tested in staging, so that the only difference between environments is configuration"
+      - "To be able to use different build settings for each environment"
+      - "To make Docker mandatory"
+    why: |
+      Rebuilding for each environment can send an untested artifact to production because of different dependency versions or build settings. A single artifact (e.g. an image tagged with the commit hash) passes through every environment. Differences between environments come only from configuration.
+
+  - q: "What do you call opening a new version to 5% of traffic first and gradually increasing it while watching the metrics?"
+    options:
+      - "Blue-green deployment"
+      - "Rolling update"
+      - "Canary deployment"
+      - "Recreate"
+    why: |
+      In a canary deployment, the new version starts with a small slice of traffic and is increased gradually if the metrics are healthy. A bug affects only a small audience. Blue-green switches traffic to the new environment all at once. A rolling update replaces instances one by one but does not control the traffic share based on metrics.
+
+  - q: "What is the best way for a .NET application running on Azure to access Key Vault and Blob Storage without storing a password?"
+    options:
+      - "Writing the connection string to `appsettings.json`"
+      - "Keeping the key in an environment variable as plain text"
+      - "Embedding the key in the code and making the repository private"
+      - "Using Managed Identity and `DefaultAzureCredential`, and granting the identity only the roles it needs"
+    why: |
+      Managed Identity lets the application get its identity from the platform, so there is no password left to store. `DefaultAzureCredential` uses the developer's session locally and Managed Identity in the cloud. The AWS equivalent is an IAM Role. Following the principle of least privilege, the identity is granted only the roles it needs.
+
+  - q: "For which scenario is serverless (Azure Functions, AWS Lambda) the **least** suitable?"
+    options:
+      - "An irregular batch job that runs at night"
+      - "A short task triggered when a message arrives in a queue"
+      - "An API that gets constantly high traffic all day and is sensitive to cold-start latency"
+      - "Generating a thumbnail when a file is uploaded"
+    why: |
+      Serverless shines for irregular, bursty and event-triggered work: you don't pay when you're not using it. Under constantly high traffic, always-on instances are usually cheaper, and cold-start latency can be a problem for APIs that need low latency.
+
+  - q: "A Linux server reports a \"disk full\" error. Which sequence of commands is best for finding the source of the problem?"
+    options:
+      - "Using `df -h` to find which file system is full and `du -sh` to find which folder is taking up space"
+      - "Checking CPU usage with `top`"
+      - "Checking network access with `ping`"
+      - "Stopping all processes with `kill -9`"
+    why: |
+      `df -h` shows usage at the file system level, and `du -sh *` shows folder sizes. Using the two to drill down, you find what is taking up space. Most of the time the cause is log files that are not rotated. `top` and `ping` are tools for other problems, and `kill -9` does not solve the problem and can cause data loss.

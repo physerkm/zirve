@@ -5,8 +5,28 @@ import { Link } from 'react-router';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeSlug from 'rehype-slug';
 import remarkGfm from 'remark-gfm';
+import { defineMessages, useMessages } from '@/i18n/messages';
 import { cn, languageLabels } from '@/lib/format';
 import type { Language } from '@/lib/types';
+
+const messages = defineMessages({
+  tr: {
+    code: 'Kod',
+    languages: { shell: 'Kabuk', text: 'Metin' },
+    tryIt: 'Dene',
+    copied: 'Kopyalandı',
+    copyCode: 'Kodu kopyala',
+    copy: 'Kopyala',
+  },
+  en: {
+    code: 'Code',
+    languages: { shell: 'Shell', text: 'Text' },
+    tryIt: 'Try it',
+    copied: 'Copied',
+    copyCode: 'Copy code',
+    copy: 'Copy',
+  },
+});
 
 const MermaidDiagram = lazy(() => import('./MermaidDiagram'));
 
@@ -28,16 +48,20 @@ const codeLanguageLabels: Record<string, string> = {
   jsx: 'JSX',
   json: 'JSON',
   sql: 'SQL',
-  bash: 'Kabuk',
-  sh: 'Kabuk',
   yaml: 'YAML',
   xml: 'XML',
   html: 'HTML',
   css: 'CSS',
   http: 'HTTP',
-  text: 'Metin',
-  txt: 'Metin',
-  plaintext: 'Metin',
+};
+
+// Adı dile göre değişen kod dilleri; etiketleri sözlükten gelir.
+const localizedLanguageLabels: Record<string, 'shell' | 'text'> = {
+  bash: 'shell',
+  sh: 'shell',
+  text: 'text',
+  txt: 'text',
+  plaintext: 'text',
 };
 
 const runnableLanguages: Record<string, Language> = {
@@ -71,6 +95,7 @@ function languageOf(node: HastNode | undefined): string | undefined {
 }
 
 function CopyButton({ text }: { text: string }) {
+  const t = useMessages(messages);
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
@@ -88,15 +113,16 @@ function CopyButton({ text }: { text: string }) {
       type="button"
       onClick={copy}
       className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-muted transition-colors hover:bg-surface-2 hover:text-fg"
-      aria-label={copied ? 'Kopyalandı' : 'Kodu kopyala'}
+      aria-label={copied ? t.copied : t.copyCode}
     >
       {copied ? <Check className="size-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden /> : <Copy className="size-3.5" aria-hidden />}
-      <span aria-live="polite">{copied ? 'Kopyalandı' : 'Kopyala'}</span>
+      <span aria-live="polite">{copied ? t.copied : t.copy}</span>
     </button>
   );
 }
 
 function CodeBlock({ node, children, playground }: { node?: HastNode; children?: React.ReactNode; playground: boolean }) {
+  const t = useMessages(messages);
   const language = languageOf(node);
   const text = textOf(node).replace(/\n$/, '');
 
@@ -109,11 +135,13 @@ function CodeBlock({ node, children, playground }: { node?: HastNode; children?:
   }
 
   const runnable = language ? runnableLanguages[language] : undefined;
+  const localizedLabel = language ? localizedLanguageLabels[language] : undefined;
+  const languageLabel = !language ? t.code : localizedLabel ? t.languages[localizedLabel] : (codeLanguageLabels[language] ?? language);
 
   return (
     <div className="not-prose group my-5 overflow-hidden rounded-xl border border-border bg-code-bg">
       <div className="flex h-9 items-center justify-between border-b border-border px-3">
-        <span className="text-xs font-medium text-muted">{language ? (codeLanguageLabels[language] ?? language) : 'Kod'}</span>
+        <span className="text-xs font-medium text-muted">{languageLabel}</span>
         <div className="flex items-center gap-1">
           {playground && runnable && (
             <Link
@@ -122,7 +150,7 @@ function CodeBlock({ node, children, playground }: { node?: HastNode; children?:
               className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-muted transition-colors hover:bg-surface-2 hover:text-fg"
             >
               <SquareTerminal className="size-3.5" aria-hidden />
-              Dene
+              {t.tryIt}
             </Link>
           )}
           <CopyButton text={text} />

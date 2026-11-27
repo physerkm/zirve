@@ -51,7 +51,9 @@ public static class RateLimitPolicies
                 var problem = new ProblemDetails
                 {
                     Status = StatusCodes.Status429TooManyRequests,
-                    Title = "Çok fazla istek gönderdiniz. Lütfen biraz bekleyip tekrar deneyin.",
+                    Title = Localization.IsEnglishRequest(context.HttpContext)
+                        ? "You've sent too many requests. Please wait a moment and try again."
+                        : "Çok fazla istek gönderdiniz. Lütfen biraz bekleyip tekrar deneyin.",
                     Extensions = { ["code"] = "rate_limited" },
                 };
 

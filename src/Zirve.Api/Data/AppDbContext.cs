@@ -11,6 +11,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     /// <summary>Tam metin aramada kullanılan PostgreSQL yapılandırması (Türkçe kök bulma).</summary>
     public const string SearchConfig = "turkish";
 
+    /// <summary>İngilizce metinlerin tam metin arama yapılandırması.</summary>
+    public const string SearchConfigEn = "english";
+
     public DbSet<Track> Tracks => Set<Track>();
 
     public DbSet<Module> Modules => Set<Module>();
@@ -53,6 +56,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             track.Property(t => t.Slug).HasMaxLength(80);
             track.Property(t => t.Title).HasMaxLength(120);
             track.Property(t => t.Description).HasMaxLength(600);
+            track.Property(t => t.TitleEn).HasMaxLength(120);
+            track.Property(t => t.DescriptionEn).HasMaxLength(600);
             track.Property(t => t.Icon).HasMaxLength(40);
             track.Property(t => t.Accent).HasMaxLength(40);
             track.HasIndex(t => t.Slug).IsUnique();
@@ -63,6 +68,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             module.Property(m => m.Slug).HasMaxLength(80);
             module.Property(m => m.Title).HasMaxLength(160);
             module.Property(m => m.Description).HasMaxLength(600);
+            module.Property(m => m.TitleEn).HasMaxLength(160);
+            module.Property(m => m.DescriptionEn).HasMaxLength(600);
             module.HasIndex(m => new { m.TrackId, m.Slug }).IsUnique();
             module.HasOne(m => m.Track).WithMany(t => t.Modules).HasForeignKey(m => m.TrackId).OnDelete(DeleteBehavior.Cascade);
         });
@@ -72,12 +79,17 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             lesson.Property(l => l.Slug).HasMaxLength(120);
             lesson.Property(l => l.Title).HasMaxLength(200);
             lesson.Property(l => l.Summary).HasMaxLength(600);
+            lesson.Property(l => l.TitleEn).HasMaxLength(200);
+            lesson.Property(l => l.SummaryEn).HasMaxLength(600);
             lesson.Property(l => l.Level).HasConversion<string>().HasMaxLength(20);
             lesson.HasIndex(l => new { l.TrackId, l.Slug }).IsUnique();
             lesson.HasOne(l => l.Module).WithMany(m => m.Lessons).HasForeignKey(l => l.ModuleId).OnDelete(DeleteBehavior.Cascade);
             lesson.HasOne(l => l.Track).WithMany().HasForeignKey(l => l.TrackId).OnDelete(DeleteBehavior.Cascade);
             lesson.HasGeneratedTsVectorColumn(l => l.SearchVector, SearchConfig, l => new { l.Title, l.Summary, l.Content })
                 .HasIndex(l => l.SearchVector)
+                .HasMethod("GIN");
+            lesson.HasGeneratedTsVectorColumn(l => l.SearchVectorEn, SearchConfigEn, l => new { l.TitleEn, l.SummaryEn, l.ContentEn })
+                .HasIndex(l => l.SearchVectorEn)
                 .HasMethod("GIN");
         });
 
@@ -94,6 +106,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             quiz.Property(q => q.Slug).HasMaxLength(120);
             quiz.Property(q => q.Title).HasMaxLength(200);
             quiz.Property(q => q.Description).HasMaxLength(600);
+            quiz.Property(q => q.TitleEn).HasMaxLength(200);
+            quiz.Property(q => q.DescriptionEn).HasMaxLength(600);
             quiz.Property(q => q.Level).HasConversion<string>().HasMaxLength(20);
             quiz.Property(q => q.ContentHash).HasMaxLength(64);
             quiz.HasIndex(q => q.Slug).IsUnique();
@@ -124,14 +138,19 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         {
             problem.Property(p => p.Slug).HasMaxLength(120);
             problem.Property(p => p.Title).HasMaxLength(200);
+            problem.Property(p => p.TitleEn).HasMaxLength(200);
             problem.Property(p => p.Difficulty).HasConversion<string>().HasMaxLength(20);
             problem.Property(p => p.SpecJson).HasColumnType("jsonb");
             problem.Property(p => p.TestsJson).HasColumnType("jsonb");
             problem.Property(p => p.SolutionsJson).HasColumnType("jsonb");
+            problem.Property(p => p.SolutionsJsonEn).HasColumnType("jsonb");
             problem.HasIndex(p => p.Slug).IsUnique();
             problem.HasIndex(p => p.Number);
             problem.HasGeneratedTsVectorColumn(p => p.SearchVector, SearchConfig, p => new { p.Title, p.Statement })
                 .HasIndex(p => p.SearchVector)
+                .HasMethod("GIN");
+            problem.HasGeneratedTsVectorColumn(p => p.SearchVectorEn, SearchConfigEn, p => new { p.TitleEn, p.StatementEn })
+                .HasIndex(p => p.SearchVectorEn)
                 .HasMethod("GIN");
         });
 

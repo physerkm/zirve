@@ -1,0 +1,126 @@
+title: The TypeScript Type System
+description: Structural typing, narrowing, discriminated unions, generics and utility types.
+questions:
+  - q: |
+      Does the following code compile?
+
+      ```typescript
+      interface Point { x: number; y: number; }
+
+      function print(p: Point) { console.log(p.x, p.y); }
+
+      const pixel = { x: 1, y: 2, color: 'red' };
+      print(pixel);
+      ```
+    options:
+      - "No; the `pixel` object wasn't declared as a `Point`."
+      - "No; the `color` property doesn't exist in `Point`."
+      - "Yes; `pixel` has every property that `Point` requires."
+      - "Yes; but only when `strict` mode is off."
+    why: |
+      TypeScript uses **structural** typing: a value is compatible if it has the required shape; it doesn't need to declare the type's name, and extra properties are fine. The only exception is the excess property check performed when you pass an object literal **directly** as an argument: `print({ x: 1, y: 2, color: 'red' })` is an error.
+
+  - q: "What happens to TypeScript types at runtime?"
+    options:
+      - "They are converted into JavaScript objects and can be queried with `typeof`."
+      - "They are erased during compilation; no type checking happens at runtime."
+      - "Only `interface` definitions are kept."
+      - "The browser validates them."
+    why: |
+      Types exist only at compile time and leave no trace in the output JavaScript. The practical consequence: stamping data from `fetch` or `JSON.parse` with a type via `as` validates nothing. You need to validate data at runtime at your system boundaries.
+
+  - q: "What is the difference between `unknown` and `any`?"
+    options:
+      - "There is no difference; `unknown` is the new name for `any`."
+      - "A value of type `unknown` can't be used until its type is narrowed; `any` turns off type checking entirely."
+      - "`any` is used only for objects, `unknown` only for primitive values."
+      - "`unknown` throws an error at runtime, `any` doesn't."
+    why: |
+      Any value can be assigned to either. The difference shows up when you use them: every operation is allowed on `any`, and errors are left for runtime; with `unknown`, you must narrow with `typeof`, `in` or a type guard before reading a property or calling a method. For data from external sources, `unknown` is the safe choice.
+
+  - q: |
+      For the type below, when can you safely access `state.data`?
+
+      ```typescript
+      type State =
+        | { status: 'loading' }
+        | { status: 'success'; data: string[] }
+        | { status: 'error'; message: string };
+      ```
+    options:
+      - "Always; `data` is defined in one member of the union."
+      - "After checking `state.status === 'success'`."
+      - "Only after casting with `state as any`."
+      - "Never; properties can't be accessed on union types."
+    why: |
+      This is a **discriminated union**: the `status` field is a different literal type in each member. Checking `status` lets TypeScript narrow the type to the matching member, and `data` becomes accessible only in that branch. This model makes invalid states such as "loading but also has data" impossible to express in the type.
+
+  - q: |
+      What is the `UserUpdate` type equal to?
+
+      ```typescript
+      interface User { id: number; name: string; email: string; }
+
+      type UserUpdate = Partial<Omit<User, 'id'>>;
+      ```
+    options:
+      - "`{ id?: number; name?: string; email?: string }`"
+      - "`{ name: string; email: string }`"
+      - "`{ name?: string; email?: string }`"
+      - "`{ id: number }`"
+    why: |
+      `Omit<User, 'id'>` first removes the `id` field: `{ name: string; email: string }`. `Partial<...>` makes all the remaining fields optional. Combining utility types is better than rewriting the same shape by hand: when `User` changes, `UserUpdate` updates automatically.
+
+  - q: |
+      What does the `K extends keyof T` constraint give you in this function?
+
+      ```typescript
+      function get<T, K extends keyof T>(obj: T, key: K): T[K] {
+        return obj[key];
+      }
+      ```
+    options:
+      - "`key` can only be the name of a property that `obj` actually has, and the return type is that property's type."
+      - "`obj` can only be an object with string keys."
+      - "It makes the function check at runtime that the key exists."
+      - "It requires the type `T` to derive from the type `K`."
+    why: |
+      `keyof T` is the union of `T`'s key names. `K extends keyof T` restricts the `key` argument to those names: a key that doesn't exist is a compile error. `T[K]` is the value type of that key; the return type of `get(user, 'name')` is inferred as `string`. No runtime check is added.
+
+  - q: |
+      What is the purpose of the assignment in the `default` branch below?
+
+      ```typescript
+      function area(shape: Circle | Square): number {
+        switch (shape.kind) {
+          case 'circle': return Math.PI * shape.radius ** 2;
+          case 'square': return shape.size ** 2;
+          default: {
+            const unreachable: never = shape;
+            return unreachable;
+          }
+        }
+      }
+      ```
+    options:
+      - "To throw an error at runtime for unknown shapes."
+      - "To produce a compile error if a new member is added to the union and not handled here."
+      - "To remove the `shape` variable from memory."
+      - "To make the function return `never`."
+    why: |
+      When every member is handled, the type of `shape` in the `default` branch narrows to `never` and the assignment is valid. If `Triangle` is added to the union, the type of `shape` in the `default` branch becomes `Triangle`; it can't be assigned to `never`, and the compiler reports the unhandled case. This is called an **exhaustiveness check**.
+
+  - q: |
+      What is the `Direction` type?
+
+      ```typescript
+      const directions = ['north', 'south', 'east', 'west'] as const;
+      type Direction = (typeof directions)[number];
+      ```
+    options:
+      - "`string`"
+      - "`string[]`"
+      - "`'north' | 'south' | 'east' | 'west'`"
+      - "`readonly string[]`"
+    why: |
+      Without `as const`, the array's type would be `string[]`. `as const` keeps the values with their literal types, as a read-only tuple. `typeof directions` gives the type of that tuple, and `[number]` gives the element type at any index, i.e. the union of the four literals. It's a common way to derive both the values and the type from a single source.

@@ -9,12 +9,17 @@ public sealed class GlobalExceptionHandler(IProblemDetailsService problemDetails
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
+        // Bu kod dil ara katmanının dışında çalışır; dil HttpContext'ten okunur.
+        var english = Localization.IsEnglishRequest(httpContext);
+
         var (status, title) = exception switch
         {
             RunnerUnavailableException unavailable => (StatusCodes.Status503ServiceUnavailable, unavailable.Message),
             RunnerRejectedException rejected => (StatusCodes.Status400BadRequest, rejected.Message),
-            BadHttpRequestException badRequest => (badRequest.StatusCode, "İstek geçersiz."),
-            _ => (StatusCodes.Status500InternalServerError, "Beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin."),
+            BadHttpRequestException badRequest => (badRequest.StatusCode, english ? "Invalid request." : "İstek geçersiz."),
+            _ => (StatusCodes.Status500InternalServerError, english
+                ? "An unexpected error occurred. Please try again later."
+                : "Beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin."),
         };
 
         if (status >= StatusCodes.Status500InternalServerError)

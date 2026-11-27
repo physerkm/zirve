@@ -429,6 +429,29 @@ public sealed class RunnerExecutionTests(RunnerFixture runner) : IClassFixture<R
         Assert.Contains("satır 2", result.Stderr);
     }
 
+    [Fact]
+    public async Task Messages_follow_the_requested_language()
+    {
+        var script = await runner.RunScriptAsync(Languages.JavaScript, "console.log('a');\nnull.x;", locale: "en");
+        Assert.Contains("line 2", script.Stderr);
+
+        // Koşucu kodu kullanıcı bağlamında üretilir; iletiler oraya da doğru dilde gömülmeli.
+        var javascript = await runner.RunTestsInAsync(
+            "en", Languages.JavaScript, "function wrongName(nums, target) { return [0, 1]; }", TwoSum, ("[[2, 7], 9]", "[0, 1]"));
+        Assert.Contains("No function named", Describe(javascript));
+
+        var csharp = await runner.RunTestsInAsync(
+            "en", Languages.CSharp, "public class Solution { public int[] Other(int[] nums, int target) => new[] { 0, 1 }; }", TwoSum, ("[[2, 7], 9]", "[0, 1]"));
+        Assert.Contains("Don't change the method signature", Describe(csharp));
+
+        var turkish = await runner.RunTestsInAsync(
+            "tr", Languages.CSharp, "public class Solution { public int[] Other(int[] nums, int target) => new[] { 0, 1 }; }", TwoSum, ("[[2, 7], 9]", "[0, 1]"));
+        Assert.Contains("Metot imzasını değiştirmeyin", Describe(turkish));
+
+        static string Describe(ExecutionResult result) =>
+            string.Join("\n", new[] { result.Message, result.Stderr }.Concat(result.Tests.Select(test => test.Error)).OfType<string>());
+    }
+
     [Theory]
     [InlineData(Languages.JavaScript, "console.log('başla'); while (true) {}")]
     [InlineData(Languages.CSharp, "Console.WriteLine(\"başla\"); while (true) { }")]

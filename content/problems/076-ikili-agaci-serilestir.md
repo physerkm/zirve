@@ -9,7 +9,7 @@ methods:
   - { name: serialize, params: [{ name: root, type: "TreeNode" }], returns: "string" }
   - { name: deserialize, params: [{ name: data, type: "string" }], returns: "TreeNode" }
 ---
-Serileştirme, bir veri yapısını veya nesneyi bellekte अथवा ağ üzerinden saklanıp iletilebilecek ve daha sonra birebir aynı yapıda geri kurulabilecek bir dizgi (string) biçimine dönüştürme işlemidir.
+Serileştirme, bir veri yapısını veya nesneyi bellekte ya da ağ üzerinden saklanıp iletilebilecek ve daha sonra birebir aynı yapıda geri kurulabilecek bir dizgi (string) biçimine dönüştürme işlemidir.
 
 Bir ikili ağacı serileştiren ve geri kuran `TreeCodec` sınıfını tasarlayın. Çözümünüzün testlerle uyumlu olması için aşağıdaki **Preorder (Kök-Sol-Sağ) virgüllü `"N"` formatını** kullanın:
 

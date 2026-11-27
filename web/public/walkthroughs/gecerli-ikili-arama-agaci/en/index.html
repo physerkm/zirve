@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<base target="_blank">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Validate Binary Search Tree</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --ink: #141b26;
+  --muted: #5a6779;
+  --line: #d6dce6;
+  --accent: #3346c8;
+  --accent-ink: #ffffff;
+  --range: #e3e9fb;
+  --range-ink: #1d2a6b;
+  --probe: #c46f00;
+  --good: #17824a;
+  --good-soft: #dcf1e4;
+  --good-soft-ink: #145c36;
+  --bad: #b8402a;
+  --code-bg: #f7f8fb;
+  --code-hl: #dfe5fb;
+  --kw: #7a3aa8;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+    --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+    --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+    --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131a; --surface: #161d27; --ink: #e5eaf2; --muted: #93a0b3; --line: #2a3443;
+  --accent: #8191f8; --accent-ink: #0b1020; --range: #1c2747; --range-ink: #c9d3ff; --probe: #e6a23c;
+  --good: #3fbf7a; --good-soft: #14301f; --good-soft-ink: #8fe0b2; --bad: #ff7d66;
+  --code-bg: #111821; --code-hl: #22305a; --kw: #c79bf0;
+  color-scheme: dark;
+}
+
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 40px;
+}
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; color: var(--muted); margin: 0; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 6vw, 54px); line-height: 1.05; letter-spacing: -.02em; margin: 8px 0 14px; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0; font-size: 17px; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: -.01em; margin: 0 0 18px; text-wrap: balance; }
+code { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+
+/* Idea */
+.idea { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; list-style: none; padding: 0; margin: 0; }
+.idea li { border-top: 2px solid var(--ink); padding-top: 12px; min-width: 0; }
+.idea .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.idea h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 2px 0 6px; text-wrap: balance; }
+.idea p { margin: 0; color: var(--muted); font-size: 15px; }
+@media (max-width: 760px) { .idea { grid-template-columns: 1fr; gap: 20px; } }
+
+/* Stepper panel */
+.stepper { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+@media (max-width: 560px) { .stepper { padding: 16px; } }
+.stepper h2 { margin: 0; }
+.controls { display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+.field { flex: 1 1 20em; min-width: 0; }
+.field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+input[type="text"] { width: 100%; max-width: 26em; box-sizing: border-box; font: 600 16px var(--font-mono); padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.err { margin: 0; font-size: 13px; color: var(--bad); }
+button { font: 500 14px var(--font-body); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.presets button { font-size: 13px; padding: 7px 10px; }
+.presets .mono { font-family: var(--font-mono); font-weight: 700; margin-right: 4px; }
+.presets button[aria-pressed="true"] { border-color: var(--accent); background: var(--range); color: var(--range-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; }
+#play { min-width: 7.5em; }
+
+.step { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+.step-meta { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--range); color: var(--range-ink); }
+.tag[data-kind="ok"] { background: var(--good); color: var(--surface); }
+.tag[data-kind="bad"] { background: var(--bad); color: var(--surface); }
+#step-text { margin: 8px 0 0; font-size: 16.5px; max-width: 78ch; min-height: 3.4em; }
+
+.panel-label { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+.panel-label .hint { font-weight: 400; }
+
+/* Tree SVG & Stack */
+.tree-wrap { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: flex; justify-content: center; }
+.tree-svg { display: block; max-width: 100%; height: auto; }
+.tree-svg .edge { stroke: var(--line); stroke-width: 2; }
+.tree-svg .edge.active { stroke: var(--accent); stroke-width: 3; }
+.tree-svg .edge.ok { stroke: var(--good); stroke-width: 2.5; }
+.tree-svg .edge.bad { stroke: var(--bad); stroke-width: 3; }
+.tree-svg .node-circle { fill: var(--surface); stroke: var(--line); stroke-width: 2; transition: fill .2s, stroke .2s; }
+.tree-svg .node[data-st="cur"] .node-circle { fill: var(--accent); stroke: var(--accent); }
+.tree-svg .node[data-st="cur"] .node-val { fill: var(--accent-ink); }
+.tree-svg .node[data-st="path"] .node-circle { fill: var(--range); stroke: var(--accent); }
+.tree-svg .node[data-st="path"] .node-val { fill: var(--range-ink); }
+.tree-svg .node[data-st="ok"] .node-circle { fill: var(--good-soft); stroke: var(--good); }
+.tree-svg .node[data-st="ok"] .node-val { fill: var(--good-soft-ink); }
+.tree-svg .node[data-st="bad"] .node-circle { fill: transparent; stroke: var(--bad); stroke-width: 3; stroke-dasharray: 4 2; }
+.tree-svg .node[data-st="bad"] .node-val { fill: var(--bad); }
+.tree-svg .node-val { fill: var(--ink); font: 700 16px var(--font-mono); text-anchor: middle; dominant-baseline: central; }
+.tree-svg .node-range { fill: var(--muted); font: 600 11px var(--font-mono); text-anchor: middle; }
+.tree-svg .node[data-st="cur"] .node-range { fill: var(--accent); font-weight: 700; }
+.tree-svg .node[data-st="bad"] .node-range { fill: var(--bad); font-weight: 700; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 8px; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--line); box-sizing: border-box; }
+.sw.cur { background: var(--accent); border-color: var(--accent); }
+.sw.path { background: var(--range); border: 2px solid var(--accent); }
+.sw.ok { background: var(--good-soft); border: 2px solid var(--good); }
+.sw.bad { background: transparent; border: 2px dashed var(--bad); }
+
+/* Variables | code */
+.board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 28px; }
+@media (max-width: 880px) { .board { grid-template-columns: 1fr; } }
+.col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.vars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.var { border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; background: var(--bg); min-width: 0; }
+.var dt { font: 400 12px var(--font-mono); color: var(--muted); }
+.var dd { margin: 0; font: 600 16px var(--font-mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.var.changed { border-color: var(--accent); background: var(--range); }
+.var.changed dd { color: var(--range-ink); }
+
+.stack { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.stack li { font: 500 13px var(--font-mono); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); }
+.stack li.top { border-color: var(--accent); background: var(--range); color: var(--range-ink); font-weight: 600; }
+
+.code { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 0; overflow-x: auto; font: 13px/1.6 var(--font-mono); }
+@media (max-width: 560px) { .code { font-size: 12px; } }
+.ln { display: block; padding: 0 14px 0 11px; white-space: pre; border-left: 3px solid transparent; }
+.ln.hl { background: var(--code-hl); border-left-color: var(--accent); }
+.kw { color: var(--kw); }
+
+.why-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 40px; }
+.why-grid > div { border-top: 1px solid var(--line); padding-top: 12px; min-width: 0; }
+.why h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin: 0 0 6px; text-wrap: balance; }
+.why p { margin: 0; color: var(--muted); }
+.why b { color: var(--ink); }
+@media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; gap: 20px; } }
+.foot { display: flex; flex-wrap: wrap; gap: 6px 20px; border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; color: var(--muted); }
+.foot a { color: var(--accent); }
+
+code, .code, .var dd, .stack li, input[type="text"] { font-variant-ligatures: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">LC 98 · Validate Binary Search Tree · Medium</p>
+    <h1>Validate Binary Search Tree</h1>
+    <p class="lead">You can follow every step of the solution here. Pick a tree, press <b>Next</b> or click <b>Play</b>, and see how the <code>(low, high)</code> range carried down to each node catches the invalid ones.</p>
+  </header>
+
+  <section aria-labelledby="idea-h">
+    <h2 id="idea-h">The idea in three steps</h2>
+    <ol class="idea">
+      <li>
+        <span class="n">1</span>
+        <h3>Checking only the parent is not enough</h3>
+        <p>Say the root is 5, its right child is 6, and 6's left child is 3: since 3 &lt; 6 it satisfies the local rule, but because it sits in 5's right subtree it must actually be greater than 5.</p>
+      </li>
+      <li>
+        <span class="n">2</span>
+        <h3>Carry an open range to every node</h3>
+        <p>The root starts with the range <code>(-∞, +∞)</code>. Going left, the upper bound becomes the node's value <code>(low, node.val)</code>; going right, the lower bound does <code>(node.val, high)</code>.</p>
+      </li>
+      <li>
+        <span class="n">3</span>
+        <h3>Guard the bounds with long</h3>
+        <p>Since a node value can be <code>int.MinValue</code> or <code>int.MaxValue</code>, we set the initial bounds to <code>long.MinValue</code> and <code>long.MaxValue</code>; on equality (<code>&lt;=</code> or <code>&gt;=</code>) we return <code>false</code> immediately.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="stepper" aria-labelledby="st-h">
+    <h2 id="st-h">Step through it</h2>
+
+    <div class="controls">
+      <div class="row">
+        <div class="field">
+          <label for="list">Tree (in level order, at most 7 positions; null for an empty node)</label>
+          <input id="list" type="text" value="5, 1, 4, null, null, 3, 6" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="nav">
+          <button type="button" id="reset">Restart</button>
+          <button type="button" id="prev-btn">← Back</button>
+          <button type="button" id="next-btn" class="primary">Next →</button>
+          <button type="button" id="play">▶ Play</button>
+        </div>
+      </div>
+      <div class="presets" role="group" aria-label="Preset examples">
+        <button type="button" data-l="5, 1, 4, null, null, 3, 6"><span class="mono">[5,1,4,null,null,3,6]</span>invalid</button>
+        <button type="button" data-l="5, 4, 6, null, null, 3, 7"><span class="mono">[5,4,6,null,null,3,7]</span>subtree trap</button>
+        <button type="button" data-l="2, 1, 3"><span class="mono">[2,1,3]</span>valid</button>
+        <button type="button" data-l="10, 5, 15, 3, 7, 12, 20"><span class="mono">[10,5,15,3,7,12,20]</span>fully valid</button>
+        <button type="button" data-l="2, 2, 2"><span class="mono">[2,2,2]</span>equal values</button>
+      </div>
+      <p class="err" id="list-err" hidden>Enter 1 to 7 comma-separated values (integers or null). The root cannot be null.</p>
+    </div>
+
+    <div class="step" aria-live="polite">
+      <div class="step-meta"><span id="step-count"></span><span id="step-tag" class="tag"></span></div>
+      <p id="step-text"></p>
+    </div>
+
+    <div>
+      <p class="panel-label">The tree and the allowed <code>(low, high)</code> ranges <span class="hint">(above each node is the open range passed to it)</span></p>
+      <div class="tree-wrap"><div id="tree-box"></div></div>
+      <div class="legend">
+        <span><i class="sw cur"></i>node being examined</span>
+        <span><i class="sw path"></i>ancestor node on the call stack</span>
+        <span><i class="sw ok"></i>valid together with its subtree</span>
+        <span><i class="sw bad"></i>node that breaks the range rule</span>
+      </div>
+    </div>
+
+    <div class="board">
+      <div class="col">
+        <p class="panel-label">Variables</p>
+        <dl class="vars" id="vars"></dl>
+        <p class="panel-label" style="margin-top: 12px">Call stack (the top one is running now)</p>
+        <ul class="stack" id="stack"></ul>
+      </div>
+      <div class="col">
+        <p class="panel-label">Code (Solution.cs)</p>
+        <div class="code" id="code" role="region" aria-label="C# code" tabindex="0"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="why" aria-labelledby="why-h">
+    <h2 id="why-h">Why is it so efficient?</h2>
+    <div class="why-grid">
+      <div>
+        <h3>O(n) time, O(h) space</h3>
+        <p>Each node is visited exactly once, and each visit does only two number comparisons: <b>O(n) time</b>. The recursion stack grows at most to the tree's height <code>h</code>: <b>O(log n)</b> for a balanced tree, <b>O(n) space</b> for a tree that extends down a single branch.</p>
+      </div>
+      <div>
+        <h3>Why long.MinValue and long.MaxValue?</h3>
+        <p>According to the constraints, a node value can be <code>-2³¹</code> (<code>int.MinValue</code>) or <code>2³¹ - 1</code> (<code>int.MaxValue</code>). If we kept the bounds as <code>int</code>, a valid single-node tree with value <code>int.MinValue</code> would fail the <code>node.val &lt;= low</code> check and wrongly return <code>false</code>.</p>
+      </div>
+      <div>
+        <h3>The short-circuit (&&) advantage</h3>
+        <p>In the expression <code>IsValid(node.left, ...) &amp;&amp; IsValid(node.right, ...)</code>, as soon as the left subtree returns <code>false</code>, C# never enters the right subtree. The search stops the moment an error is found.</p>
+      </div>
+      <div>
+        <h3>Alternative: inorder traversal</h3>
+        <p>If you traverse a BST in left–root–right (inorder) order, the values come out in strictly increasing order. Keeping the previous value and checking <code> node.val &lt;= prev</code> also works, with the same O(n) time and O(h) space complexity.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <a href="https://leetcode.com/problems/validate-binary-search-tree/">Problem: LeetCode 98</a>
+  </footer>
+</div>
+
+<script src="walkthrough.js"></script>
+</body>
+</html>

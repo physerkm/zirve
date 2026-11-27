@@ -1,5 +1,11 @@
 import { useCallback, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
+import { defineMessages, useMessages } from '@/i18n/messages';
 import { readStorage, writeStorage } from '@/lib/storage';
+
+const messages = defineMessages({
+  tr: { resize: 'Bölmeleri yeniden boyutlandır' },
+  en: { resize: 'Resize panes' },
+});
 
 interface SplitPaneProps {
   left: ReactNode;
@@ -13,6 +19,7 @@ interface SplitPaneProps {
 
 /** Yan yana iki bölme; aradaki tutamaç fareyle ya da ok tuşlarıyla sürüklenebilir. */
 export function SplitPane({ left, right, storageKey, defaultRatio = 0.44, minRatio = 0.25, maxRatio = 0.7 }: SplitPaneProps) {
+  const t = useMessages(messages);
   const containerRef = useRef<HTMLDivElement>(null);
   const [ratio, setRatio] = useState(() => {
     const stored = Number(readStorage(storageKey));
@@ -48,7 +55,7 @@ export function SplitPane({ left, right, storageKey, defaultRatio = 0.44, minRat
       <div
         role="separator"
         aria-orientation="vertical"
-        aria-label="Bölmeleri yeniden boyutlandır"
+        aria-label={t.resize}
         aria-valuenow={Math.round(ratio * 100)}
         aria-valuemin={Math.round(minRatio * 100)}
         aria-valuemax={Math.round(maxRatio * 100)}

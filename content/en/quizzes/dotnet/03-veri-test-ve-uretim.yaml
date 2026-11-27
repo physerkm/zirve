@@ -1,0 +1,107 @@
+title: Data Access, Testing and Production
+description: "Change tracking, N+1, IQueryable, concurrency and migrations in EF Core; caching and Redis; test doubles and integration tests; logging, OpenTelemetry, health checks and resilience."
+questions:
+  - q: |
+      How many SQL queries does the following code run? (Lazy loading is enabled and there are 100 orders.)
+
+      ```csharp
+      var orders = await db.Orders.ToListAsync();
+      foreach (var order in orders)
+          Console.WriteLine(order.Lines.Count);
+      ```
+    options:
+      - "1"
+      - "2"
+      - "101"
+      - "200"
+    why: |
+      This is the classic N+1 problem: 1 query for the orders, then 1 more query the first time each order's `Lines` collection is accessed. 101 in total. The fix is eager loading with `Include(o => o.Lines)` or a projection that selects only the information you need (`Select(o => new { o.Id, LineCount = o.Lines.Count })`), which also comes down to a single query.
+
+  - q: |
+      A repository method returns `IEnumerable<Order>`, and the caller uses it like this:
+
+      ```csharp
+      IEnumerable<Order> GetAll() => db.Orders;
+      var paid = repo.GetAll().Where(o => o.Status == OrderStatus.Paid).ToList();
+      ```
+
+      What happens?
+    options:
+      - "The filter runs in SQL: WHERE Status = 'Paid'."
+      - "The entire Orders table is loaded into memory and the filter is applied in C#."
+      - "A compile error occurs."
+      - "EF Core caches the query, so there is no performance difference."
+    why: |
+      When the return type is `IEnumerable<T>`, the subsequent `Where` binds to `Enumerable.Where` (LINQ to Objects). EF Core first runs the unfiltered query and fetches the whole table, and then the filter is applied in memory. If `IQueryable<T>` were returned, the filter would be added to the expression tree and translated to SQL.
+
+  - q: "Two users read the same product at the same time and update its stock, and one silently overwrites the other's change. What is the best solution in EF Core?"
+    options:
+      - "Using `AsNoTracking()`"
+      - "Calling `SaveChangesAsync` twice"
+      - "Making the DbContext a singleton"
+      - "Adding a concurrency token to the product (rowversion in SQL Server, xmin in PostgreSQL) and handling `DbUpdateConcurrencyException`"
+    why: |
+      Optimistic concurrency is the solution to the lost update problem. EF Core generates `UPDATE ... WHERE Id = @id AND RowVersion = @original`. If someone else has changed the record, the number of affected rows is 0 and `DbUpdateConcurrencyException` is thrown. The application can return this as 409, or re-read and retry. Making the DbContext a singleton breaks thread safety.
+
+  - q: "Which statement about `ExecuteUpdateAsync` is true?"
+    options:
+      - "It runs a single SQL UPDATE command and bypasses the change tracker; tracked entities in memory are not updated."
+      - "It first loads the entities into memory, then updates them one by one."
+      - "It is written to the database only after `SaveChangesAsync` is called."
+      - "It triggers SaveChanges interceptors."
+    why: |
+      `ExecuteUpdateAsync` and `ExecuteDeleteAsync`, introduced in EF Core 7, run a single command directly in the database. They are fast, but they bypass the change tracker. Entities already loaded in the same context keep their old values, and `SaveChanges` interceptors do not run.
+
+  - q: "The cache entry for a popular product page expired, and the 500 requests arriving at that moment piled onto the database. What is this called, and what is the most direct fix?"
+    options:
+      - "Cache penetration; a Bloom filter"
+      - "Split brain; a quorum"
+      - "Cache stampede; coalescing requests for the same key into a single load (e.g. HybridCache) or early refresh"
+      - "Hot partition; renaming the key"
+    why: |
+      A cache stampede (thundering herd) happens when a frequently read key drops out and all concurrent requests go to the source at once. Request coalescing lets one load run while the others wait for its result. `HybridCache` does this out of the box. Early refresh and adding jitter to the TTL also help.
+
+  - q: "When a product is updated, in what order should the database and the cache be handled?"
+    options:
+      - "Delete from the cache first, then update the database."
+      - "Update the database first, then delete the entry from the cache."
+      - "Update only the cache; the database is synchronized in the background."
+      - "The order does not matter."
+    why: |
+      If the cache is deleted first, a read arriving between the delete and the database update reads the old value from the database and writes it back to the cache, and the stale data remains for the whole TTL. Updating the database first and then deleting largely closes this window. For the small race conditions that remain, the TTL is a safety net.
+
+  - q: "What is the most recommended approach for testing code that uses `DbContext`?"
+    options:
+      - "Faking the DbContext and its DbSets with a mocking library"
+      - "Using the EF Core InMemory provider instead of a real database"
+      - "Faking my own abstraction (e.g. IOrderRepository) in unit tests, and verifying data access with integration tests against a real database using Testcontainers"
+      - "Not testing data access code"
+    why: |
+      Mocking types you don't own (DbContext, HttpClient) produces brittle tests that try to imitate the real behavior. The InMemory provider does not reflect the behavior of transactions, constraints or SQL translation, and Microsoft does not recommend it for testing either. The right approach: unit test the business logic with your own abstractions, and verify data access with integration tests against the real engine.
+
+  - q: "Which of the following logging calls is correct for structured logging?"
+    options:
+      - "`logger.LogInformation($\"Order {orderId} paid\");`"
+      - "`logger.LogInformation(\"Order \" + orderId + \" paid\");`"
+      - "`logger.LogInformation(\"Order {OrderId} paid\", orderId);`"
+      - "`Console.WriteLine($\"Order {orderId} paid\");`"
+    why: |
+      With a message template, `OrderId` is stored as a separate field. You can search and group by that field in the logging system, and because the template stays constant, events of the same kind can be counted together. String interpolation or concatenation loses this structure, and it builds the string even when the log level is disabled.
+
+  - q: "In a service running on Kubernetes, the liveness probe checks the database connection. What happens when the database is unreachable for 1 minute?"
+    options:
+      - "Only traffic is cut off; the pods keep running."
+      - "Nothing happens; liveness probe results are ignored."
+      - "The database is restarted automatically."
+      - "All pods are restarted; when the database comes back, the service may be stuck in a restart loop instead of recovering."
+    why: |
+      When the liveness probe fails, the orchestrator restarts the container. If a dependency check is put into liveness, an outage of an external dependency restarts every instance at the same time and makes things worse. Dependency checks belong in the readiness probe: when it fails, only traffic is cut off.
+
+  - q: "A call chain has three services (A → B → C), and each one retries a failed call 3 times. When C goes down completely, at most how many times the load does C receive, and what is the right approach?"
+    options:
+      - "3 times; no problem."
+      - "9 times; raise the retry count to 10"
+      - "27 times (3 × 3 × 3); retry at only one layer, and use exponential backoff with jitter and a circuit breaker"
+      - "The load does not change; retries are answered from the cache."
+    why: |
+      Retries at each layer multiply: each attempt by A leads to three attempts by B, and each attempt by B leads to three attempts by C. This is called a retry storm, and it completely overwhelms a service that is already failing. The right approach is to keep retries at a single layer, add exponential backoff and jitter, and fail fast with a circuit breaker.

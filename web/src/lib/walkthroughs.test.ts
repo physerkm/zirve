@@ -4,15 +4,30 @@ import { hasWalkthrough, walkthroughFileUrl, walkthroughPath, walkthroughSlugs }
 // Dosyalar diskten Vite'ın glob içe aktarmasıyla okunur; anahtarlar dosya yollarıdır.
 const pages = import.meta.glob<string>('../../public/walkthroughs/*/index.html', { query: '?raw', import: 'default', eager: true });
 const scripts = import.meta.glob('../../public/walkthroughs/*/walkthrough.js', { query: '?url' });
+const englishPages = import.meta.glob<string>('../../public/walkthroughs/*/en/index.html', { query: '?raw', import: 'default', eager: true });
+const englishScripts = import.meta.glob('../../public/walkthroughs/*/en/walkthrough.js', { query: '?url' });
 const problems = import.meta.glob('../../../content/problems/*.md', { query: '?url' });
 
 const folderOf = (path: string) => path.split('/').at(-2) ?? '';
+const englishFolderOf = (path: string) => path.split('/').at(-3) ?? '';
 const sorted = (values: readonly string[]) => [...values].sort();
 
 describe('adım adım anlatımlar', () => {
   it('listedeki her anlatımın dosyaları public klasöründe bulunur ve fazladan klasör yoktur', () => {
     expect(sorted(Object.keys(pages).map(folderOf))).toEqual(sorted(walkthroughSlugs));
     expect(sorted(Object.keys(scripts).map(folderOf))).toEqual(sorted(walkthroughSlugs));
+  });
+
+  it('her anlatımın en/ altında İngilizce kopyası vardır ve kopya İngilizce işaretlidir', () => {
+    expect(sorted(Object.keys(englishPages).map(englishFolderOf))).toEqual(sorted(walkthroughSlugs));
+    expect(sorted(Object.keys(englishScripts).map(englishFolderOf))).toEqual(sorted(walkthroughSlugs));
+
+    for (const [path, html] of Object.entries(englishPages)) {
+      expect(html, path).toContain('<html lang="en">');
+      expect(html, path).toContain('<script src="walkthrough.js"></script>');
+      expect(html.match(/<script/g), path).toHaveLength(1);
+      expect(html, path).not.toMatch(/\son[a-z]+="/);
+    }
   });
 
   it('her anlatım var olan bir probleme aittir', () => {
@@ -36,6 +51,7 @@ describe('adım adım anlatımlar', () => {
     expect(hasWalkthrough('min-yigin')).toBe(true);
     expect(hasWalkthrough('olmayan-problem')).toBe(false);
     expect(walkthroughFileUrl('min-yigin')).toBe('/walkthroughs/min-yigin/index.html');
+    expect(walkthroughFileUrl('min-yigin', 'en')).toBe('/walkthroughs/min-yigin/en/index.html');
     expect(walkthroughPath('min-yigin')).toBe('/problems/min-yigin/adim-adim');
   });
 });

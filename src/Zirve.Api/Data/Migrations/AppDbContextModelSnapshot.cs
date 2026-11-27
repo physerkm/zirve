@@ -233,6 +233,11 @@ namespace Zirve.Api.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("content");
 
+                    b.Property<string>("ContentEn")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content_en");
+
                     b.Property<string>("Level")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -259,6 +264,14 @@ namespace Zirve.Api.Data.Migrations
                         .HasAnnotation("Npgsql:TsVectorConfig", "turkish")
                         .HasAnnotation("Npgsql:TsVectorProperties", new[] { "Title", "Summary", "Content" });
 
+                    b.Property<NpgsqlTsVector>("SearchVectorEn")
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("tsvector")
+                        .HasColumnName("search_vector_en")
+                        .HasAnnotation("Npgsql:TsVectorConfig", "english")
+                        .HasAnnotation("Npgsql:TsVectorProperties", new[] { "TitleEn", "SummaryEn", "ContentEn" });
+
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(120)
@@ -271,11 +284,23 @@ namespace Zirve.Api.Data.Migrations
                         .HasColumnType("character varying(600)")
                         .HasColumnName("summary");
 
+                    b.Property<string>("SummaryEn")
+                        .IsRequired()
+                        .HasMaxLength(600)
+                        .HasColumnType("character varying(600)")
+                        .HasColumnName("summary_en");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("title");
+
+                    b.Property<string>("TitleEn")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title_en");
 
                     b.Property<int>("TrackId")
                         .HasColumnType("integer")
@@ -291,6 +316,11 @@ namespace Zirve.Api.Data.Migrations
                         .HasDatabaseName("ix_lessons_search_vector");
 
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchVector"), "GIN");
+
+                    b.HasIndex("SearchVectorEn")
+                        .HasDatabaseName("ix_lessons_search_vector_en");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchVectorEn"), "GIN");
 
                     b.HasIndex("TrackId", "Slug")
                         .IsUnique()
@@ -340,6 +370,12 @@ namespace Zirve.Api.Data.Migrations
                         .HasColumnType("character varying(600)")
                         .HasColumnName("description");
 
+                    b.Property<string>("DescriptionEn")
+                        .IsRequired()
+                        .HasMaxLength(600)
+                        .HasColumnType("character varying(600)")
+                        .HasColumnName("description_en");
+
                     b.Property<int>("Order")
                         .HasColumnType("integer")
                         .HasColumnName("order");
@@ -355,6 +391,12 @@ namespace Zirve.Api.Data.Migrations
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)")
                         .HasColumnName("title");
+
+                    b.Property<string>("TitleEn")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("title_en");
 
                     b.Property<int>("TrackId")
                         .HasColumnType("integer")
@@ -389,10 +431,19 @@ namespace Zirve.Api.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("editorial");
 
+                    b.Property<string>("EditorialEn")
+                        .HasColumnType("text")
+                        .HasColumnName("editorial_en");
+
                     b.PrimitiveCollection<List<string>>("Hints")
                         .IsRequired()
                         .HasColumnType("text[]")
                         .HasColumnName("hints");
+
+                    b.PrimitiveCollection<List<string>>("HintsEn")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("hints_en");
 
                     b.PrimitiveCollection<List<string>>("Languages")
                         .IsRequired()
@@ -411,6 +462,14 @@ namespace Zirve.Api.Data.Migrations
                         .HasAnnotation("Npgsql:TsVectorConfig", "turkish")
                         .HasAnnotation("Npgsql:TsVectorProperties", new[] { "Title", "Statement" });
 
+                    b.Property<NpgsqlTsVector>("SearchVectorEn")
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("tsvector")
+                        .HasColumnName("search_vector_en")
+                        .HasAnnotation("Npgsql:TsVectorConfig", "english")
+                        .HasAnnotation("Npgsql:TsVectorProperties", new[] { "TitleEn", "StatementEn" });
+
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(120)
@@ -422,6 +481,11 @@ namespace Zirve.Api.Data.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("solutions_json");
 
+                    b.Property<string>("SolutionsJsonEn")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("solutions_json_en");
+
                     b.Property<string>("SpecJson")
                         .IsRequired()
                         .HasColumnType("jsonb")
@@ -431,6 +495,11 @@ namespace Zirve.Api.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("statement");
+
+                    b.Property<string>("StatementEn")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("statement_en");
 
                     b.PrimitiveCollection<List<string>>("Tags")
                         .IsRequired()
@@ -448,6 +517,12 @@ namespace Zirve.Api.Data.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("title");
 
+                    b.Property<string>("TitleEn")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title_en");
+
                     b.HasKey("Id")
                         .HasName("pk_problems");
 
@@ -458,6 +533,11 @@ namespace Zirve.Api.Data.Migrations
                         .HasDatabaseName("ix_problems_search_vector");
 
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchVector"), "GIN");
+
+                    b.HasIndex("SearchVectorEn")
+                        .HasDatabaseName("ix_problems_search_vector_en");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchVectorEn"), "GIN");
 
                     b.HasIndex("Slug")
                         .IsUnique()
@@ -486,6 +566,11 @@ namespace Zirve.Api.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("explanation");
 
+                    b.Property<string>("ExplanationEn")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("explanation_en");
+
                     b.Property<bool>("IsMultiple")
                         .HasColumnType("boolean")
                         .HasColumnName("is_multiple");
@@ -502,6 +587,11 @@ namespace Zirve.Api.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("text");
+
+                    b.Property<string>("TextEn")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text_en");
 
                     b.HasKey("Id")
                         .HasName("pk_questions");
@@ -538,6 +628,11 @@ namespace Zirve.Api.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("text");
 
+                    b.Property<string>("TextEn")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text_en");
+
                     b.HasKey("Id")
                         .HasName("pk_question_options");
 
@@ -568,6 +663,12 @@ namespace Zirve.Api.Data.Migrations
                         .HasColumnType("character varying(600)")
                         .HasColumnName("description");
 
+                    b.Property<string>("DescriptionEn")
+                        .IsRequired()
+                        .HasMaxLength(600)
+                        .HasColumnType("character varying(600)")
+                        .HasColumnName("description_en");
+
                     b.Property<string>("Level")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -593,6 +694,12 @@ namespace Zirve.Api.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("title");
+
+                    b.Property<string>("TitleEn")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title_en");
 
                     b.Property<int>("TrackId")
                         .HasColumnType("integer")
@@ -738,6 +845,12 @@ namespace Zirve.Api.Data.Migrations
                         .HasColumnType("character varying(600)")
                         .HasColumnName("description");
 
+                    b.Property<string>("DescriptionEn")
+                        .IsRequired()
+                        .HasMaxLength(600)
+                        .HasColumnType("character varying(600)")
+                        .HasColumnName("description_en");
+
                     b.Property<string>("Icon")
                         .IsRequired()
                         .HasMaxLength(40)
@@ -759,6 +872,12 @@ namespace Zirve.Api.Data.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)")
                         .HasColumnName("title");
+
+                    b.Property<string>("TitleEn")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("title_en");
 
                     b.HasKey("Id")
                         .HasName("pk_tracks");

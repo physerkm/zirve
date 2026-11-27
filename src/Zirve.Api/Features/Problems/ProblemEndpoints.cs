@@ -51,12 +51,12 @@ public sealed record EditorialResponse(string Editorial, IReadOnlyDictionary<str
 
 public sealed class CodeRequest
 {
-    [Required(ErrorMessage = "Dil zorunlu.")]
+    [Required(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.LanguageRequired))]
     [StringLength(20)]
     public string Language { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Kod boş olamaz.")]
-    [StringLength(50_000, ErrorMessage = "Kod en fazla 50.000 karakter olabilir.")]
+    [Required(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.CodeRequired))]
+    [StringLength(50_000, ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.CodeTooLong))]
     public string Code { get; set; } = string.Empty;
 }
 
@@ -125,10 +125,21 @@ public static class ProblemEndpoints
 
     private static async Task<Ok<List<ProblemListItem>>> ListAsync(AppDbContext db, HttpContext http, CancellationToken cancellationToken)
     {
+        var en = Localization.IsEnglish;
+
         var problems = await db.Problems
             .AsNoTracking()
             .OrderBy(problem => problem.Number)
-            .Select(problem => new { problem.Id, problem.Slug, problem.Number, problem.Title, problem.Difficulty, problem.Tags, problem.Languages })
+            .Select(problem => new
+            {
+                problem.Id,
+                problem.Slug,
+                problem.Number,
+                Title = en ? problem.TitleEn : problem.Title,
+                problem.Difficulty,
+                problem.Tags,
+                problem.Languages,
+            })
             .ToListAsync(cancellationToken);
 
         var statuses = await LoadStatusesAsync(db, http.User.GetUserId(), problemId: null, cancellationToken);
@@ -158,25 +169,28 @@ public static class ProblemEndpoints
             .Select(item => new SampleTest(item.index, item.test.Args, item.test.Ops, item.test.Expected))
             .ToList();
 
-        var starters = problem.Languages.ToDictionary(language => language, language => StarterCodeGenerator.Generate(spec, language));
+        var en = Localization.IsEnglish;
+        var starters = problem.Languages.ToDictionary(
+            language => language, language => StarterCodeGenerator.Generate(spec, language, Localization.LanguageCode));
         var statuses = await LoadStatusesAsync(db, http.User.GetUserId(), problem.Id, cancellationToken);
 
         var previous = await db.Problems
             .AsNoTracking()
             .Where(p => p.Number < problem.Number)
             .OrderByDescending(p => p.Number)
-            .Select(p => new LessonLink(p.Slug, p.Title))
+            .Select(p => new LessonLink(p.Slug, en ? p.TitleEn : p.Title))
             .FirstOrDefaultAsync(cancellationToken);
 
         var next = await db.Problems
             .AsNoTracking()
             .Where(p => p.Number > problem.Number)
             .OrderBy(p => p.Number)
-            .Select(p => new LessonLink(p.Slug, p.Title))
+            .Select(p => new LessonLink(p.Slug, en ? p.TitleEn : p.Title))
             .FirstOrDefaultAsync(cancellationToken);
 
         return TypedResults.Ok(new ProblemDetail(
-            problem.Slug, problem.Number, problem.Title, problem.Difficulty, problem.Tags, problem.Statement, problem.Hints,
+            problem.Slug, problem.Number, en ? problem.TitleEn : problem.Title, problem.Difficulty, problem.Tags,
+            en ? problem.StatementEn : problem.Statement, en ? problem.HintsEn : problem.Hints,
             problem.Languages, spec, starters, samples, tests.Count, !string.IsNullOrEmpty(problem.Editorial),
             statuses.GetValueOrDefault(problem.Id), previous, next));
     }
@@ -184,10 +198,12 @@ public static class ProblemEndpoints
     private static async Task<Results<Ok<EditorialResponse>, NotFound>> GetEditorialAsync(
         string slug, AppDbContext db, CancellationToken cancellationToken)
     {
+        var en = Localization.IsEnglish;
+
         var problem = await db.Problems
             .AsNoTracking()
             .Where(p => p.Slug == slug)
-            .Select(p => new { p.Editorial, p.SolutionsJson })
+            .Select(p => new { Editorial = en ? p.EditorialEn : p.Editorial, SolutionsJson = en ? p.SolutionsJsonEn : p.SolutionsJson })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (problem is null || string.IsNullOrEmpty(problem.Editorial))
@@ -227,7 +243,12 @@ public static class ProblemEndpoints
         {
             return TypedResults.ValidationProblem(new Dictionary<string, string[]>
             {
-                [nameof(CodeRequest.Language)] = [$"Bu problem '{request.Language}' dilini desteklemiyor."],
+                [nameof(CodeRequest.Language)] =
+                [
+                    Localization.Text(
+                        $"Bu problem '{request.Language}' dilini desteklemiyor.",
+                        $"This problem doesn't support the '{request.Language}' language."),
+                ],
             });
         }
 
@@ -287,13 +308,14 @@ public static class ProblemEndpoints
         Guid id, AppDbContext db, HttpContext http, CancellationToken cancellationToken)
     {
         var userId = http.User.RequireUserId();
+        var en = Localization.IsEnglish;
 
         // Başkasının gönderimi "bulunamadı" olarak yanıtlanır; varlığı bile sızdırılmaz.
         var submission = await db.Submissions
             .AsNoTracking()
             .Where(s => s.Id == id && s.UserId == userId)
             .Select(s => new SubmissionDetail(
-                s.Id, s.Problem.Slug, s.Problem.Title, s.Language, s.Code, s.Verdict,
+                s.Id, s.Problem.Slug, en ? s.Problem.TitleEn : s.Problem.Title, s.Language, s.Code, s.Verdict,
                 s.PassedCount, s.TotalCount, s.DurationMs, s.CreatedAt))
             .FirstOrDefaultAsync(cancellationToken);
 
