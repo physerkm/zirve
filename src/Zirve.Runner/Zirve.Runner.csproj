@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <RootNamespace>Zirve.Runner</RootNamespace>
+    <!-- LibraryImport'un ürettiği yerel çağrı kodu için (Sandbox: lchown). Kullanıcı kodunda unsafe kapalıdır. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

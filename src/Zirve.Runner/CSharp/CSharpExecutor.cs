@@ -14,19 +14,21 @@ public sealed class CSharpExecutor
     private readonly CSharpCompiler _compiler;
     private readonly RunnerOptions _options;
     private readonly WorkDirectory _workDirectory;
+    private readonly Sandbox _sandbox;
     private readonly string _dotnetPath;
     private readonly string _runtimeConfig;
 
-    public CSharpExecutor(CSharpCompiler compiler, IOptions<RunnerOptions> options, WorkDirectory workDirectory)
+    public CSharpExecutor(CSharpCompiler compiler, IOptions<RunnerOptions> options, WorkDirectory workDirectory, Sandbox sandbox)
     {
         _compiler = compiler;
         _options = options.Value;
         _workDirectory = workDirectory;
+        _sandbox = sandbox;
         _dotnetPath = ExecutableLocator.ResolveDotnet(_options.DotnetPath);
         _runtimeConfig = BuildRuntimeConfig();
     }
 
-    public async Task<RawExecution> ExecuteAsync(ExecutionRequest request, CancellationToken cancellationToken)
+    public async Task<RawExecution> ExecuteAsync(ExecutionRequest request, SandboxLease? lease, CancellationToken cancellationToken)
     {
         var compiled = _compiler.Compile(request.Code, request.Mode, _options.EnforceCSharpApiRestrictions);
         if (!compiled.Success)
@@ -41,8 +43,11 @@ public sealed class CSharpExecutor
             await File.WriteAllBytesAsync(Path.Combine(directory, "run.dll"), compiled.Assembly!, cancellationToken);
             await File.WriteAllTextAsync(Path.Combine(directory, "run.runtimeconfig.json"), _runtimeConfig, cancellationToken);
 
+            _sandbox.PrepareDirectory(directory, lease);
+
+            // Nonce komut satırında değil stdin'deki yükte taşınır: /proc/<pid>/cmdline herkese açıktır.
             var nonce = Guid.NewGuid().ToString("N");
-            var startInfo = CreateStartInfo(directory, nonce);
+            var startInfo = _sandbox.Wrap(CreateStartInfo(directory), lease, _options.Isolation.ProcessMemoryMb);
 
             if (request.Mode == ExecutionMode.Script)
             {
@@ -52,7 +57,7 @@ public sealed class CSharpExecutor
                 return ScriptResult(scriptOutcome);
             }
 
-            var payload = BuildPayload(request);
+            var payload = BuildPayload(request, nonce);
             var outcome = await ProcessRunner.RunAsync(
                 startInfo, payload, TimeSpan.FromSeconds(_options.TestsTimeoutSeconds), _options.MaxOutputBytes, cancellationToken);
 
@@ -99,12 +104,12 @@ public sealed class CSharpExecutor
         };
     }
 
-    private ProcessStartInfo CreateStartInfo(string directory, string nonce)
+    private ProcessStartInfo CreateStartInfo(string directory)
     {
+        // Göreli yol: çalışma klasörünün adı komut satırında (herkese açık) görünmesin.
         var startInfo = new ProcessStartInfo(_dotnetPath) { WorkingDirectory = directory };
         startInfo.ArgumentList.Add("exec");
-        startInfo.ArgumentList.Add(Path.Combine(directory, "run.dll"));
-        startInfo.ArgumentList.Add(nonce);
+        startInfo.ArgumentList.Add("run.dll");
 
         // Runner'ın ortam değişkenleri (bağlantı dizeleri, anahtarlar) kullanıcı koduna sızmasın.
         var environment = startInfo.Environment;
@@ -132,12 +137,13 @@ public sealed class CSharpExecutor
         return startInfo;
     }
 
-    private static string BuildPayload(ExecutionRequest request)
+    private static string BuildPayload(ExecutionRequest request, string nonce)
     {
         var spec = request.Spec!;
 
         return JsonSerializer.Serialize(new
         {
+            nonce,
             kind = spec.Kind,
             name = spec.Name,
             tests = request.Tests.Select(test => new { id = test.Id, args = test.Args, ops = test.Ops }),

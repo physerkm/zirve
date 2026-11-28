@@ -145,12 +145,12 @@ Site <http://localhost:8080> adresinde açılır. Üretimde nginx'in önüne TLS
 Kullanıcıdan gelen kodu çalıştırmak bu sistemin en riskli işidir. Savunma katmanları:
 
 1. **Ayrı servis, ayrı ağ.** Runner, API'den ayrı bir kapsayıcıdır ve `internal` bir Docker ağındadır: internete ve veritabanına ulaşamaz. API ile arasında paylaşılan bir anahtar vardır.
-2. **Kapsayıcı kısıtları.** Salt-okunur dosya sistemi, yetkisiz kullanıcı, bütün Linux yetenekleri düşürülmüş, `no-new-privileges`, süreç/bellek/işlemci sınırları.
-3. **Çalıştırma başına alt süreç.** Her istek kendi sürecinde, temizlenmiş ortam değişkenleriyle, süre, bellek ve çıktı sınırıyla çalışır; sınır aşılırsa süreç ağacı öldürülür.
+2. **Kapsayıcı kısıtları.** Salt-okunur dosya sistemi, `no-new-privileges`, süreç/bellek/işlemci sınırları. Runner süreci yalnızca beş Linux yetkisine (SETUID, SETGID, KILL, CHOWN, DAC_OVERRIDE) sahiptir; bunlar 3. maddedeki yalıtım içindir.
+3. **Çalıştırma başına alt süreç ve kullanıcı.** Her istek kendi sürecinde, temizlenmiş ortam değişkenleriyle, süre ve çıktı sınırıyla çalışır; sınır aşılırsa süreç ağacı öldürülür. Kapsayıcıda (`Runner:Isolation`) her eşzamanlı yuvanın kendi Linux kullanıcısı vardır: çocuk süreç `setpriv` ile hiçbir yetkisi olmayan bu kullanıcıya geçer, veri belleği `RLIMIT_DATA` ile sınırlanır (V8 yığınının dışındaki ArrayBuffer'lar dahil) ve çalışma klasörü yalnızca ona açıktır. Böylece dil düzeyindeki kısıtları aşan bir kod bile Runner'ın ortamını (API anahtarı), başka kullanıcıların kodunu ve süreçlerini göremez. Çalıştırma bitince o kullanıcının arkada kalan bütün süreçleri öldürülür.
 4. **Dil düzeyinde kısıtlar (derinlemesine savunma).** C# kodu yalnızca izin verilen derlemelere başvurabilir; dosya, ağ, yansıma ve süreç API'leri derleme aşamasında reddedilir. JavaScript ayrı bir V8 bağlamında, `eval` kapalı ve Node izin modeliyle (`--permission`) çalışır.
 5. **API tarafı.** Kod çalıştırma oturum açmış kullanıcılara özeldir ve kullanıcı başına hız sınırı uygulanır.
 
-4. madde tek başına bir güvenlik sınırı **değildir**; asıl sınır 1–3. maddelerdir. Yerel geliştirmede (`npm run dev`) Runner kapsayıcısız, sizin kullanıcınızla çalışır: yalnızca güvendiğiniz kodu çalıştırın. İnternete açık bir kurulumda daha güçlü yalıtım için gVisor ya da Firecracker gibi bir çalışma zamanı değerlendirin.
+4. madde tek başına bir güvenlik sınırı **değildir**; asıl sınır 1–3. maddelerdir. Yerel geliştirmede (`npm run dev`) Runner kapsayıcısız, sizin kullanıcınızla ve çalıştırma başına yalıtım olmadan çalışır: yalnızca güvendiğiniz kodu çalıştırın. Yalıtımın kendisi CI'da gerçek Runner kapsayıcısında sınanır (kullanıcı değişimi, bellek sınırı, çalıştırmalar arası erişim). Çalıştırmalar aynı iç ağı paylaşır; internete açık bir kurulumda daha güçlü yalıtım için gVisor ya da Firecracker gibi bir çalışma zamanı değerlendirin.
 
 Diğer önlemler: parolalar ASP.NET Core Identity ile özetlenir (PBKDF2), başarısız girişlerde hesap kilitlenir, giriş/kayıt uç noktaları IP başına sınırlandırılır, hata yanıtları iç ayrıntı sızdırmaz, API yanıtları önbelleğe alınmaz, nginx katı bir Content-Security-Policy gönderir.
 

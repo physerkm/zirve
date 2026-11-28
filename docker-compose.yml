@@ -44,9 +44,16 @@ services:
     tmpfs:
       - /tmp:size=256m,mode=1777
     cap_drop: [ALL]
+    # Yalnızca çalıştırma başına yalıtım için gereken yetkiler: çocuk süreci ayrı bir kullanıcıya geçirmek
+    # (SETUID, SETGID), çalışma klasörünü ona vermek (CHOWN), o kullanıcının süreçlerini öldürmek (KILL) ve
+    # bittiğinde klasörünü silmek (DAC_OVERRIDE). Kullanıcı kodu bu yetkilerin hiçbirini taşımaz.
+    cap_add: [SETUID, SETGID, KILL, CHOWN, DAC_OVERRIDE]
     security_opt:
       - no-new-privileges:true
     pids_limit: 256
+    # Her çalıştırmanın veri belleği sınırlıdır (Runner__Isolation__ProcessMemoryMb: C# 512 MB,
+    # NodeProcessMemoryMb: JS/TS 1024 MB). Bu sınırlar yazılabilir SANAL belleği sayar; Node'un ~600 MB'ı
+    # başlangıçta ayrılır ama kullanılmaz. Fiziksel kullanım çalıştırma başına ~500 MB'ı geçmez.
     mem_limit: 1536m
     cpus: 2
 
