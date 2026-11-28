@@ -115,6 +115,18 @@ jobs:
       - name: Runner kapsayıcısını kur ve başlat
         run: docker compose -p zirve up -d --build runner
 
+      - name: GEÇİCİ tanı - Node ve .NET veri belleği
+        if: always()
+        run: |
+          docker compose -p zirve exec -T runner sh -c '
+            echo "--- node (sınırsız):"; node -e "console.log(require(\"fs\").readFileSync(\"/proc/self/status\",\"utf8\").match(/^(VmSize|VmData|VmRSS|Threads).*$/gm).join(\" | \"))"
+            echo "--- node, --max-old-space-size=256:"; node --max-old-space-size=256 -e "console.log(require(\"fs\").readFileSync(\"/proc/self/status\",\"utf8\").match(/^(VmSize|VmData|VmRSS).*$/gm).join(\" | \"))"
+            for mb in 512 768 1024 1280 1536 2048 3072 4096; do
+              (ulimit -d $((mb*1024)); node --max-old-space-size=256 -e "1" > /dev/null 2>&1 && echo "node ulimit -d ${mb} MB: başladı" || echo "node ulimit -d ${mb} MB: BAŞLAYAMADI")
+            done
+            echo "--- uname:"; uname -r; nproc
+          '
+
       - name: Uçtan uca yalıtım denemeleri
         run: |
           docker run --rm --network zirve_sandbox \
