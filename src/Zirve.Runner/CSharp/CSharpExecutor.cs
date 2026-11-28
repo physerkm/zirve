@@ -47,7 +47,7 @@ public sealed class CSharpExecutor
 
             // Nonce komut satırında değil stdin'deki yükte taşınır: /proc/<pid>/cmdline herkese açıktır.
             var nonce = Guid.NewGuid().ToString("N");
-            var startInfo = _sandbox.Wrap(CreateStartInfo(directory), lease);
+            var startInfo = _sandbox.Wrap(CreateStartInfo(directory), lease, _options.Isolation.ProcessMemoryMb);
 
             if (request.Mode == ExecutionMode.Script)
             {

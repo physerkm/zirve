@@ -24,20 +24,20 @@ public sealed class IsolationTests
 
     private const string SkipReason = "Yalıtım testleri yalnızca Linux'ta, root olarak ve ZIRVE_ISOLATION_TESTS=1 iken koşar.";
 
-    private static (Sandbox Sandbox, WorkDirectory Work, string Root) Create(int memoryMb = 640)
+    private static (Sandbox Sandbox, WorkDirectory Work, string Root) Create()
     {
         var root = Path.Combine(Path.GetTempPath(), "zirve-isolation-" + Guid.NewGuid().ToString("N")[..8]);
         var options = Options.Create(new RunnerOptions
         {
             MaxConcurrency = 2,
             WorkDirectory = root,
-            Isolation = new IsolationOptions { Enabled = true, ProcessMemoryMb = memoryMb },
+            Isolation = new IsolationOptions { Enabled = true },
         });
 
         return (new Sandbox(options, NullLogger<Sandbox>.Instance), new WorkDirectory(options, NullLogger<WorkDirectory>.Instance), root);
     }
 
-    private static Task<ProcessOutcome> RunShellAsync(Sandbox sandbox, SandboxLease lease, string directory, string script)
+    private static Task<ProcessOutcome> RunShellAsync(Sandbox sandbox, SandboxLease lease, string directory, string script, int memoryMb = 512)
     {
         var inner = new ProcessStartInfo("/bin/sh") { WorkingDirectory = directory };
         inner.ArgumentList.Add("-c");
@@ -45,7 +45,7 @@ public sealed class IsolationTests
         inner.Environment.Clear();
         inner.Environment["PATH"] = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
 
-        return ProcessRunner.RunAsync(sandbox.Wrap(inner, lease), stdin: null, TimeSpan.FromSeconds(30), 100_000, TestContext.Current.CancellationToken);
+        return ProcessRunner.RunAsync(sandbox.Wrap(inner, lease, memoryMb), stdin: null, TimeSpan.FromSeconds(30), 100_000, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -117,7 +117,7 @@ public sealed class IsolationTests
     public async Task Data_memory_is_limited_per_run()
     {
         Assert.SkipUnless(Available, SkipReason);
-        var (sandbox, work, _) = Create(memoryMb: 128);
+        var (sandbox, work, _) = Create();
         var lease = sandbox.Acquire()!;
         var directory = work.Create();
         sandbox.PrepareDirectory(directory, lease);
@@ -127,7 +127,7 @@ public sealed class IsolationTests
             // "tail -c N" bir borudan okurken son N baytı bellekte tutar: 256 MB, 128 MB sınırına sığmamalı.
             var outcome = await RunShellAsync(sandbox, lease, directory, """
                 head -c 300000000 /dev/zero | tail -c 256000000 > /dev/null && echo FITS || echo LIMITED
-                """);
+                """, memoryMb: 128);
 
             Assert.Contains("LIMITED", outcome.Stdout);
         }

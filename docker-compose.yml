@@ -51,8 +51,9 @@ services:
     security_opt:
       - no-new-privileges:true
     pids_limit: 256
-    # Her çalıştırma en fazla Runner__Isolation__ProcessMemoryMb (varsayılan 512 MB) veri belleği kullanabilir;
-    # sınır, eşzamanlılık × bu değer + Runner'ın kendisi kadar olmalı.
+    # Her çalıştırmanın veri belleği sınırlıdır (Runner__Isolation__ProcessMemoryMb: C# 512 MB,
+    # NodeProcessMemoryMb: JS/TS 1024 MB). Bu sınırlar yazılabilir SANAL belleği sayar; Node'un ~600 MB'ı
+    # başlangıçta ayrılır ama kullanılmaz. Fiziksel kullanım çalıştırma başına ~500 MB'ı geçmez.
     mem_limit: 1536m
     cpus: 2
 

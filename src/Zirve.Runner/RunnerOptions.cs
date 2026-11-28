@@ -79,11 +79,19 @@ public sealed class IsolationOptions
     public int FirstUid { get; set; } = 20000;
 
     /// <summary>
-    /// Bir çalıştırmanın en fazla veri belleği (RLIMIT_DATA, MB). Çalışma zamanının kendi payını da içerir;
-    /// kapsayıcı bellek sınırı en az (eşzamanlılık × bu değer) + Runner'ın kendisi kadar olmalıdır.
+    /// Bir C# çalıştırmasının en fazla veri belleği (RLIMIT_DATA, MB). RLIMIT_DATA yazılabilir SANAL belleği
+    /// sayar ve çalışma zamanının kendi payını da içerir; fiziksel kullanım bunun altında kalır.
     /// </summary>
     [Range(128, 8192)]
     public int ProcessMemoryMb { get; set; } = 512;
+
+    /// <summary>
+    /// Bir JavaScript/TypeScript çalıştırmasının en fazla veri belleği (RLIMIT_DATA, MB). V8 boştayken bile
+    /// ~600 MB yazılabilir sanal bellek ayırır (fiziksel kullanımı ~40 MB'tır; ölçüm CI'da); bu yüzden sınır
+    /// C#'tan yüksektir. Aradaki ~400 MB, V8 yığını (MemoryLimitMb) ve ArrayBuffer'lar için gerçek kullanım payıdır.
+    /// </summary>
+    [Range(768, 8192)]
+    public int NodeProcessMemoryMb { get; set; } = 1024;
 
     public string SetprivPath { get; set; } = "/usr/bin/setpriv";
 

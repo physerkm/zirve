@@ -53,7 +53,7 @@ public sealed class NodeExecutor
         try
         {
             _sandbox.PrepareDirectory(directory, lease);
-            var startInfo = _sandbox.Wrap(CreateStartInfo(directory), lease);
+            var startInfo = _sandbox.Wrap(CreateStartInfo(directory), lease, _options.Isolation.NodeProcessMemoryMb);
 
             // Script modunda önce koşucunun kendi (daha açıklayıcı) zaman aşımı devreye girsin.
             var timeout = isScript
@@ -131,6 +131,9 @@ public sealed class NodeExecutor
 
         startInfo.ArgumentList.Add($"--max-old-space-size={_options.MemoryLimitMb.ToString(CultureInfo.InvariantCulture)}");
         startInfo.ArgumentList.Add("--disable-warning=ExperimentalWarning");
+        // V8 arka plan iş parçacığı sayısı işlemci sayısına bağlıdır ve her biri bellek ayırır; sabitlenir ki
+        // bellek sınırı (Runner:Isolation) her makinede aynı anlama gelsin.
+        startInfo.ArgumentList.Add("--v8-pool-size=2");
         startInfo.ArgumentList.Add(_harnessPath);
 
         var environment = startInfo.Environment;

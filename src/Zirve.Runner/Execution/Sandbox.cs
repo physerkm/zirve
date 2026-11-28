@@ -123,7 +123,7 @@ public sealed partial class Sandbox
     /// <c>setpriv --reuid=U --regid=U --clear-groups … -- sh -c 'ulimit -d KB &amp;&amp; exec "$0" "$@"' program argümanlar</c>.
     /// Ortam değişkenleri ve çalışma klasörü aynen korunur.
     /// </summary>
-    public ProcessStartInfo Wrap(ProcessStartInfo inner, SandboxLease? lease)
+    public ProcessStartInfo Wrap(ProcessStartInfo inner, SandboxLease? lease, int dataLimitMb)
     {
         if (lease is null)
         {
@@ -137,7 +137,7 @@ public sealed partial class Sandbox
             wrapped.ArgumentList.Add(argument);
         }
 
-        var dataLimitKb = (_options.ProcessMemoryMb * 1024L).ToString(CultureInfo.InvariantCulture);
+        var dataLimitKb = (dataLimitMb * 1024L).ToString(CultureInfo.InvariantCulture);
         wrapped.ArgumentList.Add(_options.ShellPath);
         wrapped.ArgumentList.Add("-c");
         wrapped.ArgumentList.Add($"ulimit -d {dataLimitKb} && exec \"$0\" \"$@\"");
