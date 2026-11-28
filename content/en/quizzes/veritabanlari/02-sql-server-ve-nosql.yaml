@@ -26,7 +26,7 @@ questions:
       - "Every insert goes to a random page of the B-tree; this causes page splits, fragmentation and, because of the wide key, growth of every nonclustered index."
       - "There is no drawback; this is the best practice."
     why: |
-      A good clustered key should be narrow, unique, unchanging and ever-increasing. A random GUID breaks the last condition: new rows are inserted at random places instead of at the end. On top of that, the 16-byte key is repeated in every nonclustered index. A sequential GUID (`NEWSEQUENTIALID()`, `Guid.CreateVersion7()`) or `BIGINT IDENTITY` are better options.
+      A good clustered key should be narrow, unique, unchanging and ever-increasing. A random GUID breaks the last condition: new rows are inserted at random places instead of at the end. On top of that, the 16-byte key is repeated in every nonclustered index. A sequential GUID (`NEWSEQUENTIALID()` or the sequential GUIDs EF Core generates for SQL Server) or `BIGINT IDENTITY` are better options. Note: `Guid.CreateVersion7()` is not sequential in SQL Server's `uniqueidentifier` sort order, because SQL Server compares the last bytes first.
 
   - q: "In a busy SQL Server database, read queries are slow because they wait on locks held by write transactions. What is the most correct fix?"
     options:

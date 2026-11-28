@@ -1,4 +1,4 @@
-import { getLocale } from '@/i18n/locale';
+import { getLocale, type Locale } from '@/i18n/locale';
 import { currentMessages, defineMessages } from '@/i18n/messages';
 import type { Session } from './types';
 
@@ -90,7 +90,13 @@ function toApiError(status: number, body: unknown): ApiError {
   return new ApiError(status, message, problem.code, fieldErrors);
 }
 
-async function request<T>(method: string, path: string, body?: unknown, isRetry = false): Promise<T> {
+async function request<T>(
+  method: string,
+  path: string,
+  body?: unknown,
+  isRetry = false,
+  locale: Locale = getLocale(),
+): Promise<T> {
   const isUnsafe = method !== 'GET';
 
   if (isUnsafe && csrfToken === null) {
@@ -98,7 +104,8 @@ async function request<T>(method: string, path: string, body?: unknown, isRetry 
   }
 
   // Sunucu içeriği ve iletileri bu dilde döndürür; tarayıcının kendi Accept-Language değeri geçersiz kılınır.
-  const headers: Record<string, string> = { Accept: 'application/json', 'Accept-Language': getLocale() };
+  // Sorgular dili kendi önbellek anahtarından verir; böylece yanıt her zaman o anahtarın dilindedir.
+  const headers: Record<string, string> = { Accept: 'application/json', 'Accept-Language': locale };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (isUnsafe && csrfToken !== null) headers['X-CSRF-TOKEN'] = csrfToken;
 
@@ -127,7 +134,7 @@ async function request<T>(method: string, path: string, body?: unknown, isRetry 
   // Belirteç eskimiş olabilir (ör. başka sekmede giriş/çıkış yapıldı): yenileyip bir kez daha dene.
   if (error.code === 'csrf_invalid' && !isRetry) {
     await loadSession();
-    return request<T>(method, path, body, true);
+    return request<T>(method, path, body, true, locale);
   }
 
   throw error;
@@ -143,7 +150,8 @@ export function loadSession(): Promise<Session> {
 }
 
 export const api = {
-  get: <T>(path: string) => request<T>('GET', path),
+  /** locale verilmezse geçerli dil kullanılır. */
+  get: <T>(path: string, locale?: Locale) => request<T>('GET', path, undefined, false, locale),
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
 };

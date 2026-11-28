@@ -182,7 +182,7 @@ public static class CatalogEndpoints
             bestScores = await db.QuizAttempts
                 .Where(attempt => attempt.UserId == userId && attempt.Quiz.TrackId == track.Id && attempt.TotalCount > 0)
                 .GroupBy(attempt => attempt.QuizId)
-                .Select(group => new { QuizId = group.Key, Best = group.Max(attempt => attempt.CorrectCount * 100 / attempt.TotalCount) })
+                .Select(group => new { QuizId = group.Key, Best = group.Max(attempt => (attempt.CorrectCount * 200 + attempt.TotalCount) / (2 * attempt.TotalCount)) })
                 .ToDictionaryAsync(item => item.QuizId, item => item.Best, cancellationToken);
         }
 

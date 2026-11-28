@@ -8,7 +8,7 @@ title: Best Time to Buy and Sell Stock
 ```text
 Input:  prices = [7, 1, 5, 3, 6, 4]
 Output:  5
-Explanation: Buy on day 2 (price 1) and sell on day 5 (price 6): profit 5.
+Explanation: Buy on day 1 (price 1) and sell on day 4 (price 6): profit 5.
 ```
 
 ### Example 2

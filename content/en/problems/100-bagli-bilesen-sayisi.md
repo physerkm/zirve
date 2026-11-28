@@ -102,7 +102,7 @@ function countComponents(n: number, edges: number[][]): number {
 
 ### Complexity
 
-- **Time:** O(n + e · α(n)).
+- **Time:** O(n + e · log n). The solution uses only path compression (path halving); adding union by size or rank as well brings it to O(n + e · α(n)).
 - **Space:** O(n).
 
 The DFS/BFS solution also runs in O(n + e), but it requires building an adjacency list first. Union-Find also works when the edges arrive as a stream.

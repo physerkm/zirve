@@ -26,7 +26,12 @@ public static class PlaygroundEndpoints
         {
             return TypedResults.ValidationProblem(new Dictionary<string, string[]>
             {
-                [nameof(CodeRequest.Language)] = [$"Desteklenen diller: {string.Join(", ", Languages.All)}."],
+                [nameof(CodeRequest.Language)] =
+                [
+                    Localization.Text(
+                        $"Desteklenen diller: {string.Join(", ", Languages.All)}.",
+                        $"Supported languages: {string.Join(", ", Languages.All)}."),
+                ],
             });
         }
 

@@ -14,10 +14,12 @@ $ redis-cli -p 6380
 127.0.0.1:6380> SET user:42 "Ayşe" EX 60
 OK
 127.0.0.1:6380> GET user:42
-"Ayşe"
+"Ay\xc5\x9fe"
 127.0.0.1:6380> TTL user:42
 (integer) 57
 ```
+
+`redis-cli` shows non-ASCII bytes as escape sequences ("ş" is two bytes in UTF-8: `c5 9f`); with `redis-cli --raw` it appears as `Ayşe`.
 
 You can write the server in C#, Go, Rust, or TypeScript. As clients, you'll use the real `redis-cli` and `redis-benchmark`; that way protocol compatibility is tested automatically.
 

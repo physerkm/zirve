@@ -114,7 +114,7 @@ Singleton is the most criticized pattern, because:
 - **It makes testing harder.** It can't be replaced with a fake instance in tests, and tests affect each other through shared state.
 - **It brings concurrency problems.** The single instance is shared across all threads; any mutable state inside it requires synchronization.
 
-In modern applications, the "single instance" need is met by the DI container: `services.AddSingleton<ICache, MemoryCache>()`. There's still only one instance, but the class doesn't know that; it receives the dependency through its constructor and is easily replaced in tests. For example, injecting .NET's `TimeProvider` abstraction instead of reading the time directly with `DateTime.UtcNow` makes time-dependent code testable.
+In modern applications, the "single instance" need is met by the DI container: `services.AddSingleton<IClock, SystemClock>()`. There's still only one instance, but the class doesn't know that; it receives the dependency through its constructor and is easily replaced in tests. For example, injecting .NET's `TimeProvider` abstraction instead of reading the time directly with `DateTime.UtcNow` makes time-dependent code testable.
 
 ## Adapter
 

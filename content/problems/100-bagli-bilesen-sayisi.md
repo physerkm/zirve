@@ -109,7 +109,7 @@ function countComponents(n: number, edges: number[][]): number {
 
 ### Karmaşıklık
 
-- **Zaman:** O(n + e · α(n)).
+- **Zaman:** O(n + e · log n). Çözüm yalnızca yol sıkıştırma (yol yarılama) kullanır; birleştirmede boyuta ya da ranka göre birleştirme de eklenirse O(n + e · α(n)) olur.
 - **Alan:** O(n).
 
 DFS/BFS çözümü de O(n + e) sürer ama önce komşuluk listesi kurmayı gerektirir. Birlik-Bul, kenarlar akış halinde gelirken de çalışır.

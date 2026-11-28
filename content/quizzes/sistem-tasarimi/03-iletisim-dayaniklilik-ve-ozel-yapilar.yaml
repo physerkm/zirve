@@ -36,16 +36,16 @@ questions:
     why: |
       `OFFSET 10000` veritabanının 10.020 satırı okuyup 10.000'ini atması demektir. İmleç son görülen sıralama anahtarını taşır (`WHERE (created_at, id) < (...)`) ve indeksle doğrudan o noktadan başlar. Araya yeni kayıt girdiğinde ofset kayar; imleç kaymaz. Bedeli: rastgele sayfaya atlanamaz ve sıralama sütunlarında indeks gerekir.
 
-  - q: "Üç katmanlı bir çağrı zincirinde (ağ geçidi → servis A → servis B) her katman başarısız isteği **3 kez** yeniden deniyor. B tamamen çökmüşse, tek bir kullanıcı isteği B'ye en fazla kaç istek olarak ulaşabilir?"
+  - q: "Üç katmanlı bir çağrı zincirinde (ağ geçidi → servis A → servis B) bir alt katmanı çağıran her katman başarısız isteği toplam **3 deneme** yapacak şekilde yeniden deniyor. B tamamen çökmüşse, tek bir kullanıcı isteği B'ye en fazla kaç istek olarak ulaşabilir?"
     options:
       - "3"
       - "9"
       - "27"
       - "81"
-    answer: 3
+    answer: 2
     difficulty: hard
     why: |
-      Her katman toplam 3 deneme yapıyorsa çarpan katman başına 3'tür: ağ geçidinin her denemesi A'da 3 deneme, A'nın her denemesi B'ye 3 istek. 3 × 3 × 3 = 27. Bu "yeniden deneme fırtınası" zorlanan bir servisi bitirir. Çözümler: yeniden denemeyi tek bir katmanda yapmak, yeniden deneme bütçesi, üstel geri çekilme + jitter ve devre kesici.
+      Yeniden deneyen iki katman vardır ve her biri çarpanı 3 artırır: ağ geçidi A'ya en fazla 3 deneme yapar, A da aldığı her istek için B'ye 3 deneme yapar. 3 × 3 = 9. Zincire bir katman daha eklenseydi 27 olurdu; çarpan katman sayısıyla üstel büyür. Bu "yeniden deneme fırtınası" zorlanan bir servisi bitirir. Çözümler: yeniden denemeyi tek bir katmanda yapmak, yeniden deneme bütçesi, üstel geri çekilme + jitter ve devre kesici.
 
   - q: "Devre kesicinin **yarı açık** (half-open) durumunun amacı nedir?"
     options:

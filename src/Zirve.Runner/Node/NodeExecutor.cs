@@ -168,7 +168,11 @@ public sealed class NodeExecutor
             return RunnerText.T("Bellek sınırı aşıldı.", "Memory limit exceeded.");
         }
 
-        var lastLine = outcome.Stderr.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).LastOrDefault();
+        // Node yakalanmamış bir hatada en sona sürüm satırını ("Node.js v24…") ve yığın izini yazar;
+        // kullanıcıya gösterilecek olan bunlardan önceki son satırdır.
+        var lastLine = outcome.Stderr
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .LastOrDefault(line => !line.StartsWith("Node.js v", StringComparison.Ordinal) && !line.StartsWith("at ", StringComparison.Ordinal));
         return lastLine is null
             ? RunnerText.T(
                 $"Program beklenmedik biçimde sonlandı (çıkış kodu {outcome.ExitCode}).",

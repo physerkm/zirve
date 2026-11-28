@@ -1,5 +1,5 @@
-import { hashKey, QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getLocale } from '@/i18n/locale';
+import { QueryClient, useMutation, useQuery, useQueryClient, type Query } from '@tanstack/react-query';
+import { type Locale, useLocale } from '@/i18n/locale';
 import { api, ApiError, loadSession } from './api';
 import type {
   Dashboard,
@@ -30,15 +30,16 @@ export const queryClient = new QueryClient({
       // 4xx yanıtları yeniden denemek anlamsızdır; yalnızca ağ ve sunucu hatalarında tekrar dene.
       retry: (failureCount, error) =>
         !(error instanceof ApiError && error.status >= 400 && error.status < 500) && failureCount < 2,
-      // Sunucu yanıtları dile göre değişir; her dilin önbelleği ayrıdır. Dil değişince bileşenler aynı
-      // anahtarla yeni (o dilin) sorgusuna bağlanır, geri dönüldüğünde önceki dilin verisi hazırdır.
-      // Oturum dilden bağımsızdır ve tek kopya tutulur.
-      queryKeyHashFn: (queryKey) => (queryKey[0] === 'session' ? hashKey(queryKey) : hashKey([...queryKey, getLocale()])),
     },
     mutations: { retry: false },
   },
 });
 
+// Sunucu yanıtları dile göre değişir. Dil, sorgu anahtarının SON öğesidir ve istek de o anahtardaki
+// dille yapılır: böylece bir dilin önbellek kaydı asla öbür dilin verisini almaz (yeniden çekilse bile).
+// Dile bağlı hook'lar dili kendileri izler; dil değişince bileşen yeni dilin kaydına bağlanır, geri
+// dönüldüğünde önceki dilin verisi hazırdır. Ön ek ile geçersiz kılma her iki dilin kaydını da kapsar.
+// Oturum dilden bağımsızdır ve tek kopya tutulur.
 const keys = {
   session: ['session'] as const,
   tracks: ['tracks'] as const,
@@ -54,6 +55,14 @@ const keys = {
   dashboard: ['dashboard'] as const,
   search: (query: string) => ['search', query] as const,
 };
+
+const localized = <const T extends readonly unknown[]>(key: T, locale: Locale) => [...key, locale] as const;
+
+/** Anahtarı, dil öğesi dışında verilen anahtarla birebir aynı olan sorgular (bütün dillerde). */
+const exactly =
+  (key: readonly unknown[]) =>
+  (query: Query): boolean =>
+    query.queryKey.length === key.length + 1 && key.every((part, index) => query.queryKey[index] === part);
 
 // ------------------------------------------------------------------ oturum
 
@@ -93,34 +102,44 @@ export const useLogout = () => useSessionMutation(() => api.post<Session>('/auth
 
 // ------------------------------------------------------------------ katalog
 
-export const useTracks = () => useQuery({ queryKey: keys.tracks, queryFn: () => api.get<TrackSummary[]>('/tracks') });
+export function useTracks() {
+  const locale = useLocale();
+  return useQuery({ queryKey: localized(keys.tracks, locale), queryFn: () => api.get<TrackSummary[]>('/tracks', locale) });
+}
 
-export const useTrack = (slug: string) =>
-  useQuery({ queryKey: keys.track(slug), queryFn: () => api.get<TrackDetail>(`/tracks/${slug}`) });
+export function useTrack(slug: string) {
+  const locale = useLocale();
+  return useQuery({ queryKey: localized(keys.track(slug), locale), queryFn: () => api.get<TrackDetail>(`/tracks/${slug}`, locale) });
+}
 
-export const useLesson = (track: string, lesson: string) =>
-  useQuery({
-    queryKey: keys.lesson(track, lesson),
-    queryFn: () => api.get<LessonDetail>(`/tracks/${track}/lessons/${lesson}`),
+export function useLesson(track: string, lesson: string) {
+  const locale = useLocale();
+  return useQuery({
+    queryKey: localized(keys.lesson(track, lesson), locale),
+    queryFn: () => api.get<LessonDetail>(`/tracks/${track}/lessons/${lesson}`, locale),
   });
+}
 
 export function useSetLessonProgress(track: string, lesson: string) {
   const client = useQueryClient();
+  const key = localized(keys.lesson(track, lesson), useLocale());
 
   return useMutation({
     mutationFn: (completed: boolean) => api.put<void>(`/tracks/${track}/lessons/${lesson}/progress`, { completed }),
     // İyimser güncelleme: onay kutusu anında tepki verir, hata olursa geri alınır.
     onMutate: async (completed) => {
-      await client.cancelQueries({ queryKey: keys.lesson(track, lesson) });
-      const previous = client.getQueryData<LessonDetail>(keys.lesson(track, lesson));
-      if (previous) client.setQueryData(keys.lesson(track, lesson), { ...previous, completed });
+      await client.cancelQueries({ queryKey: key });
+      const previous = client.getQueryData<LessonDetail>(key);
+      if (previous) client.setQueryData(key, { ...previous, completed });
       return { previous };
     },
     onError: (_error, _completed, context) => {
-      if (context?.previous) client.setQueryData(keys.lesson(track, lesson), context.previous);
+      if (context?.previous) client.setQueryData(key, context.previous);
     },
     onSettled: () =>
       Promise.all([
+        // Dersin öbür dildeki kaydı da güncel durumu göstermeli.
+        client.invalidateQueries({ queryKey: keys.lesson(track, lesson) }),
         client.invalidateQueries({ queryKey: keys.tracks }),
         client.invalidateQueries({ queryKey: keys.dashboard }),
       ]),
@@ -129,11 +148,21 @@ export function useSetLessonProgress(track: string, lesson: string) {
 
 // ------------------------------------------------------------------ testler (quiz)
 
-export const useQuizzes = () =>
-  useQuery({ queryKey: keys.quizzes, queryFn: () => api.get<QuizSummary[]>('/quizzes') });
+export function useQuizzes() {
+  const locale = useLocale();
+  return useQuery({ queryKey: localized(keys.quizzes, locale), queryFn: () => api.get<QuizSummary[]>('/quizzes', locale) });
+}
 
-export const useQuiz = (slug: string) =>
-  useQuery({ queryKey: keys.quiz(slug), queryFn: () => api.get<QuizDetail>(`/quizzes/${slug}`) });
+export function useQuiz(slug: string) {
+  const locale = useLocale();
+  return useQuery({
+    queryKey: localized(keys.quiz(slug), locale),
+    queryFn: () => api.get<QuizDetail>(`/quizzes/${slug}`, locale),
+    // Dil değişirken aynı testin önceki dildeki verisi gösterilmeye devam eder: soru ve şık kimlikleri
+    // iki dilde aynıdır, yarıdaki test ve verilen cevaplar korunur.
+    placeholderData: (previous, previousQuery) => (previousQuery?.queryKey[1] === slug ? previous : undefined),
+  });
+}
 
 export function useSubmitQuiz(slug: string) {
   const client = useQueryClient();
@@ -143,7 +172,7 @@ export function useSubmitQuiz(slug: string) {
       api.post<QuizAttemptResult>(`/quizzes/${slug}/attempts`, body),
     onSuccess: () =>
       Promise.all([
-        client.invalidateQueries({ queryKey: keys.quizzes, exact: true }),
+        client.invalidateQueries({ predicate: exactly(keys.quizzes) }),
         client.invalidateQueries({ queryKey: keys.tracks }),
         client.invalidateQueries({ queryKey: keys.dashboard }),
       ]),
@@ -152,34 +181,49 @@ export function useSubmitQuiz(slug: string) {
 
 // ------------------------------------------------------------------ problemler
 
-export const useProblems = () =>
-  useQuery({ queryKey: keys.problems, queryFn: () => api.get<ProblemListItem[]>('/problems') });
+export function useProblems() {
+  const locale = useLocale();
+  return useQuery({ queryKey: localized(keys.problems, locale), queryFn: () => api.get<ProblemListItem[]>('/problems', locale) });
+}
 
-export const useProblem = (slug: string) =>
-  useQuery({ queryKey: keys.problem(slug), queryFn: () => api.get<ProblemDetail>(`/problems/${slug}`) });
+export function useProblem(slug: string) {
+  const locale = useLocale();
+  return useQuery({
+    queryKey: localized(keys.problem(slug), locale),
+    queryFn: () => api.get<ProblemDetail>(`/problems/${slug}`, locale),
+    // Dil değişirken aynı problemin önceki dildeki verisi gösterilmeye devam eder; editör ve sonuçlar korunur.
+    placeholderData: (previous, previousQuery) => (previousQuery?.queryKey[1] === slug ? previous : undefined),
+  });
+}
 
-export const useEditorial = (slug: string, enabled: boolean) =>
-  useQuery({
-    queryKey: keys.editorial(slug),
-    queryFn: () => api.get<Editorial>(`/problems/${slug}/editorial`),
+export function useEditorial(slug: string, enabled: boolean) {
+  const locale = useLocale();
+  return useQuery({
+    queryKey: localized(keys.editorial(slug), locale),
+    queryFn: () => api.get<Editorial>(`/problems/${slug}/editorial`, locale),
     enabled,
     staleTime: Infinity,
   });
+}
 
-export const useSubmissions = (slug: string, enabled: boolean) =>
-  useQuery({
-    queryKey: keys.submissions(slug),
-    queryFn: () => api.get<SubmissionSummary[]>(`/problems/${slug}/submissions`),
+export function useSubmissions(slug: string, enabled: boolean) {
+  const locale = useLocale();
+  return useQuery({
+    queryKey: localized(keys.submissions(slug), locale),
+    queryFn: () => api.get<SubmissionSummary[]>(`/problems/${slug}/submissions`, locale),
     enabled,
   });
+}
 
-export const useSubmission = (id: string | null) =>
-  useQuery({
-    queryKey: keys.submission(id ?? ''),
-    queryFn: () => api.get<SubmissionDetail>(`/submissions/${id}`),
+export function useSubmission(id: string | null) {
+  const locale = useLocale();
+  return useQuery({
+    queryKey: localized(keys.submission(id ?? ''), locale),
+    queryFn: () => api.get<SubmissionDetail>(`/submissions/${id}`, locale),
     enabled: id !== null,
     staleTime: Infinity,
   });
+}
 
 export function useJudge(slug: string) {
   const client = useQueryClient();
@@ -192,8 +236,8 @@ export function useJudge(slug: string) {
 
       return Promise.all([
         client.invalidateQueries({ queryKey: keys.submissions(slug) }),
-        client.invalidateQueries({ queryKey: keys.problem(slug), exact: true }),
-        client.invalidateQueries({ queryKey: keys.problems, exact: true }),
+        client.invalidateQueries({ predicate: exactly(keys.problem(slug)) }),
+        client.invalidateQueries({ predicate: exactly(keys.problems) }),
         client.invalidateQueries({ queryKey: keys.dashboard }),
       ]);
     },
@@ -207,13 +251,22 @@ export const useRunPlayground = () =>
 
 // ------------------------------------------------------------------ panel ve arama
 
-export const useDashboard = (enabled: boolean) =>
-  useQuery({ queryKey: keys.dashboard, queryFn: () => api.get<Dashboard>('/me/dashboard'), enabled, staleTime: 10_000 });
+export function useDashboard(enabled: boolean) {
+  const locale = useLocale();
+  return useQuery({
+    queryKey: localized(keys.dashboard, locale),
+    queryFn: () => api.get<Dashboard>('/me/dashboard', locale),
+    enabled,
+    staleTime: 10_000,
+  });
+}
 
-export const useSearch = (query: string) =>
-  useQuery({
-    queryKey: keys.search(query),
-    queryFn: () => api.get<SearchResults>(`/search?q=${encodeURIComponent(query)}`),
+export function useSearch(query: string) {
+  const locale = useLocale();
+  return useQuery({
+    queryKey: localized(keys.search(query), locale),
+    queryFn: () => api.get<SearchResults>(`/search?q=${encodeURIComponent(query)}`, locale),
     enabled: query.trim().length >= 2,
     placeholderData: (previous) => previous,
   });
+}

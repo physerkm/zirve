@@ -65,7 +65,7 @@ Model yalnızca metin üretir, ama **hangi fonksiyonun hangi argümanlarla çağ
 
 ```csharp
 [Description("Bir siparişin güncel durumunu döner")]
-static async Task<string> GetOrderStatus([Description("Sipariş numarası")] string orderNumber, OrderQueries orders)
+async Task<string> GetOrderStatus([Description("Sipariş numarası")] string orderNumber)   // orders kapsamdan yakalanır; model yalnızca orderNumber'ı doldurur
     => (await orders.FindStatusAsync(orderNumber))?.ToString() ?? "Sipariş bulunamadı";
 
 IChatClient client = innerClient.AsBuilder().UseFunctionInvocation().Build();

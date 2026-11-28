@@ -72,7 +72,8 @@ public sealed class ExecutionService
     {
         if (!Languages.IsSupported(request.Language))
         {
-            throw new InvalidExecutionRequestException($"Desteklenmeyen dil: '{request.Language}'.");
+            throw new InvalidExecutionRequestException(RunnerText.T(
+                $"Desteklenmeyen dil: '{request.Language}'.", $"Unsupported language: '{request.Language}'."));
         }
 
         if (string.IsNullOrWhiteSpace(request.Code))
@@ -82,7 +83,8 @@ public sealed class ExecutionService
 
         if (request.Code.Length > _options.MaxCodeLength)
         {
-            throw new InvalidExecutionRequestException($"Kod en fazla {_options.MaxCodeLength} karakter olabilir.");
+            throw new InvalidExecutionRequestException(RunnerText.T(
+                $"Kod en fazla {_options.MaxCodeLength} karakter olabilir.", $"Code can be at most {_options.MaxCodeLength} characters."));
         }
 
         if (request.Mode != ExecutionMode.Tests)

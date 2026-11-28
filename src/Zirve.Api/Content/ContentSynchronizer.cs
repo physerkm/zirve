@@ -20,6 +20,10 @@ public sealed class ContentSynchronizer(AppDbContext db, TimeProvider timeProvid
 
     public async Task<bool> SyncAsync(ContentBundle bundle, CancellationToken cancellationToken)
     {
+        // Geçici bir hatadan sonra aynı DbContext ile yeniden denenebilir; geri alınan önceki denemenin
+        // izlenen (eklenmiş/değişmiş) varlıkları kalırsa ikinci deneme benzersiz dizinlere takılır.
+        db.ChangeTracker.Clear();
+
         var state = await db.ContentStates.FindAsync([StateKey], cancellationToken);
         if (state?.Hash == bundle.Hash)
         {

@@ -58,8 +58,8 @@ Kimliği olmayan, **değerleriyle** tanımlanan ve değişmez (immutable) nesne.
 ```csharp
 public sealed record Money
 {
-    public decimal Amount { get; }
-    public string Currency { get; }
+    public decimal Amount { get; private init; }   // EF Core setter'sız özellikleri eşlemez
+    public string Currency { get; private init; }
 
     public Money(decimal amount, string currency)
     {

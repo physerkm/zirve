@@ -97,11 +97,11 @@ questions:
     why: |
       When the liveness probe fails, the orchestrator restarts the container. If a dependency check is put into liveness, an outage of an external dependency restarts every instance at the same time and makes things worse. Dependency checks belong in the readiness probe: when it fails, only traffic is cut off.
 
-  - q: "A call chain has three services (A → B → C), and each one retries a failed call 3 times. When C goes down completely, at most how many times the load does C receive, and what is the right approach?"
+  - q: "A call chain has four services (A → B → C → D), and each of the first three tries a failed call at most 3 times. When D goes down completely, at most how many times the load does D receive, and what is the right approach?"
     options:
       - "3 times; no problem."
       - "9 times; raise the retry count to 10"
       - "27 times (3 × 3 × 3); retry at only one layer, and use exponential backoff with jitter and a circuit breaker"
       - "The load does not change; retries are answered from the cache."
     why: |
-      Retries at each layer multiply: each attempt by A leads to three attempts by B, and each attempt by B leads to three attempts by C. This is called a retry storm, and it completely overwhelms a service that is already failing. The right approach is to keep retries at a single layer, add exponential backoff and jitter, and fail fast with a circuit breaker.
+      Attempts at each layer multiply: each of A's three attempts against B leads to three attempts by B against C, and each attempt by B leads to three attempts by C against D: 3 × 3 × 3 = 27. This is called a retry storm, and it completely overwhelms a service that is already failing. The right approach is to keep retries at a single layer, add exponential backoff and jitter, and fail fast with a circuit breaker.

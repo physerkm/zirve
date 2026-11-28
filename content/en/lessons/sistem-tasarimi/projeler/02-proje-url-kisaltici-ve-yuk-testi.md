@@ -163,6 +163,10 @@ services:
     volumes: ["./nginx.conf:/etc/nginx/nginx.conf:ro"]
   postgres:
     image: postgres:18
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: links
   redis:
     image: redis:8
 ```

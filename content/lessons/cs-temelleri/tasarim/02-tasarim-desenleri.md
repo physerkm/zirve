@@ -116,7 +116,7 @@ Singleton en çok eleştirilen desendir; çünkü:
 - **Test etmeyi zorlaştırır.** Testlerde sahte bir örnekle değiştirilemez; testler paylaşılan durum yüzünden birbirini etkiler.
 - **Eşzamanlılık sorunu taşır.** Tek örnek bütün thread'ler arasında paylaşılır; içindeki değişebilir durum senkronizasyon gerektirir.
 
-Modern uygulamada "tek örnek" ihtiyacı DI kapsayıcısıyla karşılanır: `services.AddSingleton<ICache, MemoryCache>()`. Örnek yine tektir; ama sınıf bunu bilmez, bağımlılığı yapıcısından alır ve testte kolayca değiştirilir. Örneğin zamanı doğrudan `DateTime.UtcNow` ile okumak yerine .NET'in `TimeProvider` soyutlamasını enjekte etmek, zamana bağlı kodu test edilebilir kılar.
+Modern uygulamada "tek örnek" ihtiyacı DI kapsayıcısıyla karşılanır: `services.AddSingleton<IClock, SystemClock>()`. Örnek yine tektir; ama sınıf bunu bilmez, bağımlılığı yapıcısından alır ve testte kolayca değiştirilir. Örneğin zamanı doğrudan `DateTime.UtcNow` ile okumak yerine .NET'in `TimeProvider` soyutlamasını enjekte etmek, zamana bağlı kodu test edilebilir kılar.
 
 ## Adapter
 

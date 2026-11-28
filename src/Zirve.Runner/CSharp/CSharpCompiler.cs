@@ -51,7 +51,7 @@ public sealed class CSharpCompiler
         "System.Threading.Tasks",
         "System.Threading.Tasks.Parallel",
         "System.Threading.Thread",
-        "Microsoft.CSharp",
+        // Microsoft.CSharp bilerek yok: dynamic bağlama üyeleri adıyla çözer ve API denetimini atlatır.
     ];
 
     private const string GlobalUsings = """

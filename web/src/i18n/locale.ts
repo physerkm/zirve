@@ -23,7 +23,8 @@ function subscribe(listener: () => void): () => void {
 export function setLocale(locale: Locale): void {
   if (locale === getLocale()) return;
   document.documentElement.lang = locale;
-  writeStorage('language', locale);
+  // "language" anahtarı problem sayfasındaki programlama dili tercihine aittir; arayüz dili ayrı tutulur.
+  writeStorage('locale', locale);
   listeners.forEach((listener) => listener());
 }
 

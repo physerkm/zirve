@@ -87,7 +87,7 @@ flowchart LR
 **Teslim.** Ağ, mesajı kaybedebilir ya da çoğaltabilir. Model: **en az bir kez teslim + istemcide tekilleştirme**.
 
 - Sunucu, istemci `ack` göndermeyene kadar mesajı "teslim edilmemiş" sayar.
-- İstemci her sohbet için **aldığı en son sıra numarasını** bilir. Yeniden bağlandığında "ch-91 için 1042'ye kadar aldım" der; sunucu 1043'ten sonrasını gönderir. Aynı `seq` iki kez gelirse istemci yok sayar.
+- İstemci her sohbet için **aldığı en son sıra numarasını** bilir. Yeniden bağlandığında "ch-91 için 1042'ye kadar aldım" der; sunucu 1043'ten itibaren gönderir. Aynı `seq` iki kez gelirse istemci yok sayar.
 - Sıra numarasında boşluk görürse (1043'ten sonra 1045) istemci eksik aralığı ister.
 
 Bu tasarımda çevrimdışı teslim için ayrı bir "gelen kutusu" gerekmez: **senkronizasyon, son görülen sıra numarasından sonrasını çekmektir**. Birden çok cihaz da aynı mekanizmayla, her cihaz kendi konumunu tutarak eşitlenir.

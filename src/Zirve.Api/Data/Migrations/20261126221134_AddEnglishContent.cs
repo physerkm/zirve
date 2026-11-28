@@ -240,12 +240,14 @@ namespace Zirve.Api.Data.Migrations
                 name: "title_en",
                 table: "modules");
 
+            // Üretilen arama sütunu, dayandığı metin sütunlarından ÖNCE kaldırılmalı: PostgreSQL bir metin
+            // sütunu düşerken ona bağlı üretilen sütunu da kendiliğinden düşürür ve sonraki adım hata verir.
             migrationBuilder.DropColumn(
-                name: "content_en",
+                name: "search_vector_en",
                 table: "lessons");
 
             migrationBuilder.DropColumn(
-                name: "search_vector_en",
+                name: "content_en",
                 table: "lessons");
 
             migrationBuilder.DropColumn(

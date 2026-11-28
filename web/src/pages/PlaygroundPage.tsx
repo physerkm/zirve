@@ -1,6 +1,6 @@
 import { Clock, Play, RotateCcw } from 'lucide-react';
-import { lazy, Suspense, useState } from 'react';
-import { Link, useLocation } from 'react-router';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { Button, ErrorNotice, Spinner } from '@/components/ui';
 import { defineMessages, useMessages } from '@/i18n/messages';
 import { cn, languageLabels } from '@/lib/format';
@@ -213,6 +213,17 @@ export default function PlaygroundPage() {
   const [codeByLanguage, setCodeByLanguage] = useState<Partial<Record<Language, string>>>(() =>
     incoming.language && incoming.code !== undefined ? { [incoming.language]: incoming.code } : {},
   );
+
+  // "Dene" ile gelen kod bir kez uygulanır: kaydedilir ve yönlendirme durumu temizlenir. Durum geçmişte
+  // kalırsa sayfa yenilendiğinde ders kodu, kullanıcının sonradan yaptığı düzenlemelerin yerine yeniden yüklenirdi.
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (incoming.language && incoming.code !== undefined) {
+      writeStorage(`playground:code:${incoming.language}`, incoming.code);
+      writeStorage('playground:language', incoming.language);
+      navigate(location.pathname + location.search, { replace: true, state: null });
+    }
+  }, [incoming.language, incoming.code, location.pathname, location.search, navigate]);
 
   const storageKey = `playground:code:${language}`;
   // Kullanıcının yazdığı ya da kaydettiği kod her zaman önceliklidir; örnek kod yalnızca ikisi de yoksa, geçerli dilde gösterilir.

@@ -14,7 +14,7 @@ returns: "int"
 ```text
 Girdi:  prices = [7, 1, 5, 3, 6, 4]
 Çıktı:  5
-Açıklama: 2. gün al (fiyat 1), 5. gün sat (fiyat 6): kâr 5.
+Açıklama: 1. gün al (fiyat 1), 4. gün sat (fiyat 6): kâr 5.
 ```
 
 ### Örnek 2

@@ -23,6 +23,10 @@ ENV ASPNETCORE_HTTP_PORTS=8080 \
     Content__Path=/app/content \
     DOTNET_gcServer=0
 
+# Data Protection anahtarları için bağlama noktası. Görüntüde yoksa Docker onu root sahipliğinde oluşturur
+# ve yetkisiz kullanıcı anahtar yazamaz (oturum ve CSRF 500 verir). Boş adlandırılmış birim bu sahipliği devralır.
+RUN mkdir -p /keys && chown $APP_UID /keys
+
 # Görüntüdeki yerleşik, yetkisiz kullanıcı.
 USER $APP_UID
 EXPOSE 8080

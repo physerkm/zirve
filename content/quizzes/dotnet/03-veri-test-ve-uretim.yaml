@@ -117,7 +117,7 @@ questions:
     why: |
       Liveness probe başarısız olunca orkestratör konteyneri yeniden başlatır. Bağımlılık kontrolü liveness'a konursa, dış bir bağımlılığın kesintisi bütün örneklerin aynı anda yeniden başlatılmasına yol açar ve durumu kötüleştirir. Bağımlılık kontrolü readiness probe'a aittir: o başarısız olunca yalnızca trafik kesilir.
 
-  - q: "Çağrı zincirinde üç servis var (A → B → C) ve her biri başarısız çağrıyı 3 kez yeniden deniyor. C tamamen çöktüğünde C en fazla kaç kat yük alır ve doğru yaklaşım nedir?"
+  - q: "Çağrı zincirinde dört servis var (A → B → C → D) ve ilk üçünün her biri başarısız bir çağrıyı en fazla 3 kez deniyor. D tamamen çöktüğünde D en fazla kaç kat yük alır ve doğru yaklaşım nedir?"
     options:
       - "3 kat; sorun yok."
       - "9 kat; deneme sayısını 10'a çıkarmak"
@@ -126,4 +126,4 @@ questions:
     answer: 3
     difficulty: hard
     why: |
-      Her katmandaki yeniden denemeler çarpılır: A'nın her denemesi B'nin üç denemesine, B'nin her denemesi C'nin üç denemesine yol açar. Buna yeniden deneme fırtınası denir ve çökmekte olan servisi tamamen boğar. Yeniden denemeyi tek bir katmanda tutmak, üstel bekleme ve jitter eklemek ve circuit breaker ile hızlı başarısız olmak doğru yaklaşımdır.
+      Her katmandaki denemeler çarpılır: A'nın B'ye yaptığı üç denemenin her biri B'nin C'ye üç denemesine, B'nin her denemesi de C'nin D'ye üç denemesine yol açar: 3 × 3 × 3 = 27. Buna yeniden deneme fırtınası denir ve çökmekte olan servisi tamamen boğar. Yeniden denemeyi tek bir katmanda tutmak, üstel bekleme ve jitter eklemek ve circuit breaker ile hızlı başarısız olmak doğru yaklaşımdır.

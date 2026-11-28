@@ -12,7 +12,7 @@ questions:
     answer: 1
     difficulty: easy
     why: |
-      Idempotent, aynı isteğin bir ya da birden fazla kez uygulanmasının aynı son durumu üretmesi demektir. PUT kaynağı gönderilen gövdeyle bütünüyle değiştirdiği için idempotenttir. POST ise idempotent değildir. Aynı isteği tekrar göndermek yeni kayıtlar oluşturabilir. "Güvenli" (safe) fiiller yalnızca GET, HEAD ve OPTIONS'tır: sunucu durumunu hiç değiştirmezler.
+      Idempotent, aynı isteğin bir ya da birden fazla kez uygulanmasının aynı son durumu üretmesi demektir. PUT kaynağı gönderilen gövdeyle bütünüyle değiştirdiği için idempotenttir. POST ise idempotent değildir. Aynı isteği tekrar göndermek yeni kayıtlar oluşturabilir. "Güvenli" (safe) fiiller yalnızca GET, HEAD, OPTIONS ve TRACE'tir: sunucu durumunu hiç değiştirmezler.
 
   - q: "Oturum açmış bir kullanıcı, yalnızca yöneticilerin silebildiği bir kaydı silmeye çalışıyor. Hangi durum kodu dönmelidir?"
     options:

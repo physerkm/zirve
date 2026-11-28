@@ -38,7 +38,7 @@ Explanation: The path (0,0) -> (1,0) -> (2,0) -> (2,1) -> (2,2) breaks 2 obstacl
 - `m == grid.length`
 - `n == grid[i].length`
 - `1 <= m, n <= 40`
-- `1 <= k <= m * n`
+- `0 <= k <= m * n`
 - `grid[i][j]` is `0` or `1`.
 - `grid[0][0] == grid[m - 1][n - 1] == 0`
 

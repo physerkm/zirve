@@ -38,7 +38,7 @@ public static class SearchEndpoints
 
         if (query.Length > MaxQueryLength)
         {
-            query = query[..MaxQueryLength];
+            query = query[..(char.IsHighSurrogate(query[MaxQueryLength - 1]) ? MaxQueryLength - 1 : MaxQueryLength)];
         }
 
         // Tam metin araması kelime köklerini eşleştirir; başlıkta kısmi eşleşme ("asyn" -> "async") için ILIKE eklenir.

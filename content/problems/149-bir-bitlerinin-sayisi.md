@@ -7,7 +7,7 @@ params:
   - { name: n, type: "int" }
 returns: "int"
 ---
-Pozitif bir tam sayı `n` veriliyor. Bu sayının ikili (binary) gösterimindeki **`1` bitlerinin sayısını** (diğer adıyla **Hamming ağırlığını**) döndüren bir fonksiyon yazın.
+Negatif olmayan bir tam sayı `n` veriliyor. Bu sayının ikili (binary) gösterimindeki **`1` bitlerinin sayısını** (diğer adıyla **Hamming ağırlığını**) döndüren bir fonksiyon yazın.
 
 ### Örnek 1
 
@@ -35,7 +35,7 @@ Açıklama: İkili gösterimi 01111111111111111111111111111101 şeklindedir ve 3
 
 ### Kısıtlar
 
-- `1 <= n <= 2^31 - 1`
+- `0 <= n <= 2^31 - 1`
 
 ## İpuçları
 

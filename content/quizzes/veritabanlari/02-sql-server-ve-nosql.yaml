@@ -34,7 +34,7 @@ questions:
     answer: 3
     difficulty: medium
     why: |
-      İyi bir clustered anahtar dar, benzersiz, değişmez ve sürekli artan olmalıdır. Rastgele GUID son koşulu bozar: yeni satırlar sona değil rastgele yerlere eklenir. Ayrıca 16 baytlık anahtar her nonclustered indekste tekrar eder. Sıralı GUID (`NEWSEQUENTIALID()`, `Guid.CreateVersion7()`) ya da `BIGINT IDENTITY` daha iyi seçeneklerdir.
+      İyi bir clustered anahtar dar, benzersiz, değişmez ve sürekli artan olmalıdır. Rastgele GUID son koşulu bozar: yeni satırlar sona değil rastgele yerlere eklenir. Ayrıca 16 baytlık anahtar her nonclustered indekste tekrar eder. Sıralı GUID (`NEWSEQUENTIALID()` ya da EF Core'un SQL Server için ürettiği sıralı GUID'ler) ya da `BIGINT IDENTITY` daha iyi seçeneklerdir. Dikkat: `Guid.CreateVersion7()` SQL Server'ın `uniqueidentifier` sıralamasında sıralı değildir, çünkü SQL Server son baytları önce karşılaştırır.
 
   - q: "Yoğun bir SQL Server veritabanında okuma sorguları, yazma transaction'larının kilitlerini beklediği için yavaş. En doğru çözüm hangisidir?"
     options:

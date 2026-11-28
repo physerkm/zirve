@@ -12,7 +12,7 @@ returns: "int"
 
 İki nokta `[x_i, y_i]` ve `[x_j, y_j]` arasındaki bağlantı maliyeti, bu iki nokta arasındaki **Manhattan mesafesidir**: `|x_i - x_j| + |y_i - y_j|`.
 
-Tüm noktaları birbirine bağlamak için gereken **minimum toplam maliyeti** döndürün. Herhangi iki nokta arasında doğrudan veya dolaylı olarak tam bir basit yol bulunuyorsa tüm noktalar birbirine bağlanmış kabul edilir.
+Tüm noktaları birbirine bağlamak için gereken **minimum toplam maliyeti** döndürün. Herhangi iki nokta arasında doğrudan veya dolaylı olarak tam olarak bir basit yol bulunuyorsa tüm noktalar birbirine bağlanmış kabul edilir.
 
 ### Örnek 1
 

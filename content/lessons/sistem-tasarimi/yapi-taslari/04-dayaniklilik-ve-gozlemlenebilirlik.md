@@ -104,7 +104,7 @@ Görmediğiniz sistemi işletemezsiniz. Üç temel sinyal:
 - **USE** (kaynaklar için): **U**tilization (kullanım), **S**aturation (doygunluk, kuyruk uzunluğu), **E**rrors.
 - Google'ın **dört altın sinyali:** gecikme, trafik, hata, doygunluk.
 
-**Ortalama gecikme yalan söyler.** Yüzdelik kullanın: p50, p95, **p99**. Bir sayfa 50 arka uç çağrısı yapıyorsa, her çağrının p99'u o sayfadaki isteklerin büyük kısmında hissedilir (kuyruk gecikmesi, *tail latency*). Kuyruk gecikmesini düşürmek için yaygın teknik: belirli süre içinde yanıt gelmezse aynı isteği ikinci bir kopyaya da göndermek (**hedged request**).
+**Ortalama gecikme yalan söyler.** Yüzdelik kullanın: p50, p95, **p99**. Bir sayfa 50 arka uç çağrısı yapıyorsa, sayfa isteklerinin yaklaşık %40'ı en az bir çağrıda p99 gecikmesine takılır (1 − 0,99⁵⁰ ≈ 0,4; kuyruk gecikmesi, *tail latency*). Kuyruk gecikmesini düşürmek için yaygın teknik: belirli süre içinde yanıt gelmezse aynı isteği ikinci bir kopyaya da göndermek (**hedged request**).
 
 ## SLI, SLO ve hata bütçesi
 

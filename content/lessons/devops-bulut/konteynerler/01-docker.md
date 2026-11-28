@@ -76,7 +76,7 @@ docker ps                      # çalışan konteynerler
 docker logs -f orders          # logları izle
 docker exec -it orders sh      # içine gir (chiseled imajda kabuk yok)
 docker stop orders && docker rm orders
-docker image prune             # kullanılmayan imajları temizle
+docker image prune             # etiketsiz (dangling) imajları temizle (-a: kullanılmayan bütün imajlar)
 ```
 
 - `-p 5000:8080`: ana makinenin 5000 portunu konteynerin 8080 portuna bağlar.

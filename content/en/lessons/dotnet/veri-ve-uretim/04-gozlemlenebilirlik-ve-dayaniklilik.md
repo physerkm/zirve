@@ -157,7 +157,7 @@ builder.Services.AddHttpClient<PaymentClient>(c =>
 | **Bulkhead** | Limits the number of concurrent calls allotted to a dependency | A slow dependency can't consume all resources |
 | **Fallback** | A backup response on failure | Stale data from the cache, a default value |
 
-**Retry storm:** if every layer retries 3 times and the call chain is 3 services deep, the bottom service receives 3 × 3 × 3 = 27 times the load. Retry at a single layer only, and combine it with a circuit breaker.
+**Retry storm:** if every layer makes 3 attempts per call (including the first) and the call chain is 3 services deep, the bottom service receives 3 × 3 × 3 = 27 times the load. Retry at a single layer only, and combine it with a circuit breaker.
 
 Before retrying non-idempotent calls such as payments, make sure the server supports idempotency keys.
 

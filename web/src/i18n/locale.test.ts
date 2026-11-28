@@ -20,7 +20,7 @@ describe('dil', () => {
     setLocale('en');
 
     expect(document.documentElement.lang).toBe('en');
-    expect(localStorage.getItem('zirve:language')).toBe('en');
+    expect(localStorage.getItem('zirve:locale')).toBe('en');
     expect(intlLocale()).toBe('en-US');
     expect(currentMessages(messages).greeting).toBe('Hello');
     expect(currentMessages(messages).count(3)).toBe('3 lessons');

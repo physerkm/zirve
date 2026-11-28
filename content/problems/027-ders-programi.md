@@ -61,7 +61,7 @@ Problem, yönlü bir grafta **döngü tespiti (cycle detection)** ya da eşdeğe
 
 1. **Grafı ve giriş derecelerini kur:** Her `[course, pre]` çifti için `pre → course` kenarını komşuluk listesine (`adj[pre]`) ekler ve `indegree[course]` (bu dersin kalan ön koşul sayısı) değerini 1 artırırız.
 2. **Ön koşulsuz derslerden başla:** Başlangıçta `indegree[i] == 0` olan tüm dersleri kuyruğa (`Queue`) koyarız; çünkü bu dersler hiçbir derse bağımlı değildir, hemen alınabilir.
-3. **Kilitleri açarak ilerle:** Kuyruktan çıkan her `cur` dersi tamamlanmış sayılır (`completed++`). Bu dersin bağlı olduğu her `next` dersinin `indegree[next]` değerini 1 azaltırız. Eğer `indegree[next] == 0` olursa, `next` dersinin tüm ön koşulları tamamlanmış demektir; onu da kuyruğa ekleriz.
+3. **Kilitleri açarak ilerle:** Kuyruktan çıkan her `cur` dersi tamamlanmış sayılır (`completed++`). Bu derse bağlı olan her `next` dersinin `indegree[next]` değerini 1 azaltırız. Eğer `indegree[next] == 0` olursa, `next` dersinin tüm ön koşulları tamamlanmış demektir; onu da kuyruğa ekleriz.
 4. **Döngü kontrolü:** Eğer grafta bir döngü varsa, o döngüdeki hiçbir düğümün `indegree` değeri `0`'a düşmez ve kuyruğa giremez. Döngü bittiğinde `completed == numCourses` ise tüm dersler alınabilmiştir (`true`), değilse bir döngü vardır (`false`).
 
 ```csharp solution

@@ -70,7 +70,7 @@ LibraryApi/
 | Validasyon | FluentValidation + handler decorator'ı | Kurallar tek yerde ve test edilebilir; her handler'da tekrar yok |
 | Mapping | Elle eşleme (statik metot ya da extension) | AutoMapper da ticari oldu; elle eşleme açık ve derleme zamanında güvenli |
 | Veritabanı | EF Core 10 + SQL Server LocalDB | Kurulumu hafif, Docker gerektirmez |
-| Kimlikler | `Guid.CreateVersion7()` | Zamana göre sıralı GUID: index parçalanması azdır, tahmin edilemez |
+| Kimlikler | `Guid.CreateVersion7()` | Zamana göre sıralı ve tahmin edilemez GUID. Not: SQL Server `uniqueidentifier` değerlerini son baytlardan başlayarak sıraladığı için bu sıra orada korunmaz; clustered index parçalanmasını azaltmak istiyorsanız EF Core'un SQL Server için ürettiği sıralı GUID'leri kullanın |
 | Zaman | Yerleşik `TimeProvider` | Doğrudan `DateTime.UtcNow` test edilemez. Gecikme senaryolarını sahte saatle test edeceksin |
 | Kimlik doğrulama | JWT Bearer + rol tabanlı policy'ler | Stateless API'lerde standart yaklaşım |
 | Dokümantasyon | Yerleşik OpenAPI + Scalar arayüzü | .NET 9'dan itibaren şablonlarda Swashbuckle yerine yerleşik OpenAPI desteği var |

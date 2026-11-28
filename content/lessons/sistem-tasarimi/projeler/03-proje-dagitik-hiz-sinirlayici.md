@@ -92,7 +92,7 @@ Son satırdaki iyileştirme: bir anahtar `429` aldığında `Retry-After` süres
 ## Aşama 6: başarısızlık modları
 
 - `docker compose stop redis` ve iste: **açık** modda istekler geçiyor mu, **kapalı** modda (giriş uç noktası) `503` dönüyor mu?
-- Redis çağrısına kısa zaman aşımı (ör. 10 ms) koy; Redis yavaşladığında (`redis-cli DEBUG SLEEP 2`) API'nin kilitlenmediğini doğrula.
+- Redis çağrısına kısa zaman aşımı (ör. 10 ms) koy; Redis yavaşladığında (`redis-cli DEBUG SLEEP 2`) API'nin kilitlenmediğini doğrula. (Redis 7+ `DEBUG` komutunu varsayılan olarak engeller: sunucuyu `--enable-debug-command local` ile başlat ve komutu konteyner içinden çalıştır: `docker compose exec redis redis-cli DEBUG SLEEP 2`.)
 - Redis uzun süre düşükse devre kesici açılsın ve süreç içi yerel sınırlayıcıya geri düşülsün (sınır / örnek sayısı). Bunun doğruluk bedelini README'de açıkla.
 
 ## Aşama 7: kurallar ve gözlemlenebilirlik

@@ -56,6 +56,10 @@ if (behindProxy)
         options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
         options.KnownIPNetworks.Clear();
         options.KnownProxies.Clear();
+
+        // Varsayılan 1: yalnızca nginx önde. nginx'in önünde bir yük dengeleyici daha varsa 2 yapın; yoksa
+        // bütün istekler dengeleyicinin adresinden gelmiş görünür ve IP başına sınırlar herkes için ortak olur.
+        options.ForwardLimit = builder.Configuration.GetValue<int?>("ForwardedHeaders:ForwardLimit") ?? 1;
     });
 }
 builder.Services.AddCodeRunner();
@@ -85,8 +89,9 @@ if (!app.Environment.IsDevelopment())
 
 app.UseSecurityHeaders();
 app.UseZirveLocalization();
-app.UseRateLimiter();
 app.UseAuthentication();
+// Kimlik doğrulamadan SONRA: kod çalıştırma sınırı kullanıcı başınadır ve kullanıcı ancak burada bilinir.
+app.UseRateLimiter();
 app.UseAuthorization();
 app.UseCsrfProtection();
 

@@ -119,7 +119,7 @@ Large files are uploaded in **parts** (e.g. 5–100 MB) (multipart upload):
 - If the connection drops, only the missing parts are re-uploaded; the client can ask which parts are complete.
 - When all parts are done, a "complete" call assembles the object.
 
-File sync services (Dropbox, Google Drive) go a step further: they split the file into content-defined blocks, take a hash of each block and upload only the **changed blocks**. If a block with the same hash already exists, it isn't uploaded at all (deduplication).
+File sync services (Dropbox, Google Drive) go a step further: they split the file into blocks (4 MB each at Dropbox), take a hash of each block and upload only the **changed blocks**. If a block with the same hash already exists, it isn't uploaded at all (deduplication).
 
 ### Distribution with a CDN
 

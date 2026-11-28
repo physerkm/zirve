@@ -22,7 +22,7 @@ Console.WriteLine(a);                // OrderPlaced { OrderId = ..., Total = 250
 Record'ların sağladıkları: **değer eşitliği** (`Equals`, `GetHashCode`, `==`), okunur `ToString`, `with` ile kopyalama ve konumsal (positional) sözdiziminde yapıbozum (`var (id, total, _) = a;`).
 
 - `record` (ya da `record class`) referans tipidir. `record struct` değer tipidir.
-- Konumsal record'ların özellikleri `init` erişimcilidir: oluşturulduktan sonra değiştirilemez.
+- Konumsal `record` ve `readonly record struct` özellikleri `init` erişimcilidir: oluşturulduktan sonra değiştirilemez. Düz `record struct`'ta ise konumsal özellikler `get; set;`'tir, yani değiştirilebilir.
 - Kullanım yerleri: DTO'lar, komutlar, olaylar, value object'ler.
 - Dikkat: record içindeki bir `List<T>` alanı yine referanstır. İki record'un eşitliği listelerin **referans** eşitliğine bakar ve `with` listeyi kopyalamaz (sığ kopya).
 

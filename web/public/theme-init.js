@@ -12,7 +12,9 @@
 
   var language = 'tr';
   try {
-    var storedLanguage = localStorage.getItem('zirve:language');
+    // zirve:language programlama dili tercihidir (csharp, typescript…); arayüz dili zirve:locale'dadır.
+    // İlk sürümde arayüz dili yanlışlıkla zirve:language'a yazılıyordu; oradaki tr/en değeri bir kez okunur.
+    var storedLanguage = localStorage.getItem('zirve:locale') || localStorage.getItem('zirve:language');
     if (storedLanguage === 'tr' || storedLanguage === 'en') {
       language = storedLanguage;
     } else {
