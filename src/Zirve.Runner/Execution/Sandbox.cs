@@ -105,6 +105,10 @@ public sealed partial class Sandbox
             return;
         }
 
+        // İzin, sahiplik devredilmeden ÖNCE ayarlanır: başkasına ait bir dosyanın iznini değiştirmek CAP_FOWNER
+        // ister; Runner'a bu yetkiyi vermiyoruz.
+        File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+
         foreach (var path in Directory.EnumerateFileSystemEntries(directory, "*", SearchOption.AllDirectories).Prepend(directory))
         {
             if (lchown(path, (uint)lease.Uid, (uint)lease.Uid) != 0)
@@ -112,8 +116,6 @@ public sealed partial class Sandbox
                 throw new IOException($"Sahiplik değiştirilemedi ({Marshal.GetLastPInvokeError()}): {path}");
             }
         }
-
-        File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
     }
 
     /// <summary>
