@@ -44,9 +44,15 @@ services:
     tmpfs:
       - /tmp:size=256m,mode=1777
     cap_drop: [ALL]
+    # Yalnızca çalıştırma başına yalıtım için gereken yetkiler: çocuk süreci ayrı bir kullanıcıya geçirmek
+    # (SETUID, SETGID), çalışma klasörünü ona vermek (CHOWN), o kullanıcının süreçlerini öldürmek (KILL) ve
+    # bittiğinde klasörünü silmek (DAC_OVERRIDE). Kullanıcı kodu bu yetkilerin hiçbirini taşımaz.
+    cap_add: [SETUID, SETGID, KILL, CHOWN, DAC_OVERRIDE]
     security_opt:
       - no-new-privileges:true
     pids_limit: 256
+    # Her çalıştırma en fazla Runner__Isolation__ProcessMemoryMb (varsayılan 512 MB) veri belleği kullanabilir;
+    # sınır, eşzamanlılık × bu değer + Runner'ın kendisi kadar olmalı.
     mem_limit: 1536m
     cpus: 2
 

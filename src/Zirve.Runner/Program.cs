@@ -17,6 +17,7 @@ builder.Services
     .ValidateOnStart();
 
 builder.Services.AddSingleton<WorkDirectory>();
+builder.Services.AddSingleton<Sandbox>();
 builder.Services.AddSingleton<CSharpCompiler>();
 builder.Services.AddSingleton<CSharpExecutor>();
 builder.Services.AddSingleton<NodeExecutor>();

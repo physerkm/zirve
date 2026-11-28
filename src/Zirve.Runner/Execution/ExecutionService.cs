@@ -22,11 +22,14 @@ public sealed class ExecutionService
     private readonly RunnerOptions _options;
     private readonly ILogger<ExecutionService> _logger;
     private readonly SemaphoreSlim _slots;
+    private readonly Sandbox _sandbox;
 
-    public ExecutionService(CSharpExecutor csharp, NodeExecutor node, IOptions<RunnerOptions> options, ILogger<ExecutionService> logger)
+    public ExecutionService(
+        CSharpExecutor csharp, NodeExecutor node, Sandbox sandbox, IOptions<RunnerOptions> options, ILogger<ExecutionService> logger)
     {
         _csharp = csharp;
         _node = node;
+        _sandbox = sandbox;
         _options = options.Value;
         _logger = logger;
         _slots = new SemaphoreSlim(_options.EffectiveConcurrency, _options.EffectiveConcurrency);
@@ -42,11 +45,15 @@ public sealed class ExecutionService
             throw new RunnerBusyException();
         }
 
+        SandboxLease? lease = null;
+
         try
         {
+            lease = _sandbox.Acquire();
+
             var raw = request.Language == Languages.CSharp
-                ? await _csharp.ExecuteAsync(request, cancellationToken)
-                : await _node.ExecuteAsync(request, cancellationToken);
+                ? await _csharp.ExecuteAsync(request, lease, cancellationToken)
+                : await _node.ExecuteAsync(request, lease, cancellationToken);
 
             return BuildResult(request, raw);
         }
@@ -64,6 +71,8 @@ public sealed class ExecutionService
         }
         finally
         {
+            // Yuvanın arkada kalan süreçleri öldürülmeden yuva bir sonraki çalıştırmaya verilmez.
+            await _sandbox.ReleaseAsync(lease);
             _slots.Release();
         }
     }

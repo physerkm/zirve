@@ -25,10 +25,12 @@ public sealed class RunnerFixture
 
         var workDirectory = new WorkDirectory(options, NullLogger<WorkDirectory>.Instance);
         var compiler = new CSharpCompiler();
+        var sandbox = new Sandbox(options, NullLogger<Sandbox>.Instance);
 
         Service = new ExecutionService(
-            new CSharpExecutor(compiler, options, workDirectory),
-            new NodeExecutor(options, workDirectory),
+            new CSharpExecutor(compiler, options, workDirectory, sandbox),
+            new NodeExecutor(options, workDirectory, sandbox),
+            sandbox,
             options,
             NullLogger<ExecutionService>.Instance);
     }

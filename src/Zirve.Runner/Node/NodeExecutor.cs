@@ -13,13 +13,15 @@ public sealed class NodeExecutor
 {
     private readonly RunnerOptions _options;
     private readonly WorkDirectory _workDirectory;
+    private readonly Sandbox _sandbox;
     private readonly string _nodePath;
     private readonly string _harnessPath;
 
-    public NodeExecutor(IOptions<RunnerOptions> options, WorkDirectory workDirectory)
+    public NodeExecutor(IOptions<RunnerOptions> options, WorkDirectory workDirectory, Sandbox sandbox)
     {
         _options = options.Value;
         _workDirectory = workDirectory;
+        _sandbox = sandbox;
         _nodePath = ExecutableLocator.Resolve(_options.NodePath);
         _harnessPath = Path.Combine(AppContext.BaseDirectory, "Node", "harness.mjs");
 
@@ -29,7 +31,7 @@ public sealed class NodeExecutor
         }
     }
 
-    public async Task<RawExecution> ExecuteAsync(ExecutionRequest request, CancellationToken cancellationToken)
+    public async Task<RawExecution> ExecuteAsync(ExecutionRequest request, SandboxLease? lease, CancellationToken cancellationToken)
     {
         var nonce = Guid.NewGuid().ToString("N");
         var isScript = request.Mode == ExecutionMode.Script;
@@ -50,7 +52,8 @@ public sealed class NodeExecutor
 
         try
         {
-            var startInfo = CreateStartInfo(directory);
+            _sandbox.PrepareDirectory(directory, lease);
+            var startInfo = _sandbox.Wrap(CreateStartInfo(directory), lease);
 
             // Script modunda önce koşucunun kendi (daha açıklayıcı) zaman aşımı devreye girsin.
             var timeout = isScript
@@ -163,7 +166,9 @@ public sealed class NodeExecutor
         }
 
         if (outcome.Stderr.Contains("heap out of memory", StringComparison.OrdinalIgnoreCase)
-            || outcome.Stderr.Contains("heap limit", StringComparison.OrdinalIgnoreCase))
+            || outcome.Stderr.Contains("heap limit", StringComparison.OrdinalIgnoreCase)
+            || outcome.Stderr.Contains("Fatal process out of memory", StringComparison.OrdinalIgnoreCase)
+            || outcome.Stderr.Contains("allocation failed", StringComparison.OrdinalIgnoreCase))
         {
             return RunnerText.T("Bellek sınırı aşıldı.", "Memory limit exceeded.");
         }

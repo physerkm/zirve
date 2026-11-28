@@ -138,7 +138,6 @@ namespace ZirveHarness
 
         private static int Main(string[] args)
         {
-            var nonce = args.Length > 0 ? args[0] : string.Empty;
             var utf8 = new UTF8Encoding(false);
             var output = new StreamWriter(Console.OpenStandardOutput(), utf8) { AutoFlush = true, NewLine = "\n" };
 
@@ -150,6 +149,7 @@ namespace ZirveHarness
 
             using var payload = JsonDocument.Parse(payloadText);
             var root = payload.RootElement;
+            var nonce = root.TryGetProperty("nonce", out var nonceElement) ? nonceElement.GetString() : string.Empty;
             var kind = root.GetProperty("kind").GetString();
             var name = root.GetProperty("name").GetString();
 

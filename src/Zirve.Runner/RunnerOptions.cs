@@ -54,5 +54,38 @@ public sealed class RunnerOptions
     /// <summary>Node.js süreçlerini izin modeliyle (--permission) başlatır.</summary>
     public bool UseNodePermissionModel { get; set; } = true;
 
+    /// <summary>Çalıştırma başına işletim sistemi düzeyinde yalıtım (yalnızca Linux kapsayıcısında).</summary>
+    public IsolationOptions Isolation { get; set; } = new();
+
     public int EffectiveConcurrency => MaxConcurrency > 0 ? MaxConcurrency : Math.Max(1, Environment.ProcessorCount / 2);
+}
+
+/// <summary>
+/// Her eşzamanlı çalıştırma yuvası kendi Linux kullanıcısıyla (uid = <see cref="FirstUid"/> + yuva) ve veri
+/// belleği sınırıyla (RLIMIT_DATA) çalışır. Kullanıcı kodu dil düzeyindeki yalıtımı aşsa bile Runner'ın
+/// ortamını (API anahtarı), başka çalıştırmaların dosyalarını ve süreçlerini göremez; V8 yığınının dışındaki
+/// bellek (ArrayBuffer) dahil kapsayıcının belleğini tüketemez.
+/// <para>
+/// Etkinleştirmek için Runner root olarak, yalnızca SETUID, SETGID, KILL, CHOWN ve DAC_OVERRIDE yetkileriyle
+/// çalışmalıdır (bkz. docker-compose.yml). Windows'taki yerel geliştirmede kapalıdır.
+/// </para>
+/// </summary>
+public sealed class IsolationOptions
+{
+    public bool Enabled { get; set; }
+
+    /// <summary>İlk yuvanın kullanıcı ve grup kimliği; yuvalar ardışık kimlikler alır.</summary>
+    [Range(1000, 60000)]
+    public int FirstUid { get; set; } = 20000;
+
+    /// <summary>
+    /// Bir çalıştırmanın en fazla veri belleği (RLIMIT_DATA, MB). Çalışma zamanının kendi payını da içerir;
+    /// kapsayıcı bellek sınırı en az (eşzamanlılık × bu değer) + Runner'ın kendisi kadar olmalıdır.
+    /// </summary>
+    [Range(128, 8192)]
+    public int ProcessMemoryMb { get; set; } = 512;
+
+    public string SetprivPath { get; set; } = "/usr/bin/setpriv";
+
+    public string ShellPath { get; set; } = "/bin/sh";
 }

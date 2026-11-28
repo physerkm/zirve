@@ -16,6 +16,16 @@ public sealed class WorkDirectory
             : options.Value.WorkDirectory;
 
         Directory.CreateDirectory(_root);
+
+        // Yalıtımda kök yalnızca geçilebilir (0711): her çalıştırmanın klasörü kendi kullanıcısına aittir ve
+        // başka bir çalıştırma diğer klasörleri listeleyemez.
+        if (options.Value.Isolation.Enabled && OperatingSystem.IsLinux())
+        {
+            File.SetUnixFileMode(
+                _root,
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute);
+        }
+
         PurgeLeftovers();
     }
 
