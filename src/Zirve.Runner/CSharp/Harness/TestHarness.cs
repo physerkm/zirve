@@ -56,12 +56,18 @@ namespace ZirveHarness
     internal sealed class BoundedWriter : TextWriter
     {
         private readonly StringBuilder _buffer = new StringBuilder();
-        private readonly int _limit;
+        private int _limit;
         private bool _truncated;
 
         public BoundedWriter(int limit)
         {
             _limit = limit;
+        }
+
+        /// <summary>Sonraki testte yakalanacak en fazla karakter (testler arası toplam bütçeden).</summary>
+        public int Limit
+        {
+            set { _limit = Math.Max(0, value); }
         }
 
         public override Encoding Encoding => Encoding.UTF8;
@@ -147,7 +153,12 @@ namespace ZirveHarness
             var kind = root.GetProperty("kind").GetString();
             var name = root.GetProperty("name").GetString();
 
-            var capture = new BoundedWriter(64 * 1024);
+            // Test başına 64 K, bütün testler için toplam 400 K karakter. Toplam sınır Runner'ın süreç çıktı
+            // sınırının (1.000.000 bayt) altında kalmalı; yoksa hata ayıklama yazdıran doğru bir çözüm bile
+            // "çıktı sınırı aşıldı" diye kesilir.
+            const int PerTestOutput = 64 * 1024;
+            var outputBudget = 400 * 1024;
+            var capture = new BoundedWriter(PerTestOutput);
             Console.SetOut(capture);
             Console.SetError(capture);
             Console.SetIn(new StringReader(string.Empty));
@@ -159,6 +170,7 @@ namespace ZirveHarness
                 string error = null;
                 var line = 0;
                 var watch = Stopwatch.StartNew();
+                capture.Limit = Math.Min(PerTestOutput, outputBudget);
 
                 try
                 {
@@ -174,11 +186,17 @@ namespace ZirveHarness
                 }
 
                 watch.Stop();
-                WriteResult(output, nonce, id, actual, error, line, capture.Drain(), watch.Elapsed.TotalMilliseconds);
+                var stdout = capture.Drain();
+                outputBudget -= stdout.Length;
+                WriteResult(output, nonce, id, actual, error, line, stdout, watch.Elapsed.TotalMilliseconds);
             }
 
             output.WriteLine(nonce + "{\"done\":true}");
             output.Flush();
+
+            // Bütün sonuçlar yazıldı: kullanıcı kodunun bıraktığı ön plan thread'leri süreci süre sınırına kadar
+            // açık tutmasın (aksi halde her testi sonuçlanmış bir çalıştırma "zaman aşımı" görünür).
+            Environment.Exit(0);
             return 0;
         }
 
@@ -564,7 +582,7 @@ namespace ZirveHarness
         private static void WriteResult(TextWriter output, string nonce, int id, string actual, string error, int line, string stdout, double milliseconds)
         {
             using var stream = new MemoryStream();
-            using (var writer = new Utf8JsonWriter(stream))
+            using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }))
             {
                 writer.WriteStartObject();
                 writer.WriteNumber("id", id);

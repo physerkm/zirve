@@ -119,7 +119,7 @@ const greet = user.greet;        // metot nesnesinden koparıldı
 greet();                         // TypeError: this undefined (modüller ve sınıflar katı kiptedir)
 ```
 
-Metodu bir geri çağrı olarak vermek (`setTimeout(user.greet, 100)`, `button.onclick = user.greet`) aynı hatayı üretir: fonksiyon nesnesinden kopmuştur.
+Metodu bir geri çağrı olarak vermek (`setTimeout(user.greet, 100)`, `button.onclick = user.greet`) aynı sorunu üretir: fonksiyon nesnesinden kopmuştur ve `this` artık `user` değildir (tarayıcıda `setTimeout` için `window`, `onclick` için düğmenin kendisi olur; hata fırlatmak yerine yanlış değer dönebilir).
 
 ### Ok fonksiyonları
 

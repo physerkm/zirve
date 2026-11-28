@@ -31,6 +31,9 @@ public static class ApiRestrictionAnalyzer
         "System.Resources",
         "System.Security",
         "Microsoft.Win32",
+        // İfade ağaçları üyelere adıyla (dizgiyle) erişip derlenebilir; yansımanın dolaylı bir yoludur.
+        "System.Linq.Expressions",
+        "System.Dynamic",
     ];
 
     private static readonly string[] AllowedNamespaces =
@@ -67,6 +70,14 @@ public static class ApiRestrictionAnalyzer
         "System.Activator",
         "System.Runtime.CompilerServices.Unsafe",
         "System.Runtime.CompilerServices.RuntimeHelpers",
+        // Özel üyelere adıyla erişim (yansımasız yansıma).
+        "System.Runtime.CompilerServices.UnsafeAccessorAttribute",
+        "System.Runtime.CompilerServices.UnsafeAccessorTypeAttribute",
+        "System.Runtime.CompilerServices.UnsafeAccessorKind",
+        // dynamic'in alt yapısı.
+        "System.Runtime.CompilerServices.CallSite",
+        "System.Runtime.CompilerServices.CallSiteBinder",
+        "System.Runtime.CompilerServices.CallSiteHelpers",
     };
 
     private static readonly HashSet<string> AllowedEnvironmentMembers = new(StringComparer.Ordinal)
@@ -94,6 +105,13 @@ public static class ApiRestrictionAnalyzer
         var violations = new List<CompileDiagnostic>();
         var reported = new HashSet<string>(StringComparer.Ordinal);
 
+        // extern metotlar (gövdesiz, dışarıdan bağlanan) yalnızca interop ya da UnsafeAccessor için anlamlıdır.
+        foreach (var modifier in userTree.GetRoot().DescendantTokens().Where(token => token.IsKind(SyntaxKind.ExternKeyword)))
+        {
+            var position = modifier.GetLocation().GetLineSpan().StartLinePosition;
+            violations.Add(new CompileDiagnostic(position.Line + 1, position.Character + 1, Message("extern")));
+        }
+
         foreach (var node in userTree.GetRoot().DescendantNodes().OfType<SimpleNameSyntax>())
         {
             var info = model.GetSymbolInfo(node);
@@ -112,12 +130,7 @@ public static class ApiRestrictionAnalyzer
             var position = node.GetLocation().GetLineSpan().StartLinePosition;
             if (reported.Add($"{position.Line}:{violation}"))
             {
-                violations.Add(new CompileDiagnostic(
-                    position.Line + 1,
-                    position.Character + 1,
-                    RunnerText.T(
-                        $"Güvenlik nedeniyle bu ortamda '{violation}' kullanılamaz.",
-                        $"'{violation}' can't be used in this environment for security reasons.")));
+                violations.Add(new CompileDiagnostic(position.Line + 1, position.Character + 1, Message(violation)));
             }
 
             if (violations.Count >= MaxViolations)
@@ -129,6 +142,10 @@ public static class ApiRestrictionAnalyzer
         return violations;
     }
 
+    private static string Message(string violation) => RunnerText.T(
+        $"Güvenlik nedeniyle bu ortamda '{violation}' kullanılamaz.",
+        $"'{violation}' can't be used in this environment for security reasons.");
+
     private static string? Check(ISymbol symbol)
     {
         if (symbol is IAliasSymbol alias)
@@ -138,6 +155,8 @@ public static class ApiRestrictionAnalyzer
 
         return symbol switch
         {
+            // Derleyici başvurusu olmadan da yakalansın: dynamic, üyeleri çalışma zamanında adıyla çözer.
+            IDynamicTypeSymbol => "dynamic",
             INamedTypeSymbol type => CheckType(type),
             IMethodSymbol or IPropertySymbol or IFieldSymbol or IEventSymbol => CheckMember(symbol.ContainingType, symbol.Name),
             _ => null,

@@ -81,7 +81,7 @@ var orders = await db.Orders
     .ToListAsync(ct);
 ```
 
-Split queries carry a consistency risk: data can change between the queries. Alternatives are running them inside a transaction or summarizing both collections with a projection.
+Split queries carry a consistency risk: data can change between the queries. Alternatives are running them inside a transaction with snapshot or serializable isolation (the default read committed is not enough) or summarizing both collections with a projection.
 
 ## AsNoTracking
 

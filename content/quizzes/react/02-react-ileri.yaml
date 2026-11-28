@@ -89,4 +89,4 @@ questions:
     answer: 2
     difficulty: medium
     why: |
-      Sanallaştırma, DOM'daki satır sayısını on binlerden onlara indirir. Bu, memoizasyondan çok daha büyük bir kazançtır. `useCallback` fonksiyon referanslarını sabitler, bileşenleri sarmaz. İndeks anahtarları sıralama ve silmede hatalara ve gereksiz yeniden oluşturmaya yol açar.
+      Sanallaştırma, DOM'daki satır sayısını on binden onlara indirir. Bu, memoizasyondan çok daha büyük bir kazançtır. `useCallback` fonksiyon referanslarını sabitler, bileşenleri sarmaz. İndeks anahtarları sıralama ve silmede hatalara ve gereksiz yeniden oluşturmaya yol açar.

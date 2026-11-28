@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Zirve.Shared.Problems;
 
@@ -31,7 +32,8 @@ public static class ResultComparer
         JsonValueKind.Null or JsonValueKind.Undefined => null,
         JsonValueKind.True => true,
         JsonValueKind.False => false,
-        JsonValueKind.Number => element.GetDouble(),
+        // object'e kutulanır: "? long : double" ifadesinin türü double olur ve tam sayıyı yine yuvarlardı.
+        JsonValueKind.Number => element.TryGetInt64(out var integer) ? (object)integer : element.GetDouble(),
         JsonValueKind.String => element.GetString(),
         JsonValueKind.Array => element.EnumerateArray().Select(ToTree).ToList(),
         JsonValueKind.Object => new SortedDictionary<string, object?>(
@@ -71,8 +73,10 @@ public static class ResultComparer
         {
             case (bool a, bool b):
                 return a.CompareTo(b);
-            case (double a, double b):
+            case (long a, long b):
                 return a.CompareTo(b);
+            case (double or long, double or long):
+                return Convert.ToDouble(left, CultureInfo.InvariantCulture).CompareTo(Convert.ToDouble(right, CultureInfo.InvariantCulture));
             case (string a, string b):
                 return string.CompareOrdinal(a, b);
             case (List<object?> a, List<object?> b):
@@ -116,7 +120,7 @@ public static class ResultComparer
     {
         null => 0,
         bool => 1,
-        double => 2,
+        double or long => 2,
         string => 3,
         List<object?> => 4,
         _ => 5,
@@ -132,8 +136,11 @@ public static class ResultComparer
                 return a == b;
             case (string a, string b):
                 return string.Equals(a, b, StringComparison.Ordinal);
-            case (double a, double b):
-                return NumbersEqual(a, b);
+            // Tam sayılar (long) birebir karşılaştırılır; 2^53 üstünde double eşitliği yanıltıcıdır.
+            case (long a, long b):
+                return a == b;
+            case (double or long, double or long):
+                return NumbersEqual(Convert.ToDouble(left, CultureInfo.InvariantCulture), Convert.ToDouble(right, CultureInfo.InvariantCulture));
             case (List<object?> a, List<object?> b):
                 if (a.Count != b.Count)
                 {

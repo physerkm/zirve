@@ -129,6 +129,6 @@ Building this table step by step in an interview shows **which problem each tech
 
 ## The CP alternative
 
-If the requirement were "always correct" instead of "always writable" (a configuration store, a lock service), the design would change completely: a **Raft group** per range, linearizable reads and writes through the leader, and during a partition the minority side does not accept writes. etcd, TiKV, and CockroachDB take this route. Being able to compare the two designs shows that you really understand CAP/PACELC.
+If the requirement were "always correct" instead of "always writable" (a configuration store, a lock service), the design would change completely: a **Raft group** per range, linearizable reads and writes through the leader, and during a partition the minority side does not accept writes. TiKV and CockroachDB take this route; etcd also uses Raft, but runs a single Raft group for all its data. Being able to compare the two designs shows that you really understand CAP/PACELC.
 
 **Further reading:** [Dynamo: Amazon's Highly Available Key-value Store (SOSP 2007)](https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf); [Cassandra architecture documentation](https://cassandra.apache.org/doc/latest/cassandra/architecture/overview.html); Alex Xu, *System Design Interview* Volume 1, Chapter 6.

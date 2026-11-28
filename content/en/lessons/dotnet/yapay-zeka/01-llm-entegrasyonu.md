@@ -63,7 +63,7 @@ The model only produces text, but it can tell you **which function should be cal
 
 ```csharp
 [Description("Returns the current status of an order")]
-static async Task<string> GetOrderStatus([Description("Order number")] string orderNumber, OrderQueries orders)
+async Task<string> GetOrderStatus([Description("Order number")] string orderNumber)   // orders is captured from the enclosing scope; the model only fills in orderNumber
     => (await orders.FindStatusAsync(orderNumber))?.ToString() ?? "Order not found";
 
 IChatClient client = innerClient.AsBuilder().UseFunctionInvocation().Build();

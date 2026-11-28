@@ -90,7 +90,7 @@ The improvement in the last row: when a key gets a `429`, keep the result in in-
 ## Stage 6: failure modes
 
 - Run `docker compose stop redis` and send requests: in **open** mode, do requests get through; in **closed** mode (the login endpoint), does it return `503`?
-- Put a short timeout (e.g., 10 ms) on the Redis call; verify that the API doesn't hang when Redis slows down (`redis-cli DEBUG SLEEP 2`).
+- Put a short timeout (e.g., 10 ms) on the Redis call; verify that the API doesn't hang when Redis slows down (`redis-cli DEBUG SLEEP 2`). (Redis 7+ blocks the `DEBUG` command by default: start the server with `--enable-debug-command local` and run the command from inside the container: `docker compose exec redis redis-cli DEBUG SLEEP 2`.)
 - If Redis is down for a long time, have a circuit breaker open and fall back to an in-process local limiter (limit / number of instances). Explain the accuracy cost of this in the README.
 
 ## Stage 7: rules and observability

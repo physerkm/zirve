@@ -115,7 +115,7 @@ function isHappy(n: number): boolean {
 
 ### Karmaşıklık
 
-- **Zaman:** O(log n). Bir sayının basamak kareleri toplamını hesaplamak basamak sayısı kadar yani O(log n) sürer; ilk adımdan sonra değerler 243'ün altına düştüğü için döngü sabit sayıda adımda sonlanır.
+- **Zaman:** O(log n). Bir sayının basamak kareleri toplamını hesaplamak basamak sayısı kadar yani O(log n) sürer; ilk adımdan sonra değerler en fazla 730 olur ve birkaç adımda 243'ün altına düştüğü için döngü sabit sayıda adımda sonlanır.
 - **Alan:** O(1). `HashSet` yerine yalnızca `slow` ve `fast` değişkenleri kullanılır.
 
 ## Testler

@@ -173,7 +173,7 @@ Diagnosis: watch heap growth with `dotnet-counters`, take a dump with `dotnet-du
   - `[LoggerMessage]`: allocation-free logging.
 - **FrozenDictionary / FrozenSet** (.NET 8): collections optimized for read speed, for lookup tables that are built once and never change.
 - **Native AOT:** compiles the application straight to machine code, without the JIT. Very fast startup and low memory (ideal for serverless and CLI tools). Limitations: runtime reflection, dynamic code generation, and some libraries (some EF Core features, MVC controllers) are not supported. It works with Minimal APIs and source-generated JSON.
-- **Tiered compilation and Dynamic PGO** (default since .NET 8): the JIT recompiles hot code better, based on the runtime profile. That's why you need a warm-up before measuring.
+- **Tiered compilation and Dynamic PGO** (tiered compilation has been the default since .NET Core 3.0, Dynamic PGO since .NET 8): the JIT recompiles hot code better, based on the runtime profile. That's why you need a warm-up before measuring.
 
 ## Asked in interviews
 

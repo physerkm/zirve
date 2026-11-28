@@ -185,7 +185,7 @@ class Twitter {
 
 ### Complexity
 
-- **Time:** `postTweet`, `follow`, `unfollow` are O(1). `getNewsFeed` is O(f + 10 log f), where `f` is the number of followed users.
+- **Time:** `postTweet`, `follow`, `unfollow` are O(1). `getNewsFeed` is O(f log f), where `f` is the number of followed users (the `f` items are enqueued one by one, then the 10 pops take O(10 log f)).
 - **Space:** O(number of tweets + number of follow relationships).
 
 Collecting all tweets and sorting them also gives the right answer, but it takes O(T log T). With a heap, you pull only the 10 tweets you need. TypeScript has no built-in priority queue, so the TypeScript solution picks the most recent cursor with a linear scan at each step; that costs O(10 × f) and applies the same merge idea.

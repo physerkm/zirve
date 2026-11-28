@@ -111,5 +111,5 @@ function validTree(n: number, edges: number[][]): boolean {
 
 ### Complexity
 
-- **Time:** O(n · α(n)). After the edge count check, at most `n - 1` edges are processed.
+- **Time:** O(n log n). After the edge count check, at most `n - 1` edges are processed. The solution uses only path compression (path halving); adding union by size or rank as well brings it to O(n · α(n)).
 - **Space:** O(n).

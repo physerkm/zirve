@@ -9,7 +9,7 @@ returns: "int"
 ---
 `n x n` boyutunda bir ızgara `grid` veriliyor; `grid[i][j]`, `(i, j)` noktasının yüksekliğidir ve bütün değerler `0` ile `n² - 1` arasında **birbirinden farklıdır**.
 
-Yağmur yağmaya başlıyor. `t` anında her yerde suyun derinliği `t`'dir. Bir hücreden dört yönlü komşusuna, **iki hücrenin yüksekliği de en fazla `t`** ise yüzerek geçebilirsiniz. Yüzme süresiz hızdadır; yalnızca su seviyesini beklemeniz gerekir.
+Yağmur yağmaya başlıyor. `t` anında her yerde suyun derinliği `t`'dir. Bir hücreden dört yönlü komşusuna, **iki hücrenin yüksekliği de en fazla `t`** ise yüzerek geçebilirsiniz. Yüzmek hiç zaman almaz; yalnızca su seviyesini beklemeniz gerekir.
 
 Sol üst köşeden `(0, 0)` başlayarak sağ alt köşeye `(n - 1, n - 1)` ulaşabileceğiniz **en erken anı** döndürün.
 

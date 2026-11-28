@@ -157,7 +157,7 @@ public sealed class OrderApiTests(ApiFactory factory) : IClassFixture<ApiFactory
 
 (The `IAsyncLifetime` signature here is from xUnit v3 and returns `ValueTask`. In xUnit v2 it returns `Task`.)
 
-With minimal hosting, the `Program` class isn't visible to the test project by default. Add `public partial class Program;` at the end of `Program.cs`.
+With minimal hosting, the `Program` class used to be invisible to the test project by default, and you added `public partial class Program;` at the end of `Program.cs`. In .NET 10 a source generator emits this declaration for you. On older versions you still have to add it by hand.
 
 **Testcontainers** starts a real PostgreSQL, Redis, or RabbitMQ container in Docker before the test and removes it when the test finishes. That way, your tests run against the same database engine as production. Requirement: Docker on the test machine and in CI.
 

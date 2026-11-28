@@ -83,7 +83,7 @@ var orders = await db.Orders
     .ToListAsync(ct);
 ```
 
-Split query tutarlılık riski taşır: sorgular arasında veri değişebilir. Bir transaction içinde çalıştırmak ya da projeksiyonla iki koleksiyonu da özetlemek alternatiflerdir.
+Split query tutarlılık riski taşır: sorgular arasında veri değişebilir. Sorguları snapshot ya da serializable yalıtım düzeyindeki bir transaction içinde çalıştırmak (varsayılan read committed yetmez) ya da projeksiyonla iki koleksiyonu da özetlemek alternatiflerdir.
 
 ## AsNoTracking
 

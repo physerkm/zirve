@@ -1,7 +1,7 @@
 ---
 title: Number of 1 Bits
 ---
-You are given a positive integer `n`. Write a function that returns the **number of `1` bits** in its binary representation (also known as its **Hamming weight**).
+You are given a non-negative integer `n`. Write a function that returns the **number of `1` bits** in its binary representation (also known as its **Hamming weight**).
 
 ### Example 1
 
@@ -29,7 +29,7 @@ Explanation: Its binary representation is 01111111111111111111111111111101, whic
 
 ### Constraints
 
-- `1 <= n <= 2^31 - 1`
+- `0 <= n <= 2^31 - 1`
 
 ## Hints
 

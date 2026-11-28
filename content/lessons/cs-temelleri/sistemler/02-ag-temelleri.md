@@ -148,7 +148,7 @@ Cache-Control: no-store
 | `503 Service Unavailable` | Servis geçici olarak hizmet veremiyor | Aşırı yük, bakım |
 | `504 Gateway Timeout` | Vekil, arkadaki servisten zamanında yanıt alamadı | Arka servis yavaş |
 
-Kural: **4xx istemcinin, 5xx sunucunun** sorunudur. 4xx hatalarını aynen yeniden denemek işe yaramaz; 503 ve 504 gibi geçici 5xx hataları ise aralıklı yeniden denemeyle düzelebilir.
+Kural: **4xx istemcinin, 5xx sunucunun** sorunudur. 4xx hatalarını aynen yeniden denemek işe yaramaz (istisna: `429`, `Retry-After` süresi beklendikten sonra yeniden denenebilir); 503 ve 504 gibi geçici 5xx hataları ise aralıklı yeniden denemeyle düzelebilir.
 
 ### Önbellek ve çerez başlıkları
 

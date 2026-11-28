@@ -43,7 +43,9 @@ const emit = (value) => process.stdout.write(nonce + JSON.stringify(value) + '\n
 const PRELUDE = String.raw`
 (() => {
   'use strict';
+  // Test başına 64 K, bütün testler için toplam 400 K karakter (Runner'ın süreç çıktı sınırının altında).
   const LIMIT = 65536;
+  let budget = 409600;
   const logs = [];
   const failures = [];
   let size = 0;
@@ -91,8 +93,9 @@ const PRELUDE = String.raw`
   const write = (args) => {
     if (truncated) return;
     const line = args.map((arg) => inspect(arg, 0, new Set())).join(' ');
-    if (size + line.length > LIMIT) {
-      logs.push(line.slice(0, Math.max(0, LIMIT - size)) + ${JSON.stringify(t('\n… (çıktı kesildi)', '\n… (output truncated)'))});
+    const limit = Math.min(LIMIT, budget);
+    if (size + line.length > limit) {
+      logs.push(line.slice(0, Math.max(0, limit - size)) + ${JSON.stringify(t('\n… (çıktı kesildi)', '\n… (output truncated)'))});
       truncated = true;
       return;
     }
@@ -245,7 +248,7 @@ const PRELUDE = String.raw`
     encode,
     stringify,
     describe,
-    drain: () => { const text = logs.join('\n'); logs.length = 0; size = 0; truncated = false; return text; },
+    drain: () => { const text = logs.join('\n'); logs.length = 0; budget = Math.max(0, budget - size); size = 0; truncated = false; return text; },
     fail: (error) => { const info = describe(error); failures.push(info.line ? info.error + ${JSON.stringify(t(' (satır ', ' (line '))} + info.line + ')' : info.error); },
     failures: () => { const text = failures.join('\n'); failures.length = 0; return text; },
   };
@@ -254,31 +257,54 @@ const PRELUDE = String.raw`
 })();
 `;
 
-// Zamanlayıcılar ana bağlamda yaşar; kullanıcı koduna yalnızca sayısal kimlikler sızar.
-const TIMER_BRIDGE = String.raw`
-((hostSetTimeout, hostClearTimeout, hostSetInterval) => {
-  'use strict';
-  const timers = new Map();
+// Zamanlayıcılar ana bağlamda yaşar ve kayıtları da ana bağlamda tutulur; kullanıcı bağlamına yalnızca
+// sayısal kimlikler geçer. Ana bağlamın hiçbir nesnesi (ör. Node'un Timeout nesnesi) bağlam içindeki bir
+// yapıya konmamalı: kullanıcı Map.prototype.set gibi metotları değiştirip o nesneyi yakalayabilir ve
+// yapıcısından ana bağlamın Function'ına, oradan process'e ulaşır.
+function createTimerHost() {
+  const handles = new Map();
   let sequence = 0;
+
+  // Bu iki fonksiyon bağlama yalnızca köprünün kapanışı (closure) üzerinden verilir. Hiçbir zaman hata
+  // fırlatmazlar: ana bağlamın bir Error nesnesi de bağlam içine kaçış yolu olurdu.
+  const schedule = (callback, delay, repeat) => {
+    if (typeof callback !== 'function') return 0;
+    const id = ++sequence;
+    const run = () => {
+      if (!repeat) handles.delete(id);
+      try { callback(); } catch { /* bağlamın kendi hata işleyicisi zaten çağrıldı */ }
+    };
+    const milliseconds = Number.isFinite(delay) ? Math.min(Math.max(delay, 0), 2 ** 31 - 1) : 0;
+    handles.set(id, { handle: (repeat ? setInterval : setTimeout)(run, milliseconds), repeat });
+    return id;
+  };
+
+  const cancel = (id) => {
+    const entry = typeof id === 'number' ? handles.get(id) : undefined;
+    if (entry === undefined) return;
+    (entry.repeat ? clearInterval : clearTimeout)(entry.handle);
+    handles.delete(id);
+  };
+
+  return { schedule, cancel };
+}
+
+const TIMER_BRIDGE = String.raw`
+((hostSchedule, hostCancel) => {
+  'use strict';
   const guard = (callback, args) => { try { callback(...args); } catch (error) { __z.fail(error); } };
   const requireFunction = (callback, name) => {
     if (typeof callback !== 'function') throw new TypeError(name + ${JSON.stringify(t(': ilk argüman bir fonksiyon olmalı.', ': the first argument must be a function.'))});
   };
   globalThis.setTimeout = (callback, delay, ...args) => {
     requireFunction(callback, 'setTimeout');
-    const id = ++sequence;
-    timers.set(id, hostSetTimeout(() => { timers.delete(id); guard(callback, args); }, Number(delay) || 0));
-    return id;
+    return hostSchedule(() => guard(callback, args), Number(delay) || 0, false);
   };
   globalThis.setInterval = (callback, delay, ...args) => {
     requireFunction(callback, 'setInterval');
-    const id = ++sequence;
-    timers.set(id, hostSetInterval(() => guard(callback, args), Number(delay) || 0));
-    return id;
+    return hostSchedule(() => guard(callback, args), Number(delay) || 0, true);
   };
-  globalThis.clearTimeout = globalThis.clearInterval = (id) => {
-    if (timers.has(id)) { hostClearTimeout(timers.get(id)); timers.delete(id); }
-  };
+  globalThis.clearTimeout = globalThis.clearInterval = (id) => hostCancel(id);
   globalThis.queueMicrotask = (callback) => {
     requireFunction(callback, 'queueMicrotask');
     Promise.resolve().then(() => guard(callback, []));
@@ -481,20 +507,27 @@ function runTests(code) {
       emit({ id: test.id, error: info.error, line: info.line || undefined, ms: 0 });
     }
 
-    emit({ done: true });
+    finish();
     return;
   }
 
   const invoke = buildInvoker(context);
   for (const test of tests) invoke(test);
-  emit({ done: true });
+  finish();
+}
+
+/** Son satırı yazar ve süreci kapatır: bekleyen zamanlayıcı ya da sonsuz mikro görev süreci süre sınırına kadar
+ * açık tutmasın (aksi halde her testi sonuçlanmış bir çalıştırma "zaman aşımı" görünür). */
+function finish() {
+  process.stdout.write(nonce + JSON.stringify({ done: true }) + '\n', () => process.exit(0));
 }
 
 // ---------------------------------------------------------------- script modu (deneme alanı)
 
 function runScript(code) {
   const context = createContext();
-  vm.runInContext(TIMER_BRIDGE, context, { filename: 'zirve-timers.js' })(setTimeout, clearTimeout, setInterval);
+  const timers = createTimerHost();
+  vm.runInContext(TIMER_BRIDGE, context, { filename: 'zirve-timers.js' })(timers.schedule, timers.cancel);
 
   const drain = new vm.Script('__z.drain()', { filename: 'zirve-drain.js' });
   const failures = new vm.Script('__z.failures()', { filename: 'zirve-failures.js' });

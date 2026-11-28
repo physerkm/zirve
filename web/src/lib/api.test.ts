@@ -24,6 +24,18 @@ describe('api istemcisi', () => {
     vi.unstubAllGlobals();
   });
 
+  it('isteği verilen dille, verilmezse geçerli dille yapar', async () => {
+    document.documentElement.lang = 'tr';
+    fetchMock.mockImplementation(() => Promise.resolve(jsonResponse(200, [])));
+
+    await api.get('/tracks');
+    await api.get('/tracks', 'en');
+
+    // Önbellek kaydının dili, o an seçili dilden bağımsız olarak isteğe yansımalı.
+    expect(headersOf(fetchMock.mock.calls[0])['Accept-Language']).toBe('tr');
+    expect(headersOf(fetchMock.mock.calls[1])['Accept-Language']).toBe('en');
+  });
+
   it('GET isteklerinde CSRF belirteci göndermez ve oturum istemez', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse(200, [{ slug: 'csharp' }]));
 

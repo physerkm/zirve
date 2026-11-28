@@ -9,6 +9,13 @@ public sealed class GlobalExceptionHandler(IProblemDetailsService problemDetails
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
+        // İstemci isteği iptal etti (bağlantı kapandı): yanıtı okuyacak kimse yok; hata olarak günlüklenmez.
+        if (exception is OperationCanceledException && httpContext.RequestAborted.IsCancellationRequested)
+        {
+            httpContext.Response.StatusCode = 499;
+            return true;
+        }
+
         // Bu kod dil ara katmanının dışında çalışır; dil HttpContext'ten okunur.
         var english = Localization.IsEnglishRequest(httpContext);
 

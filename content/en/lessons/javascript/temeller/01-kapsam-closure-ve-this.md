@@ -117,7 +117,7 @@ const greet = user.greet;        // the method is detached from its object
 greet();                         // TypeError: this is undefined (modules and classes are in strict mode)
 ```
 
-Passing a method as a callback (`setTimeout(user.greet, 100)`, `button.onclick = user.greet`) produces the same error: the function has been detached from its object.
+Passing a method as a callback (`setTimeout(user.greet, 100)`, `button.onclick = user.greet`) causes the same problem: the function has been detached from its object, and `this` is no longer `user` (in the browser it is `window` for `setTimeout` and the button itself for `onclick`, so instead of throwing it may quietly return the wrong value).
 
 ### Arrow functions
 

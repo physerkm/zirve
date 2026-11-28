@@ -240,6 +240,55 @@ public sealed class RunnerExecutionTests(RunnerFixture runner) : IClassFixture<R
         Assert.NotEqual(TestStatus.Passed, result.Tests[0].Status);
     }
 
+    // Yansıma yasağını derleyicinin dolaylı yollarıyla aşma denemeleri: dynamic bağlama, ifade ağaçları ve
+    // UnsafeAccessor. Üçü de dosya sistemine ve süreç bilgisine erişim sağlayabilir.
+    [Theory]
+    [InlineData("""
+        public class Solution { public int[] TwoSum(int[] nums, int target) {
+            dynamic t = typeof(int); var file = t.Assembly.GetType("System.IO.File"); return nums; } }
+        """)]
+    [InlineData("""
+        using System.Linq.Expressions;
+        public class Solution { public int[] TwoSum(int[] nums, int target) {
+            var asm = Expression.Property(Expression.Constant(typeof(int)), "Assembly");
+            var get = Expression.Lambda<Func<object>>(asm).Compile()(); return nums; } }
+        """)]
+    [InlineData("""
+        using System.Runtime.CompilerServices;
+        public class Solution {
+            [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "GetType")]
+            static extern object Peek(object target);
+            public int[] TwoSum(int[] nums, int target) => nums; }
+        """)]
+    public async Task CSharp_indirect_reflection_is_rejected(string code)
+    {
+        var result = await runner.RunTestsAsync(Languages.CSharp, code, TwoSum, TwoSumTests);
+
+        Assert.Equal(ExecutionStatus.CompileError, result.Status);
+    }
+
+    [Fact]
+    public async Task JavaScript_timers_do_not_leak_host_objects_into_the_sandbox()
+    {
+        // Zamanlayıcı kimlikleri bağlam içindeki bir Map'e konuyorsa, kullanıcı Map.prototype.set'i değiştirip ana
+        // bağlamın nesnesini yakalayabilir; onun yapıcısından ana bağlamın Function'ına ve process'e ulaşılır.
+        const string code = """
+            let leaked;
+            const original = Map.prototype.set;
+            Map.prototype.set = function (key, value) { leaked = value; return original.call(this, key, value); };
+            const id = setTimeout(() => {}, 0);
+            Map.prototype.set = original;
+            let escaped = false;
+            try { escaped = typeof leaked?.constructor?.constructor('return process')() === 'object'; } catch (e) { }
+            console.log(escaped ? 'ESCAPED' : 'contained', typeof id);
+            """;
+
+        var result = await runner.RunScriptAsync(Languages.JavaScript, code);
+
+        Assert.Equal(ExecutionStatus.Completed, result.Status);
+        Assert.Contains("contained number", result.Stdout);
+    }
+
     [Fact]
     public async Task JavaScript_sandbox_does_not_expose_host_globals()
     {

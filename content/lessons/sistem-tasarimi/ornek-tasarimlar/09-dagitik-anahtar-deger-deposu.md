@@ -131,6 +131,6 @@ Mülakatta bu tabloyu adım adım kurmak, her tekniğin **hangi problemi çözd�
 
 ## CP alternatifi
 
-Gereksinim "her zaman yazılabilir" yerine "her zaman doğru" olsaydı (yapılandırma deposu, kilit servisi), tasarım tamamen değişirdi: aralık başına **Raft grubu**, lider üzerinden doğrusallaştırılabilir okuma ve yazma, bölünmede azınlık tarafı yazma kabul etmez. etcd, TiKV ve CockroachDB bu yolu izler. İki tasarımı karşılaştırabilmek, CAP/PACELC'i gerçekten anladığınızı gösterir.
+Gereksinim "her zaman yazılabilir" yerine "her zaman doğru" olsaydı (yapılandırma deposu, kilit servisi), tasarım tamamen değişirdi: aralık başına **Raft grubu**, lider üzerinden doğrusallaştırılabilir okuma ve yazma, bölünmede azınlık tarafı yazma kabul etmez. TiKV ve CockroachDB bu yolu izler; etcd de Raft kullanır ama bütün veri için tek bir Raft grubu çalıştırır. İki tasarımı karşılaştırabilmek, CAP/PACELC'i gerçekten anladığınızı gösterir.
 
 **Daha fazlası:** [Dynamo: Amazon's Highly Available Key-value Store (SOSP 2007)](https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf); [Cassandra mimari belgeleri](https://cassandra.apache.org/doc/latest/cassandra/architecture/overview.html); Alex Xu, *System Design Interview* Cilt 1, Bölüm 6.

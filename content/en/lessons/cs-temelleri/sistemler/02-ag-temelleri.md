@@ -146,7 +146,7 @@ Cache-Control: no-store
 | `503 Service Unavailable` | The service is temporarily unable to serve | Overload, maintenance |
 | `504 Gateway Timeout` | The proxy didn't get a response from the upstream service in time | The upstream service is slow |
 
-The rule: **4xx is the client's problem, 5xx is the server's.** Retrying a 4xx error unchanged won't help; transient 5xx errors like 503 and 504, however, may resolve with retries spaced out over time.
+The rule: **4xx is the client's problem, 5xx is the server's.** Retrying a 4xx error unchanged won't help (exception: a `429` can be retried after waiting out its `Retry-After`); transient 5xx errors like 503 and 504, however, may resolve with retries spaced out over time.
 
 ### Cache and cookie headers
 

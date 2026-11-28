@@ -68,7 +68,7 @@ Sorgu yalnızca `CustomerId`, `CreatedAt`, `Total` ve `Status` istiyorsa her şe
 
 - **Dar:** her nonclustered indeks clustered anahtarı taşır. Geniş anahtar bütün indeksleri büyütür.
 - **Sürekli artan:** yeni satırlar sona eklenir.
-- **Rastgele GUID** (`NEWID()`) clustered anahtar olursa her ekleme B-ağacının rastgele bir sayfasına gider: **sayfa bölünmeleri** ve parçalanma. Çözümler: `NEWSEQUENTIALID()`, uygulamada sıralı GUID üretmek (.NET 9'daki `Guid.CreateVersion7()` zaman sıralıdır) ya da `BIGINT IDENTITY` clustered anahtar ve GUID ayrı bir benzersiz kolon.
+- **Rastgele GUID** (`NEWID()`) clustered anahtar olursa her ekleme B-ağacının rastgele bir sayfasına gider: **sayfa bölünmeleri** ve parçalanma. Çözümler: `NEWSEQUENTIALID()`, uygulamada SQL Server'ın sıralamasına uygun sıralı GUID üretmek (EF Core'un sıralı GUID üreteci gibi; dikkat: .NET 9'daki `Guid.CreateVersion7()` zaman sıralıdır ama SQL Server `uniqueidentifier` değerlerini son baytlardan başlayarak karşılaştırdığı için orada sıralı davranmaz) ya da `BIGINT IDENTITY` clustered anahtar ve GUID ayrı bir benzersiz kolon.
 
 ## Eşzamanlılık: kilitler ve satır sürümleme
 

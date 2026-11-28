@@ -71,4 +71,4 @@ questions:
       - "Use the array index as the rows' `key`"
       - "Put the whole table inside a single `useMemo`"
     why: |
-      Virtualization cuts the number of rows in the DOM from tens of thousands to tens. That is a much bigger win than memoization. `useCallback` stabilizes function references; it doesn't wrap components. Index keys lead to bugs and unnecessary re-creation when sorting and deleting.
+      Virtualization cuts the number of rows in the DOM from ten thousand to a few dozen. That is a much bigger win than memoization. `useCallback` stabilizes function references; it doesn't wrap components. Index keys lead to bugs and unnecessary re-creation when sorting and deleting.

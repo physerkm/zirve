@@ -102,7 +102,8 @@ public static class QuizEndpoints
                 {
                     QuizId = group.Key,
                     Attempts = group.Count(),
-                    Best = group.Max(attempt => attempt.CorrectCount * 100 / attempt.TotalCount),
+                    // Yüzde, yarım yukarı yuvarlanır (tam sayı aritmetiğiyle); sonuç ekranıyla aynı.
+                    Best = group.Max(attempt => (attempt.CorrectCount * 200 + attempt.TotalCount) / (2 * attempt.TotalCount)),
                 })
                 .ToDictionaryAsync(item => item.QuizId, cancellationToken);
 
@@ -186,7 +187,7 @@ public static class QuizEndpoints
             saved = true;
         }
 
-        var score = results.Count == 0 ? 0 : (int)Math.Round(correctCount * 100.0 / results.Count);
+        var score = results.Count == 0 ? 0 : (int)Math.Round(correctCount * 100.0 / results.Count, MidpointRounding.AwayFromZero);
         return TypedResults.Ok(new QuizAttemptResult(correctCount, results.Count, score, saved, results));
     }
 

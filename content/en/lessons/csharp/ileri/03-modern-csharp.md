@@ -20,7 +20,7 @@ Console.WriteLine(a);                // OrderPlaced { OrderId = ..., Total = 250
 What records give you: **value equality** (`Equals`, `GetHashCode`, `==`), a readable `ToString`, copying with `with`, and deconstruction with the positional syntax (`var (id, total, _) = a;`).
 
 - `record` (or `record class`) is a reference type. `record struct` is a value type.
-- The properties of positional records have `init` accessors: they can't be changed after construction.
+- The properties of positional `record`s and `readonly record struct`s have `init` accessors: they can't be changed after construction. In a plain `record struct`, however, positional properties are `get; set;`, so they are mutable.
 - Where to use them: DTOs, commands, events, value objects.
 - Watch out: a `List<T>` field inside a record is still a reference. Equality between two records compares the lists by **reference**, and `with` doesn't copy the list (a shallow copy).
 

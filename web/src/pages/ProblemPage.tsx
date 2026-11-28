@@ -221,6 +221,10 @@ function Workspace({ problem }: { problem: ProblemDetail }) {
 
   // Eski bir gönderimi editöre yükler; gönderim başka dildeyse o dile geçilir.
   const loadSubmission = (submissionLanguage: Language, value: string) => {
+    // Sonuç paneli önceki çalıştırmayı göstermesin: yüklenen kod henüz çalıştırılmadı.
+    judge.reset();
+    setMode(null);
+    setSelectedTestId(null);
     setLanguage(submissionLanguage);
     writeStorage('language', submissionLanguage);
     setCodeByLanguage((current) => ({ ...current, [submissionLanguage]: value }));

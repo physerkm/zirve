@@ -45,7 +45,7 @@ Açıklama: (0,0) -> (1,0) -> (2,0) -> (2,1) -> (2,2) yolu 2 engel kırarak 4 ad
 - `m == grid.length`
 - `n == grid[i].length`
 - `1 <= m, n <= 40`
-- `1 <= k <= m * n`
+- `0 <= k <= m * n`
 - `grid[i][j]` değeri `0` veya `1`'dir.
 - `grid[0][0] == grid[m - 1][n - 1] == 0`
 

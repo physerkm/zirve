@@ -159,7 +159,7 @@ builder.Services.AddHttpClient<PaymentClient>(c =>
 | **Bulkhead** | Bir bağımlılığa ayrılan eşzamanlı çağrı sayısını sınırlar | Yavaş bir bağımlılık bütün kaynakları tüketemez |
 | **Fallback** | Başarısızlıkta yedek cevap | Önbellekteki eski veri, varsayılan değer |
 
-**Yeniden deneme fırtınası:** Her katman 3 kez yeniden denerse ve çağrı zinciri 3 servis derinliğindeyse en alttaki servis 3 × 3 × 3 = 27 kat yük alır. Yeniden denemeyi tek bir katmanda yapın ve circuit breaker ile birleştirin.
+**Yeniden deneme fırtınası:** Her katman bir çağrıyı (ilk deneme dahil) 3 kez denerse ve çağrı zinciri 3 servis derinliğindeyse en alttaki servis 3 × 3 × 3 = 27 kat yük alır. Yeniden denemeyi tek bir katmanda yapın ve circuit breaker ile birleştirin.
 
 Ödeme gibi idempotent olmayan çağrıları yeniden denemeden önce sunucunun idempotency anahtarı desteği olduğundan emin olun.
 

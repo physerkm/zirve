@@ -109,5 +109,5 @@ function isHappy(n: number): boolean {
 
 ### Complexity
 
-- **Time:** O(log n). Computing the sum of a number's squared digits takes as many steps as it has digits, i.e., O(log n); after the first step the values drop below 243, so the loop ends within a constant number of steps.
+- **Time:** O(log n). Computing the sum of a number's squared digits takes as many steps as it has digits, i.e., O(log n); after the first step the values are at most 730 and drop below 243 within a few steps, so the loop ends within a constant number of steps.
 - **Space:** O(1). Only the `slow` and `fast` variables are used instead of a `HashSet`.

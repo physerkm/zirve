@@ -175,7 +175,7 @@ Teşhis: `dotnet-counters` ile heap büyümesini izleyin, `dotnet-dump` ile dök
   - `[LoggerMessage]`: tahsissiz loglama.
 - **FrozenDictionary / FrozenSet** (.NET 8): bir kez oluşturulup hiç değişmeyen arama tabloları için okuma hızı optimize edilmiş koleksiyonlar.
 - **Native AOT:** uygulamayı JIT olmadan doğrudan makine koduna derler. Çok hızlı açılış ve düşük bellek (serverless ve CLI araçları için ideal). Kısıtlar: çalışma zamanı yansıması, dinamik kod üretimi ve bazı kütüphaneler (EF Core'un bazı özellikleri, MVC controller'ları) desteklenmez. Minimal API ve kaynak üreteçli JSON ile çalışır.
-- **Katmanlı derleme ve Dynamic PGO** (.NET 8'den beri varsayılan): JIT, sık çalışan kodu çalışma zamanı profiline göre yeniden ve daha iyi derler. Bu yüzden ölçümden önce ısınma gerekir.
+- **Katmanlı derleme ve Dynamic PGO** (katmanlı derleme .NET Core 3.0'dan, Dynamic PGO .NET 8'den beri varsayılan): JIT, sık çalışan kodu çalışma zamanı profiline göre yeniden ve daha iyi derler. Bu yüzden ölçümden önce ısınma gerekir.
 
 ## Mülakatta sorulur
 

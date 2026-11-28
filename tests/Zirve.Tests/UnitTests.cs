@@ -21,6 +21,8 @@ public sealed class ResultComparerTests
     [InlineData("2.5", "2.6", CompareModes.Exact, false)]
     [InlineData("1000000001", "1000000002", CompareModes.Exact, false)]
     [InlineData("3", "3.0", CompareModes.Exact, true)]
+    [InlineData("9007199254740993", "9007199254740992", CompareModes.Exact, false)]
+    [InlineData("[9007199254740993,1]", "[1,9007199254740993]", CompareModes.Unordered, true)]
     [InlineData("true", "true", CompareModes.Exact, true)]
     [InlineData("true", "1", CompareModes.Exact, false)]
     [InlineData("null", "null", CompareModes.Exact, true)]

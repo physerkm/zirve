@@ -142,7 +142,7 @@ public static class DashboardEndpoints
             new ProblemStats(solvedIds.Count, problems.Count, CountFor(Difficulty.Easy), CountFor(Difficulty.Medium), CountFor(Difficulty.Hard)),
             new QuizStats(
                 attempts.Count,
-                scored.Count == 0 ? null : (int)Math.Round(scored.Average(attempt => attempt.CorrectCount * 100.0 / attempt.TotalCount)),
+                scored.Count == 0 ? null : (int)Math.Round(scored.Average(attempt => attempt.CorrectCount * 100.0 / attempt.TotalCount), MidpointRounding.AwayFromZero),
                 attempts.Select(attempt => attempt.QuizId).Distinct().Count(),
                 totalQuizzes),
             ComputeStreak(activityByDay.Keys, today),

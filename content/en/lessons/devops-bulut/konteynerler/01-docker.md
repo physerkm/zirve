@@ -74,7 +74,7 @@ docker ps                      # running containers
 docker logs -f orders          # follow the logs
 docker exec -it orders sh      # get inside (no shell in a chiseled image)
 docker stop orders && docker rm orders
-docker image prune             # clean up unused images
+docker image prune             # clean up dangling (untagged) images (-a: all unused images)
 ```
 
 - `-p 5000:8080`: maps port 5000 on the host to port 8080 in the container.

@@ -28,7 +28,7 @@ Rules:
 2. Increase the wait exponentially: 100 ms, 200 ms, 400 ms, 800 ms…
 3. Add **randomness (jitter)** to the wait; otherwise all clients retry at the same moment.
 4. Limit the number of attempts and the total time.
-5. Watch out for multiplication across layers: if each of three layers retries 3 times, the bottom service sees 27 times the requests. Retry in a single layer, or keep a **retry budget** (e.g. at most 10% of requests may be retries).
+5. Watch out for multiplication across layers: if each of three layers makes 3 attempts, the bottom service sees 27 times the requests. Retry in a single layer, or keep a **retry budget** (e.g. at most 10% of requests may be retries).
 
 ```typescript
 async function withRetry<T>(op: () => Promise<T>, maxAttempts = 4, baseMs = 100, capMs = 2_000): Promise<T> {
@@ -102,7 +102,7 @@ Key metrics to monitor:
 - **USE** (for resources): **U**tilization, **S**aturation (queue length), **E**rrors.
 - Google's **four golden signals:** latency, traffic, errors, saturation.
 
-**Average latency lies.** Use percentiles: p50, p95, **p99**. If a page makes 50 backend calls, the p99 of each call is felt by most requests for that page (*tail latency*). A common technique for reducing tail latency: if no response arrives within a set time, send the same request to a second replica as well (a **hedged request**).
+**Average latency lies.** Use percentiles: p50, p95, **p99**. If a page makes 50 backend calls, about 40% of page requests hit the p99 latency on at least one call (1 − 0.99⁵⁰ ≈ 0.4; *tail latency*). A common technique for reducing tail latency: if no response arrives within a set time, send the same request to a second replica as well (a **hedged request**).
 
 ## SLIs, SLOs and error budgets
 

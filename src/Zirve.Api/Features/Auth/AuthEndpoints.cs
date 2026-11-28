@@ -31,11 +31,11 @@ public sealed class RegisterRequest
 public sealed class LoginRequest
 {
     [Required(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.EmailRequired))]
-    [StringLength(254)]
+    [StringLength(254, ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.EmailTooLong))]
     public string Email { get; set; } = string.Empty;
 
     [Required(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.PasswordRequired))]
-    [StringLength(128)]
+    [StringLength(128, ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.PasswordTooLong))]
     public string Password { get; set; } = string.Empty;
 
     public bool RememberMe { get; set; } = true;

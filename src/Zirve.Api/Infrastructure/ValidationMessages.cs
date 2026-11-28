@@ -18,6 +18,10 @@ public static class ValidationMessages
 
     public static string PasswordLength => Localization.Text("Parola 8 ile 128 karakter arasında olmalı.", "Password must be between 8 and 128 characters.");
 
+    public static string PasswordTooLong => Localization.Text("Parola en fazla 128 karakter olabilir.", "Password can be at most 128 characters.");
+
+    public static string LanguageTooLong => Localization.Text("Dil en fazla 20 karakter olabilir.", "Language can be at most 20 characters.");
+
     public static string DisplayNameRequired => Localization.Text("Görünen ad zorunlu.", "Display name is required.");
 
     public static string DisplayNameLength => Localization.Text("Görünen ad 2 ile 40 karakter arasında olmalı.", "Display name must be between 2 and 40 characters.");

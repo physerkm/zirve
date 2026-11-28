@@ -118,7 +118,7 @@ function validTree(n: number, edges: number[][]): boolean {
 
 ### Karmaşıklık
 
-- **Zaman:** O(n · α(n)). Kenar sayısı kontrolünden sonra en fazla `n - 1` kenar işlenir.
+- **Zaman:** O(n log n). Kenar sayısı kontrolünden sonra en fazla `n - 1` kenar işlenir. Çözüm yalnızca yol sıkıştırma (yol yarılama) kullanır; boyuta ya da ranka göre birleştirme de eklenirse O(n · α(n)) olur.
 - **Alan:** O(n).
 
 ## Testler

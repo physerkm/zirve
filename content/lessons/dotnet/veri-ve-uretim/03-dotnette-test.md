@@ -159,7 +159,7 @@ public sealed class OrderApiTests(ApiFactory factory) : IClassFixture<ApiFactory
 
 (Buradaki `IAsyncLifetime` imzası xUnit v3'tür ve `ValueTask` döner. xUnit v2'de `Task` döner.)
 
-`Program` sınıfı minimal hosting'de varsayılan olarak test projesinden görünmez. `Program.cs` sonuna `public partial class Program;` eklenir.
+`Program` sınıfı minimal hosting'de varsayılan olarak test projesinden görünmezdi ve `Program.cs` sonuna `public partial class Program;` eklenirdi. .NET 10'da bu bildirimi bir kaynak üretici (source generator) kendiliğinden üretir. Eski sürümlerde elle eklemek hâlâ gerekir.
 
 **Testcontainers** testten önce gerçek bir PostgreSQL, Redis ya da RabbitMQ konteynerini Docker'da başlatır ve test bitince kaldırır. Böylece testler üretimdekiyle aynı veritabanı motoruna karşı çalışır. Gereksinim: test makinesinde ve CI'da Docker.
 

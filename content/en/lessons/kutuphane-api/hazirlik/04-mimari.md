@@ -68,7 +68,7 @@ LibraryApi/
 | Validation | FluentValidation + a handler decorator | The rules live in one place and are testable; no repetition in every handler |
 | Mapping | Manual mapping (static methods or extensions) | AutoMapper went commercial too; manual mapping is explicit and safe at compile time |
 | Database | EF Core 10 + SQL Server LocalDB | Lightweight setup, no Docker required |
-| Ids | `Guid.CreateVersion7()` | Time-ordered GUIDs: little index fragmentation, and unpredictable |
+| Ids | `Guid.CreateVersion7()` | Time-ordered and unpredictable GUIDs. Note: SQL Server sorts `uniqueidentifier` values starting from the last bytes, so this order is not preserved there; if you want less clustered-index fragmentation, use the sequential GUIDs EF Core generates for SQL Server |
 | Time | The built-in `TimeProvider` | Direct `DateTime.UtcNow` can't be tested. You'll test the overdue scenarios with a fake clock |
 | Authentication | JWT Bearer + role-based policies | The standard approach for stateless APIs |
 | Documentation | Built-in OpenAPI + the Scalar UI | Since .NET 9, the templates have built-in OpenAPI support instead of Swashbuckle |

@@ -85,7 +85,7 @@ flowchart LR
 **Delivery.** The network can lose or duplicate a message. The model: **at-least-once delivery + deduplication on the client**.
 
 - The server treats a message as "undelivered" until the client sends an `ack`.
-- For each chat, the client knows **the latest sequence number it has received**. When it reconnects, it says "for ch-91 I have everything up to 1042"; the server sends everything after 1043. If the same `seq` arrives twice, the client ignores it.
+- For each chat, the client knows **the latest sequence number it has received**. When it reconnects, it says "for ch-91 I have everything up to 1042"; the server sends everything from 1043 on. If the same `seq` arrives twice, the client ignores it.
 - If it sees a gap in the sequence numbers (1045 after 1043), the client requests the missing range.
 
 In this design, offline delivery does not need a separate "inbox": **sync means pulling everything after the last seen sequence number**. Multiple devices sync with the same mechanism, each device tracking its own position.

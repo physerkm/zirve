@@ -46,6 +46,13 @@ function start(name, command, args, options = {}) {
     createInterface({ input: stream }).on('line', (line) => log(name, line));
   }
 
+  // Komut bulunamazsa (ör. dotnet PATH'te yok) 'error' gelir; işlenmezse betik çöker ve veritabanı açık kalır.
+  child.on('error', (error) => {
+    if (shuttingDown) return;
+    log('dev', `"${name}" başlatılamadı: ${error.message}. Diğer süreçler durduruluyor.`);
+    void shutdown(1);
+  });
+
   child.on('exit', (code) => {
     if (shuttingDown) return;
     log('dev', `"${name}" beklenmedik biçimde sonlandı (çıkış kodu ${code}). Diğer süreçler durduruluyor.`);

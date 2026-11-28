@@ -16,10 +16,12 @@ $ redis-cli -p 6380
 127.0.0.1:6380> SET kullanici:42 "Ayşe" EX 60
 OK
 127.0.0.1:6380> GET kullanici:42
-"Ayşe"
+"Ay\xc5\x9fe"
 127.0.0.1:6380> TTL kullanici:42
 (integer) 57
 ```
+
+`redis-cli`, ASCII dışı baytları kaçış dizisiyle gösterir ("ş" UTF-8'de iki bayttır: `c5 9f`); `redis-cli --raw` ile `Ayşe` olarak görünür.
 
 Sunucuyu C#, Go, Rust ya da TypeScript ile yazabilirsin. İstemci olarak gerçek `redis-cli` ve `redis-benchmark` kullanacaksın; böylece protokol uyumluluğu kendiliğinden test edilir.
 

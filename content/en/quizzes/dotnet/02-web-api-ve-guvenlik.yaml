@@ -8,7 +8,7 @@ questions:
       - "The second and third requests always return 409 Conflict."
       - "Because PUT is a safe verb, the server state never changes."
     why: |
-      Idempotent means that applying the same request once or several times produces the same final state. PUT is idempotent because it replaces the resource entirely with the body sent. POST, on the other hand, is not idempotent: sending the same request again can create new records. The only "safe" verbs are GET, HEAD and OPTIONS: they never change the server state.
+      Idempotent means that applying the same request once or several times produces the same final state. PUT is idempotent because it replaces the resource entirely with the body sent. POST, on the other hand, is not idempotent: sending the same request again can create new records. The only "safe" verbs are GET, HEAD, OPTIONS and TRACE: they never change the server state.
 
   - q: "A signed-in user tries to delete a record that only administrators can delete. Which status code should be returned?"
     options:

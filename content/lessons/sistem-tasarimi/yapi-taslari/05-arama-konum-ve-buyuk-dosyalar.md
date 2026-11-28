@@ -121,7 +121,7 @@ Büyük dosyalar **parçalar** halinde (ör. 5–100 MB) yüklenir (multipart up
 - Bağlantı koparsa yalnızca eksik parçalar yeniden yüklenir; istemci hangi parçaların tamamlandığını sorabilir.
 - Bütün parçalar bitince "tamamla" çağrısı nesneyi birleştirir.
 
-Dosya senkronizasyon servisleri (Dropbox, Google Drive) bir adım ileri gider: dosyayı içerik tanımlı bloklara böler, her bloğun özetini (hash) alır ve yalnızca **değişen blokları** yükler. Aynı özete sahip blok zaten varsa hiç yüklenmez (tekilleştirme).
+Dosya senkronizasyon servisleri (Dropbox, Google Drive) bir adım ileri gider: dosyayı bloklara (Dropbox'ta 4 MB'lık) böler, her bloğun özetini (hash) alır ve yalnızca **değişen blokları** yükler. Aynı özete sahip blok zaten varsa hiç yüklenmez (tekilleştirme).
 
 ### CDN ile dağıtım
 

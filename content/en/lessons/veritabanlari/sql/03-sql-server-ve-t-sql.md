@@ -66,7 +66,7 @@ A good clustered key should be **narrow, unique, unchanging and ever-increasing*
 
 - **Narrow:** every nonclustered index carries the clustered key. A wide key bloats all indexes.
 - **Ever-increasing:** new rows are appended at the end.
-- If a **random GUID** (`NEWID()`) is the clustered key, every insert goes to a random page of the B-tree: **page splits** and fragmentation. Solutions: `NEWSEQUENTIALID()`, generating sequential GUIDs in the application (`Guid.CreateVersion7()` in .NET 9 is time-ordered), or a `BIGINT IDENTITY` clustered key with the GUID as a separate unique column.
+- If a **random GUID** (`NEWID()`) is the clustered key, every insert goes to a random page of the B-tree: **page splits** and fragmentation. Solutions: `NEWSEQUENTIALID()`, generating GUIDs in the application that are sequential in SQL Server's sort order (such as EF Core's sequential GUID generator; note that `Guid.CreateVersion7()` in .NET 9 is time-ordered, but SQL Server compares `uniqueidentifier` values starting from the last bytes, so they are not sequential there), or a `BIGINT IDENTITY` clustered key with the GUID as a separate unique column.
 
 ## Concurrency: locks and row versioning
 

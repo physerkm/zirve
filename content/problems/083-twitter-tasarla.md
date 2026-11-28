@@ -195,7 +195,7 @@ class Twitter {
 
 ### Karmaşıklık
 
-- **Zaman:** `postTweet`, `follow`, `unfollow` O(1). `getNewsFeed` O(f + 10 log f); `f` takip edilen kullanıcı sayısı.
+- **Zaman:** `postTweet`, `follow`, `unfollow` O(1). `getNewsFeed` O(f log f); `f` takip edilen kullanıcı sayısı (heap'e `f` öğe tek tek eklenir, ardından 10 çekme O(10 log f) sürer).
 - **Alan:** O(tweet sayısı + takip ilişkisi sayısı).
 
 Bütün tweet'leri toplayıp sıralamak da doğru sonuç verir, ama O(T log T) sürer. Heap ile yalnızca gereken 10 tweet çekilir. TypeScript çözümünde hazır öncelik kuyruğu olmadığı için her adımda en yeni işaretçi doğrusal taramayla seçilir; bu O(10 × f) eder ve aynı birleştirme fikrini uygular.

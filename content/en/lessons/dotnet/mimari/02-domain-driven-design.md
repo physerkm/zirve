@@ -56,8 +56,8 @@ An object with no identity, defined by its **values**, and immutable. `Money`, `
 ```csharp
 public sealed record Money
 {
-    public decimal Amount { get; }
-    public string Currency { get; }
+    public decimal Amount { get; private init; }   // EF Core doesn't map properties without a setter
+    public string Currency { get; private init; }
 
     public Money(decimal amount, string currency)
     {

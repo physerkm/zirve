@@ -54,7 +54,11 @@ jobs:
       - run: dotnet build --no-restore -c Release -warnaserror
       - run: dotnet format --verify-no-changes
       - run: dotnet test --no-build -c Release --collect:"XPlat Code Coverage"
-      - run: dotnet list package --vulnerable --include-transitive
+      - name: Güvenlik açığı olan paketler
+        # Komut açık bulsa da 0 ile çıkar; adımın başarısız olması için çıktısı denetlenir.
+        run: |
+          dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerable.txt
+          ! grep -q "has the following vulnerable packages" vulnerable.txt
 
   image:
     needs: build-test

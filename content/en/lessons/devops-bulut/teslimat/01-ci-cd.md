@@ -52,7 +52,11 @@ jobs:
       - run: dotnet build --no-restore -c Release -warnaserror
       - run: dotnet format --verify-no-changes
       - run: dotnet test --no-build -c Release --collect:"XPlat Code Coverage"
-      - run: dotnet list package --vulnerable --include-transitive
+      - name: Vulnerable packages
+        # The command exits with 0 even when it finds vulnerabilities; check its output so the step fails.
+        run: |
+          dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerable.txt
+          ! grep -q "has the following vulnerable packages" vulnerable.txt
 
   image:
     needs: build-test

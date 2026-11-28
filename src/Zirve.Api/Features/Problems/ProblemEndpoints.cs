@@ -52,7 +52,7 @@ public sealed record EditorialResponse(string Editorial, IReadOnlyDictionary<str
 public sealed class CodeRequest
 {
     [Required(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.LanguageRequired))]
-    [StringLength(20)]
+    [StringLength(20, ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.LanguageTooLong))]
     public string Language { get; set; } = string.Empty;
 
     [Required(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.CodeRequired))]

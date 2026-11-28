@@ -16,7 +16,7 @@ level: intermediate
 | **PaaS** | Uygulama kodu ve yapılandırma | İşletim sistemi, yamalar, ölçekleme altyapısı | Azure App Service, Elastic Beanstalk |
 | **Serverless (FaaS)** | Yalnızca fonksiyon | Her şey. Kullanım başına ödeme | Azure Functions, AWS Lambda |
 
-Aşağı indikçe kontrol artar, operasyon yükü de artar. Yukarı çıktıkça hız ve kolaylık artar, esneklik azalır.
+Tabloda yukarı çıktıkça (IaaS'a doğru) kontrol artar, operasyon yükü de artar. Aşağı indikçe (serverless'a doğru) hız ve kolaylık artar, esneklik azalır.
 
 ## Uygulama barındırma
 

@@ -7,7 +7,7 @@ params:
   - { name: nums, type: "int[]" }
 returns: "int"
 ---
-Artan sırada sıralı, **elemanları birbirinden farklı** bir dizi `1` ile `n` arasında bir kez döndürülmüş (rotate edilmiş) olarak veriliyor. Örneğin `[0, 1, 2, 4, 5, 6, 7]` dizisi 4 kez döndürülünce `[4, 5, 6, 7, 0, 1, 2]` olur; `n` kez döndürülünce kendisine geri döner.
+Artan sırada sıralı, **elemanları birbirinden farklı** bir dizi `1` ile `n` arasında herhangi bir sayıda döndürülmüş (rotate edilmiş) olarak veriliyor. Örneğin `[0, 1, 2, 4, 5, 6, 7]` dizisi 4 kez döndürülünce `[4, 5, 6, 7, 0, 1, 2]` olur; `n` kez döndürülünce kendisine geri döner.
 
 Dizideki **en küçük elemanı** `O(log n)` zamanda bulun.
 

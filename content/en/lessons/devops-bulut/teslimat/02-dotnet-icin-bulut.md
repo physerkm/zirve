@@ -14,7 +14,7 @@ summary: The difference between IaaS, PaaS, and serverless, application hosting 
 | **PaaS** | Application code and configuration | Operating system, patches, scaling infrastructure | Azure App Service, Elastic Beanstalk |
 | **Serverless (FaaS)** | Only the function | Everything. Pay per use | Azure Functions, AWS Lambda |
 
-The further down you go, the more control you have, and the more operational burden too. The further up you go, the more speed and convenience you get, and the less flexibility.
+The further up the table you go (toward IaaS), the more control you have, and the more operational burden too. The further down you go (toward serverless), the more speed and convenience you get, and the less flexibility.
 
 ## Application hosting
 
@@ -94,7 +94,7 @@ Good practice: the database and cache are not exposed to the internet. Applicati
 
 ## Managing infrastructure as code (IaC)
 
-Creating resources by clicking around the portal is neither repeatable nor auditable. With IaC, infrastructure is versioned as code, reviewed, and even tested.
+Creating resources by clicking around the portal is neither repeatable nor auditable. With IaC, infrastructure is versioned as code, reviewed, and applied from the pipeline.
 
 | Tool | Note |
 | --- | --- |
